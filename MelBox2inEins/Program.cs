@@ -29,19 +29,21 @@ namespace MelBox2
                 Console.WriteLine("Programm gestartet.");
                 Console.BufferHeight = 1000; //Max. Zeilen in Konsole, bei Überlauf werden älteste Zeilen entfernt
 
-                Email.PermanentEmailRecievers = MelBox2inEins.Properties.Settings.Default.Einstellung.Cast<string>().ToList();
+                Email.PermanentEmailRecievers = MelBox2.Properties.Settings.Default.Einstellung.Cast<string>().ToList();
 
-                Gsm_Com.ComPortName = MelBox2inEins.Properties.Settings.Default.ComPort;
-
+                Gsm_Com.ComPortName = MelBox2.Properties.Settings.Default.ComPort;
+                Gsm_Com.BaudRate = MelBox2.Properties.Settings.Default.BaudRate;
                 Gsm_Com.GsmConnected += HandleGsmEvent;
                 Gsm_Com.GsmEvent += HandleGsmEvent;
 
-                Gsm.Connect();
                 Gsm.GsmSignalQualityEvent += HandleGsmEvent;
                 Gsm.SmsRecievedEvent += HandleSmsRecievedEvent;
                 Gsm.SmsSentEvent += HandleSmsSentEvent;
+                Gsm.SmsStatusreportEvent += HandleSmsStatusReportEvent;
 
-                //  gsm.SmsSend(4916095285304, "MelBox2 gestartet.");
+                Sql.Log(MelBoxSql.LogTopic.Start, MelBoxSql.LogPrio.Info, string.Format( "MelBox2 - Anwendung gestartet. {0}, BaudRate {1}", Gsm_Com.ComPortName, Gsm_Com.BaudRate) );
+                Gsm.Connect();
+                //  gsm.SmsSend(4916095285304, "MelBox2 gestartet."); //Email?
 
                 Console.WriteLine(help);
                 do

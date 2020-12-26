@@ -15,7 +15,8 @@ namespace MelBox2
         private static SerialPort Port;
         const int maxConnectTrys = 5;
         static int currentConnectTrys = 0;
-        static bool PermissionToSend = true;
+        //static bool PermissionToSend = true;
+        static readonly System.Timers.Timer sendTimer = new System.Timers.Timer(2000);
         #endregion
 
         #region Properties
@@ -70,6 +71,18 @@ namespace MelBox2
                 Environment.Exit(0);
             }
 
+            #region Timer zum koordinierten Senden über GSM-Modem
+            sendTimer.Elapsed += (sender, eventArgs) =>
+            {
+                if (ATCommandQueue.Count > 0)
+                    SendNextATCommand();
+                else
+                    sendTimer.Stop();
+            };
+            sendTimer.AutoReset = true;
+            sendTimer.Enabled = false;
+            #endregion
+
             RaiseGsmConnected(true, Port.PortName);
         }
 
@@ -114,7 +127,7 @@ namespace MelBox2
                 try
                 {
                     port.PortName = ComPortName;                            //COM1
-                    port.BaudRate = BaudRate;                                   //9600
+                    port.BaudRate = BaudRate;                               //9600
                     port.DataBits = 8;                                      //8
                     port.StopBits = StopBits.One;                           //1
                     port.Parity = Parity.None;                              //None
@@ -196,20 +209,24 @@ namespace MelBox2
 
         #region GSM Daten senden
 
+
+
         /// <summary>
         /// AT-Befehl zur Abarbeitung einreihen
         /// </summary>
         /// <param name="command">AT-Befehl</param>
         public static void AddAtCommand(string command)
         {
-            ATCommandQueue.Add(command); //Stellt die Abarbeitung nacheinander sicher
-            SendATCommand();
+            if(!ATCommandQueue.Contains(command))
+                ATCommandQueue.Add(command); //Stellt die Abarbeitung nacheinander sicher
+
+            sendTimer.Start();
         }
 
         /// <summary>
         /// Abarbeiten der anstehenden AT-Befehle
         /// </summary>
-        private static void SendATCommand()
+        internal static void SendNextATCommand()
         {
             if (Port == null || !Port.IsOpen)
             {
@@ -219,27 +236,16 @@ namespace MelBox2
 
             try
             {
-                while (ATCommandQueue.Count > 0) //Abarbeitung nacheinander
+                if (ATCommandQueue.Count > 0) //Abarbeitung nacheinander
                 {
                     if (Port != null)
                     {
-                        #region Warte mit Timeout auf letzte Antwort von GSM-Modem, bevor erneut gesendet wird
-                        int n = 0;
-                        while (!PermissionToSend && n < 100)
-                        {
-                            n++;
-                            Console.Write('.');
-                            System.Threading.Thread.Sleep(50);
-                        }
-                        Console.WriteLine();
-                        PermissionToSend = false;
-                        #endregion
-
                         string command = ATCommandQueue.FirstOrDefault();
+                      
                         Port.Write(command + "\r");
                         ATCommandQueue.Remove(command);
                         RaiseGsmEvent(GsmEventArgs.Telegram.GsmSent, command);
-                        Thread.Sleep(400);
+                        //hier keine Pause! sonst Antwortempfang unvollständig!
                     }
                 }
             }
@@ -270,12 +276,15 @@ namespace MelBox2
 
         internal static void Port_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
-            if (Port == null || !Port.IsOpen) return;
+            //PermissionToSend = true;
 
+            if (Port == null || !Port.IsOpen)
+            {
+                return;
+            }
 
             string answer = ReadFromPort();
 
-            //if ((answer.Length == 0) || ((!answer.EndsWith("\r\n> ")) && (!answer.EndsWith("\r\nOK\r\n"))))
             if (answer.Contains("ERROR"))
             {
                 RaiseGsmEvent(GsmEventArgs.Telegram.GsmError, "Fehlerhaft Empfangen:\n\r" + answer);
@@ -286,7 +295,7 @@ namespace MelBox2
                 RaiseGsmEvent(GsmEventArgs.Telegram.GsmRec, answer);
             }
 
-            PermissionToSend = true;
+           // PermissionToSend = true;
         }
 
         /// <summary>

@@ -17,6 +17,9 @@ namespace MelBox2
 
         public static void Send(MailAddressCollection to, string body, string subject = "")
         {
+            //BAUSTELLE
+            return;
+
             //per SmtpClient Funktioniert.
             using (SmtpClient smtpClient = new SmtpClient())
             {

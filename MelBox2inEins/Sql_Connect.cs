@@ -28,6 +28,7 @@ namespace MelBox2
             {
                 CreateNewDataBase();
             }
+
         }
 
         /// <summary>
@@ -68,7 +69,7 @@ namespace MelBox2
 
                         "CREATE TABLE \"LogSent\"   (\"Id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \"SentTime\" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, \"SentToId\" INTEGER NOT NULL, \"ContentId\" INTEGER NOT NULL, \"SentVia\" INTEGER NOT NULL, \"SmsRef\" INTEGER, \"ConfirmStatus\" INTEGER);" +
 
-                        "CREATE TABLE \"LogStatus\" (\"Id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \"SentTime\" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, \"SentToId\" INTEGER NOT NULL, \"ContentId\" INTEGER NOT NULL, \"SentVia\" INTEGER NOT NULL, \"SmsRef\" INTEGER, \"ConfirmStatus\" INTEGER);" +
+                        "CREATE TABLE \"LogStatus\" (\"Id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \"SentTime\" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, \"SentVia\" INTEGER NOT NULL, \"SmsRef\" INTEGER, \"ConfirmStatus\" INTEGER);" +
 
                         //Bereitschaft
                         "CREATE TABLE \"Shifts\"( \"Id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \"EntryTime\" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, " +
@@ -104,6 +105,8 @@ namespace MelBox2
 #pragma warning restore CA2100 // Review SQL queries for security vulnerabilities
                     command.ExecuteNonQuery();
                 }
+
+                Log(LogTopic.Start, LogPrio.Info, "Datenbank neu erstellt.");
 
                 InsertCompany("_UNBEKANNT_", "Musterstraße 123", "12345 Modellstadt");
                 InsertCompany("Kreutzträger Kältetechnik GmbH & Co. KG", "Theodor-Barth-Str. 21", "28307 Bremen");

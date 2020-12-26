@@ -9,11 +9,18 @@ namespace MelBox2
 {
     public partial class MelBoxSql
     {
+        /// <summary>
+        /// Ermittelt die ID für den Text der Nachricht. Erstellt für neuen Text eine ID.
+        /// </summary>
+        /// <param name="content">Nachrichtentext</param>
+        /// <returns>ID für den übergebenen content</returns>
         public int GetMessageId(string content)
         {
             try
             {
                 int id = 0;
+                if (content == null) content = "-KEIN TEXT-";
+
 
                 using (var connection = new SqliteConnection(DataSource))
                 {
@@ -21,31 +28,28 @@ namespace MelBox2
 
                     //Neuen Eintrag erstellen, wenn er nicht existiert
                     var command1 = connection.CreateCommand();
-                    command1.CommandText = @"
-                                INSERT OR IGNORE INTO MessageContent (Content)
-                                VALUES ($Content);   
-                                SELECT ID FROM MessageContent WHERE Content = $Content
-                                ";
+                    command1.CommandText = @"INSERT OR IGNORE INTO MessageContent (Content) VALUES ($Content); SELECT ID FROM MessageContent WHERE Content = $Content; ";
 
                     command1.Parameters.AddWithValue("$Content", content);//.Size = 160; //Max. 160 Zeichen (oder Bytes?)
-
 
                     using (var reader = command1.ExecuteReader())
                     {
                         while (reader.Read())
                         {
                             //Lese Eintrag
-                            if (!int.TryParse(reader.GetString(0), out id))
+                            if (int.TryParse(reader.GetString(0), out id))
                             {
-                                id = GetMessageId(content);
+                                return id;
                             }
                         }
                     }
                 }
 
                 if (id == 0)
+                {
                     //Provisorisch:
                     throw new Exception("GetMessageId() Kontakt konnte nicht zugeordnet werden.");
+                }
 
                 return id;
             }
@@ -56,7 +60,8 @@ namespace MelBox2
         }
 
         /// <summary>
-        /// Versucht den Kontakt anhand der Telefonnummer, email-Adresse oder dem Beginn eriner Nachricht zu identifizieren
+        /// Versucht den Kontakt anhand der Telefonnummer, email-Adresse oder dem Beginn eriner Nachricht zu identifizieren.
+        /// Kann kein Kontakt ermittelt werden, wird ein neuer Kontakt in der Datenbank angelegt.
         /// </summary>
         /// <param name="name"></param>
         /// <param name="phone"></param>
@@ -92,18 +97,29 @@ namespace MelBox2
 
                     using (var reader = command.ExecuteReader())
                     {
-                        while (reader.Read())
+                        if (!reader.HasRows)
                         {
+                            //Neuen Eintrag erstellen
+                            id = InsertContact(name, null, 1, email, phone, 0, false, false);
+                        }
+                        else
+                        {
+                            int n = 0;
                             //Lese Eintrag
-                            if (!int.TryParse(reader.GetString(0), out id))
+                            while (reader.Read())
                             {
-                                //Neuen Eintrag erstellen
-                                InsertContact(name, null, 1, email, phone, 0, false, false);
+                                n++;
+                                int.TryParse(reader.GetString(0), out id);
+                            }
 
-                                //Neu erstellten Eintrag lesen
-                                id = GetContactId(name, phone, email, message);
+                            if (n > 1)
+                            {
+                                Log(LogTopic.Sql, LogPrio.Warning,
+                                    string.Format("Der Kontakt mit der Id {0} ist nicht eindeutig. {1} mögliche Treffer für Name '{2}', Tel.'+{3}', Email:'{4}', KeyWord:'{5}'",
+                                    id, n, name, phone, email, keyWords) );
                             }
                         }
+                        
                     }
                 }
 
@@ -138,7 +154,7 @@ namespace MelBox2
                     command.CommandText = @"SELECT Id " +
                                             "FROM Shifts " +
                                             "WHERE  " +
-                                            "CURRENT_TIMESTAMP BETWEEN DateTime(StartDate, '+'||StartHour||' hours') AND DateTime(StartDate, '+1 day', '+'||EndHour||' hours')";
+                                            "CURRENT_TIMESTAMP BETWEEN StartTime AND EndTime ";
 
                     using (var reader = command.ExecuteReader())
                     {

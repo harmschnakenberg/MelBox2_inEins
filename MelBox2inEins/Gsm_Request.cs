@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace MelBox2
@@ -17,15 +18,32 @@ namespace MelBox2
         /// </summary>
         internal static List<Sms> SmsSendQueue { get; set; } = new List<Sms>();
 
+        /// <summary>
+        /// Objekt der SMS die grade gesendet wird
+        /// </summary>
         internal static Sms CurrentSmsSend { get; set; } = null;
 
+        /// <summary>
+        /// Liste der SMSen, für die noch Empfangsbestätigungen ausstehen 
+        /// BAUSTELLE: Nutzen für Sendewiederholung?
+        /// </summary>
         internal static List<Sms> SmsTrackingQueue { get; set; } = new List<Sms>();
 
         /// <summary>
         /// Merkliste der SMS-Indexe, die zum löschen anstehen
         /// </summary>
         internal static List<int> SmsToDelete = new List<int>();
-        
+
+        #endregion
+
+        #region SMS lesen
+        /// <summary>
+        /// (Manuelles) Anstoßen des Lesens und Verarbeitens des GSM-Modem-Speichers
+        /// </summary>
+        public static void ReadGsmMemory()
+        {
+            Gsm_Com.AddAtCommand("AT+CMGL=\"ALL\"");
+        }
         #endregion
 
         #region SMS versenden
@@ -51,7 +69,6 @@ namespace MelBox2
                 };
 
                 SmsSendQueue.Add(sms);
-
                 SmsSendFromList();
             }
         }
@@ -63,10 +80,16 @@ namespace MelBox2
         private static void SmsSendFromList()
         {
             //CurrentSmsSend wird zur Sendefreigabe auf null gesetzt. Siehe Modem-Antwort '+CMGS: <mr>'
-            if (SmsSendQueue.Count == 0 || CurrentSmsSend != null) return;
+            if (SmsSendQueue.Count == 0 ) return;
+            if ( CurrentSmsSend != null)
+            {
+                Gsm_Com.RaiseGsmEvent(GsmEventArgs.Telegram.GsmSystem, "SMS-Sendeplatz noch nicht frei. Warte auf: " + CurrentSmsSend.Message);               
+                return;
+            }
 
             CurrentSmsSend = SmsSendQueue.FirstOrDefault();
             SmsSendQueue.RemoveAt(0);
+            GlobalProperty.LastSmsSend = CurrentSmsSend.Message;
 
             const string ctrlz = "\u001a";
 
@@ -81,13 +104,7 @@ namespace MelBox2
             //3) diese Methode erneut aufrufen.
         }
 
-        /// <summary>
-        /// Manuelles Anstoßen des Lesens und Verarbeitens des GSM-Modem-Speichers
-        /// </summary>
-        public static void Trigger()
-        {
-            Gsm_Com.AddAtCommand("AT+CMGL=\"ALL\"");
-        }
+
         #endregion
 
         #region SMS löschen
@@ -99,13 +116,13 @@ namespace MelBox2
         {
             Gsm_Com.RaiseGsmEvent(GsmEventArgs.Telegram.SmsStatus, "Die SMS mit der Id " + smsId + " wird gelöscht.");
 
-#if DEBUG
-            //nicht aus Modemspeicher löschen
-#else
+//#if DEBUG
+//            //nicht aus Modemspeicher löschen
+//#else
             string cmd = "AT+CMGD=" + smsId;
             //if (Gsm_Com.ATCommandQueue.Contains(cmd)) return;
             Gsm_Com.AddAtCommand(cmd);
-#endif        
+//#endif        
             }
 
 #endregion

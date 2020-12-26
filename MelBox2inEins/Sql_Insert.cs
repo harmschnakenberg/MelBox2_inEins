@@ -142,9 +142,14 @@ namespace MelBox2
         /// <param name="maxInactiveHours"></param>
         /// <param name="sendSms"></param>
         /// <param name="sendEmail"></param>
-        /// <returns></returns>
-        public bool InsertContact(string name, string passwordPlain, int companyId, string email, ulong phone, int maxInactiveHours, bool sendSms, bool sendEmail)
+        /// <returns>ID des neu eingetragenen Kontakts</returns>
+        public int InsertContact(string name, string passwordPlain, int companyId, string email, ulong phone, int maxInactiveHours, bool sendSms, bool sendEmail)
         {
+            int id = 0;
+
+            if (name.Length < 3) name = "-KEIN NAME-";
+            if (companyId < 1) companyId = 1;
+
             try
             {
                 using (var connection = new SqliteConnection(DataSource))
@@ -153,10 +158,11 @@ namespace MelBox2
 
                     var command = connection.CreateCommand();
                     command.CommandText = "INSERT INTO \"Contact\" (\"Name\", \"Password\", \"CompanyId\", \"Email\", \"Phone\", \"MaxInactiveHours\", \"SendSms\", \"SendEmail\" ) " +
-                                                           "VALUES ( @name , @password, @companyId, @email, @phone, @maxinactivehours, @sendSms, @sendEmail);";
+                                                           "VALUES ( @name , @password, @companyId, @email, @phone, @maxinactivehours, @sendSms, @sendEmail); " +
+                                                           "SELECT ID FROM \"Contact\" ORDER BY ID DESC; ";
 
                     command.Parameters.AddWithValue("@name", name);
-                    command.Parameters.AddWithValue("@password", Encrypt(passwordPlain) );
+                    command.Parameters.AddWithValue("@password", passwordPlain == null ? (object)DBNull.Value : Encrypt(passwordPlain));
                     command.Parameters.AddWithValue("@companyId", companyId);
                     command.Parameters.AddWithValue("@email", email);
                     command.Parameters.AddWithValue("@phone", phone);
@@ -164,13 +170,24 @@ namespace MelBox2
                     command.Parameters.AddWithValue("@sendSms", sendSms ? 1 : 0);
                     command.Parameters.AddWithValue("@sendEmail", sendEmail ? 1 : 0);
 
-                    return 0 != command.ExecuteNonQuery();
+                    using (var reader = command.ExecuteReader())
+                    {
+                        //Lese Eintrag
+                        while (reader.Read())
+                        {
+                            if (int.TryParse(reader.GetString(0), out id))
+                                return id;
+                        }
+                    }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw new Exception("Sql-Fehler InsertContact()");
+                Console.WriteLine("Sql-Fehler InsertContact()\r\n" + 
+                    ex.GetType().ToString() + ": " + ex.Message + "\r\n" + ex.InnerException);
+                throw ex; 
             }
+            return id;
         }
 
         /// <summary>
@@ -251,7 +268,7 @@ namespace MelBox2
 
                     var command = connection.CreateCommand();
                     command.CommandText = "INSERT INTO \"LogSent\" (\"SentToId\", \"ContentId\", \"SentVia\", \"SmsRef\", \"ConfirmStatus\" ) " +
-                                          "VALUES (@sentToId, @contentId, @sendWay, @smsRef, @confirmStatus);" +
+                                          "VALUES (@sentToId, @contentId, @sendVia, @smsRef, @confirmStatus);" +
                                           "SELECT Id FROM \"LogSent\" ORDER BY \"SentTime\" DESC LIMIT 1";
 
                     command.Parameters.AddWithValue("@sentToId", sentToId);
@@ -274,9 +291,11 @@ namespace MelBox2
 
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw new Exception("Sql-Fehler InsertLogSent()");
+                Console.WriteLine("Sql-Fehler InsertMessageSent()\r\n" +
+                    ex.GetType().ToString() + ": " + ex.Message + "\r\n" + ex.InnerException);
+                throw ex;
             }
             return 0;
         }
@@ -307,7 +326,7 @@ namespace MelBox2
             InsertMessageSent(contentId, contactId, SendWay.Sms, smsReference, sendStatus);
         }
 
-        public int InsertMessageStatus(int contentId, int sentToId, SendWay sendVia, int smsReference, SendStatus confirmStatus = 0)
+        public int InsertMessageStatus( SendWay sendVia, int smsReference, SendStatus confirmStatus = 0)
         {
             // "CREATE TABLE \"LogSent\"   (\"Id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \"SentTime\" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, \"SentToId\" INTEGER NOT NULL, \"ContentId\" INTEGER NOT NULL, \"SentVia\" INTEGER NOT NULL, \"SmsRef\" INTEGER, \"ConfirmStatus\" INTEGER);" +
             // "CREATE TABLE \"LogStatus\" (\"Id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \"SentTime\" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, \"SentToId\" INTEGER NOT NULL, \"ContentId\" INTEGER NOT NULL, \"SentVia\" INTEGER NOT NULL, \"SmsRef\" INTEGER, \"ConfirmStatus\" INTEGER);" +
@@ -319,12 +338,10 @@ namespace MelBox2
                     connection.Open();
 
                     var command = connection.CreateCommand();
-                    command.CommandText = "INSERT INTO \"LogStatus\" (\"SentToId\", \"ContentId\", \"SentVia\", \"SmsRef\", \"ConfirmStatus\" ) " +
-                                          "VALUES (@sentToId, @contentId, @sendWay, @smsRef, @confirmStatus);" +
+                    command.CommandText = "INSERT INTO \"LogStatus\" (\"SentVia\", \"SmsRef\", \"ConfirmStatus\" ) " +
+                                          "VALUES ( @sendVia, @smsRef, @confirmStatus);" +
                                           "SELECT Id FROM \"LogStatus\" ORDER BY \"SentTime\" DESC LIMIT 1";
 
-                    command.Parameters.AddWithValue("@sentToId", sentToId);
-                    command.Parameters.AddWithValue("@contentId", contentId);
                     command.Parameters.AddWithValue("@sendVia", sendVia);
                     command.Parameters.AddWithValue("@smsRef", smsReference);
                     command.Parameters.AddWithValue("@confirmStatus", confirmStatus);
@@ -343,9 +360,9 @@ namespace MelBox2
 
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw new Exception("Sql-Fehler InsertLogSent()");
+                throw new Exception("InsertMessageStatus() " + ex.GetType().Name + "\r\n" + ex.Message);
             }
             return 0;
         }
@@ -357,10 +374,8 @@ namespace MelBox2
         /// <param name="phoneTo"></param>
         /// <param name="smsReference"></param>
         /// <param name="smsSendStatus">von Modem: 0..31 success, 32..63 pending, 64..127 aborted; von mir: >127 für intern</param>
-        public void InsertMessageStatus(string message, ulong phoneTo, int smsReference, byte smsSendStatus = 255)
+        public void InsertMessageStatus(int smsReference, byte smsSendStatus = 255)
         {
-            int contentId = GetMessageId(message);
-            int contactId = GetContactId("", phoneTo, "", message);
 
             SendStatus sendStatus = SendStatus.SetToSent;
 
@@ -373,7 +388,7 @@ namespace MelBox2
             else if (smsSendStatus >= 128)
                 sendStatus = SendStatus.SetToSent;
 
-            InsertMessageStatus(contentId, contactId, SendWay.Sms, smsReference, sendStatus);
+            InsertMessageStatus( SendWay.Sms, smsReference, sendStatus);
         }
 
 

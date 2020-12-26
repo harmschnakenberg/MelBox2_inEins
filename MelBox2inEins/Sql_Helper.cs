@@ -24,6 +24,8 @@ namespace MelBox2
         /// <returns>KeyWords</returns>
         internal static string ExtractKeyWords(string MessageContent)
         {
+            if (MessageContent == null) MessageContent = string.Empty;
+
             char[] split = new char[] { ' ', ',', '-', '.', ':', ';' };
             string[] words = MessageContent.Split(split);
 
