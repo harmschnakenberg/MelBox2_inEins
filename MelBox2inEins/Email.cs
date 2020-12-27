@@ -17,7 +17,9 @@ namespace MelBox2
 
         public static void Send(MailAddressCollection to, string body, string subject = "")
         {
+
             //BAUSTELLE
+            Console.WriteLine("Email nicht implementiert. Keine gesendet Email an: " + to.ToList().ToArray().ToString());
             return;
 
             //per SmtpClient Funktioniert.

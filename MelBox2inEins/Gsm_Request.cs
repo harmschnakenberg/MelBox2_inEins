@@ -42,7 +42,7 @@ namespace MelBox2
         /// </summary>
         public static void ReadGsmMemory()
         {
-            Gsm_Com.AddAtCommand("AT+CMGL=\"ALL\"");
+            Gsm_Basics.AddAtCommand("AT+CMGL=\"ALL\"");
         }
         #endregion
 
@@ -83,7 +83,7 @@ namespace MelBox2
             if (SmsSendQueue.Count == 0 ) return;
             if ( CurrentSmsSend != null)
             {
-                Gsm_Com.RaiseGsmEvent(GsmEventArgs.Telegram.GsmSystem, "SMS-Sendeplatz noch nicht frei. Warte auf: " + CurrentSmsSend.Message);               
+                Gsm_Basics.RaiseGsmEvent(GsmEventArgs.Telegram.GsmSystem, "SMS-Sendeplatz noch nicht frei. Warte auf: " + CurrentSmsSend.Message);               
                 return;
             }
 
@@ -94,8 +94,8 @@ namespace MelBox2
             const string ctrlz = "\u001a";
 
             //Senden
-            Gsm_Com.AddAtCommand("AT+CMGS=\"+" + CurrentSmsSend.Phone + "\"\r");
-            Gsm_Com.AddAtCommand(CurrentSmsSend.Message + ctrlz);
+            Gsm_Basics.AddAtCommand("AT+CMGS=\"+" + CurrentSmsSend.Phone + "\"\r");
+            Gsm_Basics.AddAtCommand(CurrentSmsSend.Message + ctrlz);
 
             //Danach warten auf Antwort von GSM-Modem '+CMGS: <mr>' um CurrentSmsSend die Referenz für Empfangsbestätigung zuzuweisen.
             //Nach Zuweisung der Referenz:
@@ -114,14 +114,14 @@ namespace MelBox2
         /// <param name="smsId">Id der SMS im GSM-Speicher</param>
         static void SmsDelete(int smsId)
         {
-            Gsm_Com.RaiseGsmEvent(GsmEventArgs.Telegram.SmsStatus, "Die SMS mit der Id " + smsId + " wird gelöscht.");
+            Gsm_Basics.RaiseGsmEvent(GsmEventArgs.Telegram.SmsStatus, "Die SMS mit der Id " + smsId + " wird gelöscht.");
 
 //#if DEBUG
 //            //nicht aus Modemspeicher löschen
 //#else
             string cmd = "AT+CMGD=" + smsId;
             //if (Gsm_Com.ATCommandQueue.Contains(cmd)) return;
-            Gsm_Com.AddAtCommand(cmd);
+            Gsm_Basics.AddAtCommand(cmd);
 //#endif        
             }
 

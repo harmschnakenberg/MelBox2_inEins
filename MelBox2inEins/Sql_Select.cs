@@ -1,6 +1,7 @@
 ﻿using Microsoft.Data.Sqlite;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -204,7 +205,6 @@ namespace MelBox2
             }
         }
 
-
         /// <summary>
         /// Listet die Email-Empfänger der aktuellen Bereitschaft auf, sofern vorhanden.
         /// Erzeugt keine neue Bereitschaft. 
@@ -261,5 +261,206 @@ namespace MelBox2
             }
         }
 
+
+        #region Views
+        public DataTable GetViewMsgRec()
+        {
+            DataTable recTable = new DataTable
+            {
+                TableName = "Empfangen"
+            };
+
+            try
+            {
+                using (var connection = new SqliteConnection(DataSource))
+                {
+                    connection.Open();
+
+
+                    var command1 = connection.CreateCommand();
+
+                    command1.CommandText = "SELECT * FROM \"ViewMessagesRecieved\" ORDER BY Empfangen DESC LIMIT 1000";
+
+                    using (var reader = command1.ExecuteReader())
+                    {
+                        recTable.Load(reader);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Sql-Fehler GetViewMsgRec() " + ex.GetType() + "\r\n" + ex.Message);
+            }
+
+            return recTable;
+        }
+
+        public DataTable GetViewMsgSent()
+        {
+            DataTable sentTable = new DataTable
+            {
+                TableName = "Gesendet"
+            };
+
+            try
+            {
+                using (var connection = new SqliteConnection(DataSource))
+                {
+                    connection.Open();
+
+
+                    var command1 = connection.CreateCommand();
+
+                    command1.CommandText = "SELECT * FROM \"ViewMessagesSent\" ORDER BY Gesendet DESC LIMIT 1000 ";
+
+                    using (var reader = command1.ExecuteReader())
+                    {
+                        sentTable.Load(reader);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Sql-Fehler GetViewMsgSent() " + ex.GetType() + "\r\n" + ex.Message);
+            }
+
+            return sentTable;
+        }
+
+        public DataTable GetViewMsgOverdue()
+        {
+            DataTable overdueTable = new DataTable
+            {
+                TableName = "Fehlende Meldungen"
+            };
+
+            try
+            {
+                using (var connection = new SqliteConnection(DataSource))
+                {
+                    connection.Open();
+
+
+                    var command1 = connection.CreateCommand();
+
+                    command1.CommandText = "SELECT * FROM \"ViewMessageOverdue\" ORDER BY LastRecieved DESC LIMIT 1000";
+
+                    using (var reader = command1.ExecuteReader())
+                    {
+                        overdueTable.Load(reader);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Sql-Fehler GetViewMsgOverdue() " + ex.GetType() + "\r\n" + ex.Message);
+            }
+
+            return overdueTable;
+        }
+
+        public DataTable GetViewMsgBlocked()
+        {
+            DataTable overdueTable = new DataTable
+            {
+                TableName = "Gesperrte Meldungen"
+            };
+
+            try
+            {
+                using (var connection = new SqliteConnection(DataSource))
+                {
+                    connection.Open();
+
+
+                    var command1 = connection.CreateCommand();
+
+                    command1.CommandText = "SELECT * FROM \"ViewMessagesBlocked\"";
+
+                    using (var reader = command1.ExecuteReader())
+                    {
+                        overdueTable.Load(reader);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Sql-Fehler GetViewMsgBlocked() " + ex.GetType() + "\r\n" + ex.Message);
+            }
+
+            return overdueTable;
+        }
+
+        public DataTable GetViewContactInfo(int contactId)
+        {
+            DataTable contactTable = new DataTable
+            {
+                TableName = "Benutzerkonto"
+            };
+
+            try
+            {
+                using (var connection = new SqliteConnection(DataSource))
+                {
+                    connection.Open();
+
+
+                    var command1 = connection.CreateCommand();
+
+                    command1.CommandText = "SELECT Contact.Id AS ContactId, Contact.Name AS Name, Password, CompanyId, Company.Name AS CompanyName, Email, Phone, Contact.SendWay AS SendWay " +
+                                           "FROM \"Contact\" " +
+                                           "JOIN \"Company\" ON CompanyId = Company.Id " +
+                                           "WHERE Contact.Id = @id; ";
+
+                    command1.Parameters.AddWithValue("@id", contactId);
+
+                    using (var reader = command1.ExecuteReader())
+                    {
+                        contactTable.Load(reader);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Sql-Fehler GetViewContactInfo() " + ex.GetType() + "\r\n" + ex.Message);
+            }
+
+            return contactTable;
+        }
+
+        public DataTable GetAllCompanys()
+        {
+            DataTable companyTable = new DataTable
+            {
+                TableName = "Firmen"
+            };
+
+            try
+            {
+                using (var connection = new SqliteConnection(DataSource))
+                {
+                    connection.Open();
+
+
+                    var command1 = connection.CreateCommand();
+
+                    command1.CommandText = "SELECT * " +
+                                           "FROM \"Company\" ";
+
+                    using (var reader = command1.ExecuteReader())
+                    {
+                        companyTable.Load(reader);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Sql-Fehler GetAllCompanys() " + ex.GetType() + "\r\n" + ex.Message);
+            }
+
+            return companyTable;
+        }
+
+        #endregion
     }
 }

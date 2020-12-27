@@ -1,337 +1,160 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO.Ports;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
-using MelBox2;
 
 namespace MelBox2
 {
-    public static class Gsm_Com
+    public partial class Gsm
     {
         #region Fields
-        private static SerialPort Port;
-        const int maxConnectTrys = 5;
-        static int currentConnectTrys = 0;
-        //static bool PermissionToSend = true;
-        static readonly System.Timers.Timer sendTimer = new System.Timers.Timer(2000);
+
         #endregion
 
         #region Properties
-        public static string ComPortName { get; set; } = "COM1";
+        public static int GsmReadCycleSeconds { get; set; } = 60;
 
-        public static int BaudRate { get; set; } = 9600;
-
-        /// <summary>
-        /// Liste der anstehenden AT-Commands zur sequenziellen Abarbeitung
-        /// </summary>
-        private static List<string> ATCommandQueue { get; set; } = new List<string>();
         #endregion
 
         #region Events
         /// <summary>
-        /// Event 'GSM-Ereignis'
+        /// Event SMS empfangen
         /// </summary>
-        public static event EventHandler<GsmEventArgs> GsmEvent;
+        public static event EventHandler<Sms> SmsRecievedEvent;
 
         /// <summary>
-        /// Trigger für das Event 'GSM-Ereignis'
+        /// Trigger für das Event SMS empfangen
         /// </summary>
         /// <param name="e"></param>
-        public static void RaiseGsmEvent(GsmEventArgs.Telegram telegram, string eventContent, object Payload = null)
+        static void RaiseSmsRecievedEvent(Sms e)
         {
-            GsmEvent?.Invoke(null, new GsmEventArgs(telegram, eventContent, Payload));
-            //Console.WriteLine(eventContent);
+            SmsRecievedEvent?.Invoke(null, e);
         }
 
-        public static event EventHandler<GsmEventArgs> GsmConnected;
+        /// <summary>
+        /// Event SMS erfolgreich (mit Empfangsbestätigung) versendet
+        /// </summary>
+        public static event EventHandler<Sms> SmsSentEvent;
 
-        private static void RaiseGsmConnected(bool connected, string ComPortName)
+        /// <summary>
+        /// Trigger für das Event SMS erfolgreich versendet
+        /// </summary>
+        /// <param name="e"></param>
+        static void RaiseSmsSentEvent(Sms e)
         {
-            GsmConnected?.Invoke(null, new GsmEventArgs(GsmEventArgs.Telegram.GsmConnection, ComPortName + (connected ? " verbunden":" getrennt"), connected));
+            SmsSentEvent?.Invoke(null, e);
         }
 
+        /// <summary>
+        /// Event SMS erfolgreich (mit Empfangsbestätigung) versendet
+        /// </summary>
+        public static event EventHandler<Sms> SmsStatusreportEvent;
+
+        /// <summary>
+        /// Trigger für das Event SMS erfolgreich versendet
+        /// </summary>
+        /// <param name="e"></param>
+        static void RaiseSmsStatusreportEvent(Sms e)
+        {
+            SmsStatusreportEvent?.Invoke(null, e);
+        }
+
+        /// <summary>
+        /// Event SMS erfolgreich (mit Empfangsbestätigung) versendet
+        /// </summary>
+        public static event EventHandler<GsmEventArgs> GsmSignalQualityEvent;
+
+        /// <summary>
+        /// Trigger für das Event SMS erfolgreich versendet
+        /// </summary>
+        /// <param name="e"></param>
+        static void RaiseGsmSignalQualityEvent(GsmEventArgs e)
+        {
+            GsmSignalQualityEvent?.Invoke(null, e);
+        }
         #endregion
 
         #region Constructor
-
-        /// <summary>
-        /// Nach AppStart erstmals Verbindung zum COM-Port herstellen und GSM-Modem initialisieren 
-        /// </summary>
         public static void Connect()
         {
-            ConnectPort();
+            Gsm_Basics.GsmEvent += ParseGsmRecEvent;
+            Gsm_Basics.GsmConnected += SetupGsm;
+            Gsm_Basics.Connect();
+        }
+        #endregion
 
-            if (Port == null || !Port.IsOpen) //Verbindung ist fehlgeschlagen
-            {
-                ClosePort();
-                System.Threading.Thread.Sleep(5000); //Pause zum lesen der Bildschirmausgabe.
-                Environment.Exit(0);
-            }
+        private static void SetupGsm(object sender, GsmEventArgs e)
+        {
+            //Nur beim Verbinden ausführen
+            if (e.Type != GsmEventArgs.Telegram.GsmConnection || !e.Message.ToLower().Contains("verbunden")) return;
 
-            #region Timer zum koordinierten Senden über GSM-Modem
-            sendTimer.Elapsed += (sender, eventArgs) =>
+            System.Threading.Thread.Sleep(2000); //Angstpause
+
+            //Test, ob Modem antwortet
+            Gsm_Basics.AddAtCommand("AT");
+
+            //Erzwinge, dass bei Fehlerhaftem SMS-Senden "+CMS ERROR: <err>" ausgegeben wird statt "OK"
+            Gsm_Basics.AddAtCommand("AT^SM20=0,0");
+
+            //Benachrichtigung bei SIM-Karten erkannt oder Sim-Slot offen/zu
+            Gsm_Basics.AddAtCommand("AT^SCKS=1");
+            Gsm_Basics.AddAtCommand("AT^SCKS?");
+
+            //EIgene Telefonnumer-Nummer der SIM-Karte auslesen 
+            Gsm_Basics.AddAtCommand("AT+CNUM");
+
+            //SIM-Karte im Mobilfunknetz registriert?
+            Gsm_Basics.AddAtCommand("AT+CREG=1");
+            Gsm_Basics.AddAtCommand("AT+CREG?");
+
+            //Signalqualität
+            Gsm_Basics.AddAtCommand("AT+CSQ");
+
+            //Textmode
+            Gsm_Basics.AddAtCommand("AT+CMGF=1");
+
+            //SendATCommand("AT+CPMS=\"SM\""); //ME, SM, MT
+            //SendATCommand("AT+CPMS=\"MT\",\"MT\",\"MT\"");
+            Gsm_Basics.AddAtCommand("AT+CPMS=\"MT\",\"MT\",\"MT\"");
+
+            //Sendeempfangsbestätigungen abonieren
+            //Quelle: https://www.codeproject.com/questions/271002/delivery-reports-in-at-commands
+            //Quelle: https://www.smssolutions.net/tutorials/gsm/sendsmsat/
+            //AT+CSMP=<fo> [,  <vp> / <scts> [,  <pid> [,  <dcs> ]]]
+            // <fo> First Octet:
+            // <vp> Validity-Period: 0 - 143 (vp+1 x 5min), 144 - 167 (12 Hours + ((VP-143) x 30 minutes)), [...]
+            Gsm_Basics.AddAtCommand("AT+CSMP=49,1,0,0");
+
+            Gsm_Basics.AddAtCommand("AT+CNMI=2,1,2,2,1");
+            //möglich AT+CNMI=2,1,2,2,1
+
+            ReadGsmMemory();
+
+            //Startet Timer zum wiederholten Abrufen von Nachrichten
+            SetCyclicTimer();
+
+            Gsm_Basics.RaiseGsmEvent(GsmEventArgs.Telegram.GsmSystem, "GSM-Setup wird ausgeführt.");
+        }
+
+        /// <summary>
+        /// Waretet eine Zeit und stößt dann das Lesen des GSM-Speichers an
+        /// </summary>
+        internal static void SetCyclicTimer()
+        {
+            Gsm_Basics.RaiseGsmEvent(GsmEventArgs.Telegram.GsmSystem, "Erste Abfrage: " + DateTime.Now.AddSeconds(GsmReadCycleSeconds));
+
+            System.Timers.Timer aTimer = new System.Timers.Timer(GsmReadCycleSeconds * 1000); //sec
+            aTimer.Elapsed += (sender, eventArgs) =>
             {
-                if (ATCommandQueue.Count > 0)
-                    SendNextATCommand();
-                else
-                    sendTimer.Stop();
+                Gsm_Basics.AddAtCommand("AT+CSQ");
+                ReadGsmMemory();
+                Gsm_Basics.RaiseGsmEvent(GsmEventArgs.Telegram.GsmSystem, "Nächste Abfrage: " + DateTime.Now.AddSeconds(GsmReadCycleSeconds));
             };
-            sendTimer.AutoReset = true;
-            sendTimer.Enabled = false;
-            #endregion
-
-            RaiseGsmConnected(true, Port.PortName);
-        }
-
-        #endregion
-
-        #region Verbindung
-        /// <summary>
-        /// Verbindet den COM-Port
-        /// </summary>
-        private static void ConnectPort()
-        {
-            #region richtigen COM-Port ermitteln
-            List<string> AvailableComPorts = System.IO.Ports.SerialPort.GetPortNames().ToList();
-
-            if (AvailableComPorts.Count < 1)
-            {
-                RaiseGsmEvent(GsmEventArgs.Telegram.GsmError, "Es sind keine COM-Ports vorhanden");
-                return;
-            }
-
-            if (!AvailableComPorts.Contains(ComPortName))
-            {
-                ComPortName = AvailableComPorts.LastOrDefault();
-            }
-            #endregion
-
-            #region Wenn Port bereits vebunden ist, trennen
-            if (Port != null && Port.IsOpen)
-            {
-                ClosePort();
-            }
-            #endregion
-
-            #region Verbinde ComPort
-            RaiseGsmEvent(GsmEventArgs.Telegram.GsmSystem, string.Format("Öffne Port {0}...", ComPortName));
-
-            SerialPort port = new SerialPort();
-
-            while (port == null || !port.IsOpen)
-            {
-                currentConnectTrys++;
-                try
-                {
-                    port.PortName = ComPortName;                            //COM1
-                    port.BaudRate = BaudRate;                               //9600
-                    port.DataBits = 8;                                      //8
-                    port.StopBits = StopBits.One;                           //1
-                    port.Parity = Parity.None;                              //None
-                    port.ReadTimeout = 300;                                 //300
-                    port.WriteTimeout = 300;                                //300
-                    port.Encoding = Encoding.GetEncoding("iso-8859-1");
-                    port.DataReceived += new SerialDataReceivedEventHandler(Port_DataReceived);
-                    port.ErrorReceived += new SerialErrorReceivedEventHandler(Port_ErrorReceived);
-                    port.Open();
-                    port.DtrEnable = true;
-                    port.RtsEnable = true;
-
-                    RaiseGsmEvent(GsmEventArgs.Telegram.GsmSystem, "Verbindungsversuch " + currentConnectTrys + " von " + maxConnectTrys);
-
-                }
-                catch (ArgumentException ex_arg)
-                {
-                    RaiseGsmEvent(GsmEventArgs.Telegram.GsmError, string.Format("COM-Port {0} konnte nicht verbunden werden. \r\n{1}\r\n{2}", ComPortName, ex_arg.GetType(), ex_arg.Message));
-                    Thread.Sleep(2000);
-                }
-                catch (UnauthorizedAccessException ex_unaut)
-                {
-                    RaiseGsmEvent(GsmEventArgs.Telegram.GsmError, string.Format("Der Zugriff auf COM-Port {0} wurde verweigert. \r\n{1}\r\n{2}", ComPortName, ex_unaut.GetType(), ex_unaut.Message));
-                    Thread.Sleep(2000);
-                }
-                catch (System.IO.IOException ex_io)
-                {
-                    RaiseGsmEvent(GsmEventArgs.Telegram.GsmError, string.Format("Verbindungsversuch {0}/{1}: COM-Port {2} konnte nicht erreicht werden.\r\n{3}", currentConnectTrys, maxConnectTrys, ComPortName, ex_io.Message));
-                    Thread.Sleep(2000);
-                }
-
-                if (port == null || !port.IsOpen)
-                {
-                    if (currentConnectTrys > maxConnectTrys)
-                    {
-                        RaiseGsmEvent(GsmEventArgs.Telegram.GsmError, "Maximale Anzahl Verbindungsversuche zu " + ComPortName + " überschritten.");
-                        ClosePort();
-                        Environment.Exit(0);
-                        return;
-                    }
-
-                    Thread.Sleep(4000);
-                }
-            }
-
-            currentConnectTrys = 0;
-
-            Port = port;
-            //RaiseGsmEvent(GsmEventArgs.Telegram.GsmSystem, "Verbindung über " + Port.PortName + " hergestellt.");
-            #endregion
-        }
-
-        /// <summary>
-        /// Schließt den Port und räumt auf
-        /// </summary>
-        public static void ClosePort()
-        {
-            if (Port == null) return;
-
-            RaiseGsmConnected(false, Port.PortName);
-           // RaiseGsmEvent( GsmEventArgs.Telegram.GsmSystem, "Port " + Port.PortName + " wird geschlossen.\r\n");
-
-            try
-            {
-                Port.Close();
-                Port.DataReceived -= new SerialDataReceivedEventHandler(Port_DataReceived);
-                Port.Dispose();
-                Port = null;
-                System.Threading.Thread.Sleep(3000);
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
+            aTimer.AutoReset = true;
+            aTimer.Enabled = true;
         }
 
 
-        #endregion
-
-        #region GSM Daten senden
-
-
-
-        /// <summary>
-        /// AT-Befehl zur Abarbeitung einreihen
-        /// </summary>
-        /// <param name="command">AT-Befehl</param>
-        public static void AddAtCommand(string command)
-        {
-            if(!ATCommandQueue.Contains(command))
-                ATCommandQueue.Add(command); //Stellt die Abarbeitung nacheinander sicher
-
-            sendTimer.Start();
-        }
-
-        /// <summary>
-        /// Abarbeiten der anstehenden AT-Befehle
-        /// </summary>
-        internal static void SendNextATCommand()
-        {
-            if (Port == null || !Port.IsOpen)
-            {
-                ConnectPort();
-                Thread.Sleep(2000);
-            }
-
-            try
-            {
-                if (ATCommandQueue.Count > 0) //Abarbeitung nacheinander
-                {
-                    if (Port != null)
-                    {
-                        string command = ATCommandQueue.FirstOrDefault();
-                      
-                        Port.Write(command + "\r");
-                        ATCommandQueue.Remove(command);
-                        RaiseGsmEvent(GsmEventArgs.Telegram.GsmSent, command);
-                        //hier keine Pause! sonst Antwortempfang unvollständig!
-                    }
-                }
-            }
-            catch (System.IO.IOException ex_io)
-            {
-                RaiseGsmEvent(GsmEventArgs.Telegram.GsmError, ex_io.Message);
-            }
-            catch (InvalidOperationException ex_inval)
-            {
-                RaiseGsmEvent(GsmEventArgs.Telegram.GsmError, ex_inval.Message);
-            }
-            catch (UnauthorizedAccessException ex_unaut)
-            {
-                RaiseGsmEvent(GsmEventArgs.Telegram.GsmError, ex_unaut.Message);
-            }
-        }
-
-        #endregion
-
-        #region GSM Daten empfangen
-
-        internal static void Port_ErrorReceived(object sender, SerialErrorReceivedEventArgs e)
-        {
-            //Console.WriteLine("Fehler von COM-Port: " + e.EventType);
-            RaiseGsmEvent(GsmEventArgs.Telegram.GsmError, "Fehler von COM-Port: " + e.EventType);
-            //ClosePort(); Böse!
-        }
-
-        internal static void Port_DataReceived(object sender, SerialDataReceivedEventArgs e)
-        {
-            //PermissionToSend = true;
-
-            if (Port == null || !Port.IsOpen)
-            {
-                return;
-            }
-
-            string answer = ReadFromPort();
-
-            if (answer.Contains("ERROR"))
-            {
-                RaiseGsmEvent(GsmEventArgs.Telegram.GsmError, "Fehlerhaft Empfangen:\n\r" + answer);
-            }
-            else if (answer.Length > 1)
-            {
-                //Send data to whom ever interested
-                RaiseGsmEvent(GsmEventArgs.Telegram.GsmRec, answer);
-            }
-
-           // PermissionToSend = true;
-        }
-
-        /// <summary>
-        /// Der eigentliche Lesevorgang von Port
-        /// </summary>
-        /// <returns></returns>
-        private static string ReadFromPort()
-        {
-            try
-            {
-                Port.DiscardInBuffer();
-                Port.DiscardOutBuffer();
-                string answer = string.Empty;
-                while (answer.Length < 2)
-                {
-                    System.Threading.Thread.Sleep(Port.ReadTimeout); //Ist sonst unvollständig
-                    answer += Port.ReadExisting();
-                }
-                return answer;
-            }
-            catch (TimeoutException ex_time)
-            {
-                RaiseGsmEvent(GsmEventArgs.Telegram.GsmError, string.Format("Der Port {0} konnte nicht erreicht werden. Timeout. \r\n{1}\r\n{2}", Port.PortName, ex_time.GetType(), ex_time.Message));
-                return string.Empty;
-            }
-            catch (InvalidOperationException ex_op)
-            {
-                RaiseGsmEvent(GsmEventArgs.Telegram.GsmError, string.Format("Der Port {0} ist geschlossen \r\n{1}", Port.PortName, ex_op.Message));
-                return string.Empty;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception(ex.GetType().Name + "\r\n" + ex.Message);
-            }
-        }
-
-        #endregion
     }
 }

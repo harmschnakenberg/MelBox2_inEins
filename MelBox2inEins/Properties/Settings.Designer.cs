@@ -55,12 +55,24 @@ namespace MelBox2.Properties {
   <string>harm.schnakenberg@ewe.net</string>
   <string>harm.schnakenberg@kreutztraeger.de</string>
 </ArrayOfString>")]
-        public global::System.Collections.Specialized.StringCollection Einstellung {
+        public global::System.Collections.Specialized.StringCollection PermanentEmailRecievers {
             get {
-                return ((global::System.Collections.Specialized.StringCollection)(this["Einstellung"]));
+                return ((global::System.Collections.Specialized.StringCollection)(this["PermanentEmailRecievers"]));
             }
             set {
-                this["Einstellung"] = value;
+                this["PermanentEmailRecievers"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("4916095285304")]
+        public ulong MelBoxAdminPhone {
+            get {
+                return ((ulong)(this["MelBoxAdminPhone"]));
+            }
+            set {
+                this["MelBoxAdminPhone"] = value;
             }
         }
     }

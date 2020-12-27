@@ -11,7 +11,7 @@ namespace MelBox2
     {
 
         /// <summary>
-        /// BAUSTELLE
+        /// BAUSTELLE funktioniert noch nicht
         /// </summary>
         /// <param name="sendVia"></param>
         /// <param name="smsReference"></param>
@@ -44,11 +44,9 @@ namespace MelBox2
                           "SET \"ConfirmStatus\" = @confirmStatus " +
                           "WHERE ID = (SELECT ID FROM \"LogSent\" " +
                           "WHERE \"SmsRef\" = @smsRef " +
-                         // "AND \"ContentId\" = @contentId " +
-                          //"AND \"SentToId\" = @sentToId " +
                           "AND \"SendVia\" = @sendVia " +
                           "AND \"ConfirmStatus\" = @confirmStatusOld " +
-                          "AND \"SentTime\" BETWEEN strftime(@sentTime, '-5 minutes') AND @sentTime " +
+                          "AND \"SentTime\" BETWEEN datetime(@sentTime, '-5 minutes') AND datetime(@sentTime)" +
                           "ORDER BY \"SentTime\" DESC LIMIT 1); ";
 
                     //command.Parameters.AddWithValue("@sentToId", sentToId);
@@ -67,28 +65,5 @@ namespace MelBox2
                 throw new Exception("Sql-Fehler UpdateMessageSent() " + ex.GetType() + "\r\n" + ex.Message);
             }
         }
-
-
-        //public void UpdateMessageSent(byte smsRef, int smsSendStatus) 
-        //{
-        //    try
-        //    {
-        //        SendStatus sendStatus = SendStatus.SetToSent;
-
-        //        if (smsSendStatus < 32)
-        //            sendStatus = SendStatus.SentSuccess;
-        //        else if (smsSendStatus < 64)
-        //            sendStatus = SendStatus.Pending;
-        //        else if (smsSendStatus < 128)
-        //            sendStatus = SendStatus.SendAbborted;
-
-        //        UpdateMessageSentStatus( SendWay.Sms, smsRef, sendStatus);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        throw ex;
-        //    }
-        //}
-
     }
 }

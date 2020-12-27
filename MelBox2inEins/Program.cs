@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Remoting.Channels;
-using System.Text;
-using System.Threading.Tasks;
+using System.Timers;
 
 namespace MelBox2
 {
@@ -11,11 +8,16 @@ namespace MelBox2
      * Diese Konsolenanwendung bündelt mehrere Klassenbibliotheken, und führt diese aus.
      * 
      */
-    
+
     partial class Program
     {
-        #region Properties
+        #region Fields
         internal static MelBoxSql Sql = new MelBoxSql();
+
+        #endregion
+
+        #region Properties
+  
         #endregion
 
         //internal static Gsm gsm = new Gsm();
@@ -29,21 +31,31 @@ namespace MelBox2
                 Console.WriteLine("Programm gestartet.");
                 Console.BufferHeight = 1000; //Max. Zeilen in Konsole, bei Überlauf werden älteste Zeilen entfernt
 
-                Email.PermanentEmailRecievers = MelBox2.Properties.Settings.Default.Einstellung.Cast<string>().ToList();
+                Email.PermanentEmailRecievers = Properties.Settings.Default.PermanentEmailRecievers.Cast<string>().ToList();
 
-                Gsm_Com.ComPortName = MelBox2.Properties.Settings.Default.ComPort;
-                Gsm_Com.BaudRate = MelBox2.Properties.Settings.Default.BaudRate;
-                Gsm_Com.GsmConnected += HandleGsmEvent;
-                Gsm_Com.GsmEvent += HandleGsmEvent;
+                Gsm_Basics.ComPortName = Properties.Settings.Default.ComPort;
+                Gsm_Basics.BaudRate = Properties.Settings.Default.BaudRate;
+                Gsm_Basics.GsmConnected += HandleGsmEvent;
+                Gsm_Basics.GsmEvent += HandleGsmEvent;
 
                 Gsm.GsmSignalQualityEvent += HandleGsmEvent;
                 Gsm.SmsRecievedEvent += HandleSmsRecievedEvent;
                 Gsm.SmsSentEvent += HandleSmsSentEvent;
                 Gsm.SmsStatusreportEvent += HandleSmsStatusReportEvent;
 
-                Sql.Log(MelBoxSql.LogTopic.Start, MelBoxSql.LogPrio.Info, string.Format( "MelBox2 - Anwendung gestartet. {0}, BaudRate {1}", Gsm_Com.ComPortName, Gsm_Com.BaudRate) );
+                Sql.Log(MelBoxSql.LogTopic.Start, MelBoxSql.LogPrio.Info, string.Format( "MelBox2 - Anwendung gestartet. {0}, BaudRate {1}", Gsm_Basics.ComPortName, Gsm_Basics.BaudRate) );
+                InitDailyCheck();
+
+                //TEST
+                Sql.CheckDbBackup();
+
                 Gsm.Connect();
-                //  gsm.SmsSend(4916095285304, "MelBox2 gestartet."); //Email?
+
+                #if DEBUG
+                    Console.WriteLine("\r\nDEBUG Mode: es wird keine StartUp-Info an MelBox2-Admin gesendet.");
+                #else
+                    Gsm.SmsSend(Properties.Settings.Default.MelBoxAdminPhone, "MelBox2 - Anwendung neu gestartet um " + DateTime.Now); //Email?
+                #endif
 
                 Console.WriteLine(help);
                 do
@@ -59,16 +71,20 @@ namespace MelBox2
                     {
                         Console.WriteLine("AT-Befehl eingeben:");
                         string at = Console.ReadLine();
-                        Gsm_Com.AddAtCommand(at);
+                        Gsm_Basics.AddAtCommand(at);
                     }
                 } while (Console.ReadKey(true).Key != ConsoleKey.Escape);
             }
             finally
             {
                 Console.WriteLine("Programm wird geschlossen...");
-                Gsm_Com.ClosePort();
+                Gsm_Basics.ClosePort();
                 System.Threading.Thread.Sleep(3000);
             }
         }
+
+       
+
+
     }
 }
