@@ -263,6 +263,47 @@ namespace MelBox2
 
 
         #region Views
+        public DataTable GetViewLog(DateTime StartTime, DateTime EndTime)
+        {
+
+            if (StartTime.CompareTo(EndTime) >= 0) // > 0; t1 ist später als oder gleich t2.
+            {
+                StartTime = EndTime.AddDays(-1);
+            }
+
+            DataTable recTable = new DataTable
+            {
+                TableName = "Logbuch"
+            };
+
+            try
+            {
+                using (var connection = new SqliteConnection(DataSource))
+                {
+                    connection.Open();
+
+
+                    var command1 = connection.CreateCommand();
+
+                    command1.CommandText = "SELECT * FROM \"Log\" WHERE LogTime BETWEEN @startTime AND @endTime ORDER BY LogTime DESC LIMIT 1000";
+
+                    command1.Parameters.AddWithValue("@startTime", SqlTime(StartTime));
+                    command1.Parameters.AddWithValue("@endTime", SqlTime(EndTime));
+
+                    using (var reader = command1.ExecuteReader())
+                    {
+                        recTable.Load(reader);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Sql-Fehler GetViewLog() " + ex.GetType() + "\r\n" + ex.Message);
+            }
+
+            return recTable;
+        }
+
         public DataTable GetViewMsgRec()
         {
             DataTable recTable = new DataTable

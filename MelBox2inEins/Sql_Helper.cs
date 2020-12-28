@@ -17,7 +17,6 @@ namespace MelBox2
             return System.Text.Encoding.UTF8.GetString(data);
         }
 
-
         /// <summary>
         /// Extrahiert die ersten beiden Worte als KeyWord aus einem SMS-Text
         /// </summary>
@@ -159,5 +158,6 @@ namespace MelBox2
             //file is not locked
             return false;
         }
+
     }
 }

@@ -12,7 +12,7 @@ namespace MelBox2
     partial class Program
     {
         #region Fields
-        internal static MelBoxSql Sql = new MelBoxSql();
+        public static MelBoxSql Sql = new MelBoxSql();
 
         #endregion
 
@@ -43,13 +43,15 @@ namespace MelBox2
                 Gsm.SmsSentEvent += HandleSmsSentEvent;
                 Gsm.SmsStatusreportEvent += HandleSmsStatusReportEvent;
 
+                MelBoxWebServer.StartWebServer();
+
                 Sql.Log(MelBoxSql.LogTopic.Start, MelBoxSql.LogPrio.Info, string.Format( "MelBox2 - Anwendung gestartet. {0}, BaudRate {1}", Gsm_Basics.ComPortName, Gsm_Basics.BaudRate) );
                 InitDailyCheck();
 
                 //TEST
                 Sql.CheckDbBackup();
-
-                Gsm.Connect();
+                //Test
+           //     Gsm.Connect();
 
                 #if DEBUG
                     Console.WriteLine("\r\nDEBUG Mode: es wird keine StartUp-Info an MelBox2-Admin gesendet.");
@@ -78,6 +80,7 @@ namespace MelBox2
             finally
             {
                 Console.WriteLine("Programm wird geschlossen...");
+                MelBoxWebServer.StopWebServer();
                 Gsm_Basics.ClosePort();
                 System.Threading.Thread.Sleep(3000);
             }
