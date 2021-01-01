@@ -72,17 +72,22 @@ namespace MelBox2
 			}
 			else
 			{
-				//Für jeden Empfänger (Bereitschaft) eine SMS vorbereiten
-				foreach (ulong phone in Sql.GetCurrentShiftPhoneNumbers())
+				if (Sql.IsMessageBlockedNow(e.Message))
 				{
-					//Nachricht per SMS weiterleiten
-					Gsm.SmsSend(phone, e.Message);
+					Sql.Log(MelBoxSql.LogTopic.Shift, MelBoxSql.LogPrio.Info, "Keine SMS: " + e.Message);
 				}
-
+                else 
+				{ 
+					//Für jeden Empfänger (Bereitschaft) eine SMS vorbereiten
+					foreach (ulong phone in Sql.GetCurrentShiftPhoneNumbers())
+					{
+						//Nachricht per SMS weiterleiten
+						Gsm.SmsSend(phone, e.Message);
+					}
+				}
 				//Nachricht per email weiterleiten
 				Email.Send(Sql.GetCurrentShiftEmail(), e.Message);
 			}
-
 
 			Gsm.ReadGsmMemory();
 		}

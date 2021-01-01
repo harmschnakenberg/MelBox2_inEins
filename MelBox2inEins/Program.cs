@@ -23,9 +23,9 @@ namespace MelBox2
         //internal static Gsm gsm = new Gsm();
         private static void Main()
         {
-            const string help = "- ENTF zum Aufräumen der Anzeige\r\n" +
+            const string help = "\r\n- ENTF zum Aufräumen der Anzeige\r\n" +
                                 "- EINF für AT-Befehl\r\n" +
-                                "- ESC Taste zum beenden...";
+                                "- ESC Taste zum beenden...\r\n";
             try
             {
                 Console.WriteLine("Programm gestartet.");
@@ -43,14 +43,15 @@ namespace MelBox2
                 Gsm.SmsSentEvent += HandleSmsSentEvent;
                 Gsm.SmsStatusreportEvent += HandleSmsStatusReportEvent;
 
-                MelBoxWebServer.StartWebServer();
+                MelBoxWeb.StartWebServer();
 
-                Sql.Log(MelBoxSql.LogTopic.Start, MelBoxSql.LogPrio.Info, string.Format( "MelBox2 - Anwendung gestartet. {0}, BaudRate {1}", Gsm_Basics.ComPortName, Gsm_Basics.BaudRate) );
+                Sql.Log(MelBoxSql.LogTopic.Start, MelBoxSql.LogPrio.Info, string.Format( "MelBox2 - Anwendung gestartet. {0}, {1} Baud", Gsm_Basics.ComPortName, Gsm_Basics.BaudRate) );
                 InitDailyCheck();
 
                 //TEST
-                Sql.CheckDbBackup();
-                //Test
+
+                Sql.InsertMessageRec("Testnachricht", 4916095285304);
+                //Auskommentiert für Test WebServer
            //     Gsm.Connect();
 
                 #if DEBUG
@@ -80,7 +81,7 @@ namespace MelBox2
             finally
             {
                 Console.WriteLine("Programm wird geschlossen...");
-                MelBoxWebServer.StopWebServer();
+                MelBoxWeb.StopWebServer();
                 Gsm_Basics.ClosePort();
                 System.Threading.Thread.Sleep(3000);
             }

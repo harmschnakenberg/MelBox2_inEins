@@ -20,7 +20,8 @@ namespace MelBox2
             Shutdown,
             Sms,
             Email,
-            Sql
+            Sql,
+            Shift
         }
 
         /// <summary>
@@ -67,6 +68,8 @@ namespace MelBox2
             Thursday = 16,
             Friday = 32,
             Saturday = 64,
+            Weekdays = 62,
+            AllDays = 127
         }
 
         #endregion
@@ -209,7 +212,7 @@ namespace MelBox2
                 //Absender identifizieren
                 int senderId = GetContactId("", phone, email, message);
                 //Inhalt identifizieren
-                msgId = GetMessageId(message);
+                msgId = GetContentId(message);
 
                 using (var connection = new SqliteConnection(DataSource))
                 {
@@ -217,7 +220,7 @@ namespace MelBox2
 
                     var command = connection.CreateCommand();
                     command.CommandText = "INSERT INTO \"LogRecieved\" (\"FromContactId\", \"ContentId\") VALUES " +
-                                          "(@fromContactId, @contentId );" +
+                                          "(@fromContactId, @contentId ); " +
                                           "SELECT Id FROM \"LogRecieved\" ORDER BY \"RecieveTime\" DESC LIMIT 1";
 
                     command.Parameters.AddWithValue("@fromContactId", senderId);
@@ -309,7 +312,7 @@ namespace MelBox2
         /// <param name="smsSendStatus">von Modem: 0..31 success, 32..63 pending, 64..127 aborted; von mir: >127 für intern</param>
         public void InsertMessageSent(string message, ulong phoneTo, int smsReference, byte smsSendStatus = 255)
         {
-            int contentId = GetMessageId(message);
+            int contentId = GetContentId(message);
             int contactId = GetContactId("", phoneTo , "", message);
 
             SendStatus sendStatus = SendStatus.SetToSent;
@@ -395,17 +398,18 @@ namespace MelBox2
         /// <summary>
         /// Fügt eine Nachricht der "Blacklist" hinzu, sodass diese bei Empfang nicht weitergeleitet wird.
         /// Ist die Nachricht bereits in der Liste vorhanden, wird kein neuer Eintrag erstellt.
+        /// Standartsperrzeit: immer
         /// </summary>
         /// <param name="msgId">Id der Nachricht, deren Weiterleitung gesperrt werden soll</param>
         /// <param name="startHour">Tagesstunde - Beginn der Sperre</param>
         /// <param name="endHour">Tagesstunde - Ende der Sperre</param>
         /// <param name="Days">Tage, an denen die Nachricht gesperrt sein soll, wie Wochenuhr/param>
-        public void InsertMessageBlocked(int msgId, int startHour = 17, int endHour = 7, BlockedDays blockedDays = 0)
+        public void InsertMessageBlocked(int msgId, int startHour = 7, int endHour = 7, BlockedDays blockedDays = BlockedDays.AllDays)
         {
             if (blockedDays == 0)
             {
                 //Wenn ein neuer Eintrag, dann Standartwert alle Tage 
-                blockedDays = BlockedDays.Monday & BlockedDays.Tuesday & BlockedDays.Wendsday & BlockedDays.Thursday & BlockedDays.Friday & BlockedDays.Saturday & BlockedDays.Sunday;
+                blockedDays = BlockedDays.AllDays;
             }
 
             try
@@ -438,8 +442,8 @@ namespace MelBox2
         /// Erstellt einen neuen Bereitschaftsdienst über einen Tagessprung.
         /// </summary>
         /// <param name="contactId">Id des Bereitschaftsnehmers</param>
-        /// <param name="startDate">Beginn der Bereitschaft</param>
-        /// <param name="endDate"></param>
+        /// <param name="startDate">Beginn der Bereitschaft (lokalzeit)</param>
+        /// <param name="endDate">Ende der Bereitschaft (lokalzeit)</param>
         public void InsertShift(int contactId, DateTime startDate, DateTime endDate)
         {
             try
@@ -453,8 +457,8 @@ namespace MelBox2
                                           "(CURRENT_TIMESTAMP, @contactId, @startTime, @endTime )";
 
                     command.Parameters.AddWithValue("@contactId", contactId);
-                    command.Parameters.AddWithValue("@startTime", SqlTime(startDate));
-                    command.Parameters.AddWithValue("@endTime", SqlTime(endDate));
+                    command.Parameters.AddWithValue("@startTime", SqlTime(startDate.ToUniversalTime()));
+                    command.Parameters.AddWithValue("@endTime", SqlTime(endDate.ToUniversalTime()));
                     command.ExecuteNonQuery();
                 }
             }

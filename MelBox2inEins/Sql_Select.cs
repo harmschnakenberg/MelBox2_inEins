@@ -15,23 +15,24 @@ namespace MelBox2
         /// </summary>
         /// <param name="content">Nachrichtentext</param>
         /// <returns>ID für den übergebenen content</returns>
-        public int GetMessageId(string content)
+        public int GetContentId(string content)
         {
             try
             {
                 int id = 0;
                 if (content == null) content = "-KEIN TEXT-";
 
-
                 using (var connection = new SqliteConnection(DataSource))
                 {
                     connection.Open();
 
                     //Neuen Eintrag erstellen, wenn er nicht existiert
-                    var command1 = connection.CreateCommand();
-                    command1.CommandText = @"INSERT OR IGNORE INTO MessageContent (Content) VALUES ($Content); SELECT ID FROM MessageContent WHERE Content = $Content; ";
+                    var command1 = connection.CreateCommand();                 
+                    //Vermeide ein UNIQUE Constrain in Tabelle MessageContent, um später Abfragen Konfilikte zu vermeiden
+                    command1.CommandText = @"INSERT INTO MessageContent(Content) SELECT $Content WHERE NOT EXISTS(SELECT 1 FROM MessageContent WHERE Content = $Content); " +
+                                            "SELECT ID FROM MessageContent WHERE Content = $Content; ";
 
-                    command1.Parameters.AddWithValue("$Content", content);//.Size = 160; //Max. 160 Zeichen (oder Bytes?)
+                    command1.Parameters.AddWithValue("$Content", content);
 
                     using (var reader = command1.ExecuteReader())
                     {
@@ -49,16 +50,60 @@ namespace MelBox2
                 if (id == 0)
                 {
                     //Provisorisch:
-                    throw new Exception("GetMessageId() Kontakt konnte nicht zugeordnet werden.");
+                    throw new Exception("GetMessageId(content) Nachricht konnte nicht zugeordnet werden.");
                 }
 
                 return id;
             }
             catch (Exception ex)
             {
-                throw new Exception("Sql-Fehler GetMessageId()" + ex.GetType() + "\r\n" + ex.Message);
+                throw new Exception("Sql-Fehler GetMessageId(content)" + ex.GetType() + "\r\n" + ex.Message);
             }
         }
+
+        public int GetContentId(int recMsgId)
+        {
+            try
+            {
+                int contentId = 0;
+
+                using (var connection = new SqliteConnection(DataSource))
+                {
+                    connection.Open();
+
+                    //Neuen Eintrag erstellen, wenn er nicht existiert
+                    var command1 = connection.CreateCommand();
+                    command1.CommandText = @"SELECT ContentId FROM LogRecieved WHERE Id = $recMsgid; ";
+
+                    command1.Parameters.AddWithValue("$recMsgid", recMsgId);
+
+                    using (var reader = command1.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            //Lese Eintrag
+                            if (int.TryParse(reader.GetString(0), out contentId))
+                            {
+                                return contentId;
+                            }
+                        }
+                    }
+                }
+
+                if (contentId == 0)
+                {
+                    //Provisorisch:
+                    throw new Exception("GetContentId() Empfangene Nachricht konnte nicht zugeordnet werden.");
+                }
+
+                return contentId;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Sql-Fehler GetContentId(recMsgId)" + ex.GetType() + "\r\n" + ex.Message);
+            }
+        }
+
 
         /// <summary>
         /// Versucht den Kontakt anhand der Telefonnummer, email-Adresse oder dem Beginn eriner Nachricht zu identifizieren.
@@ -130,6 +175,76 @@ namespace MelBox2
             {
                 throw new Exception("Sql-Fehler GetContactId()" + ex.GetType() + "\r\n" + ex.Message);
             }
+        }
+
+        public int GetContactIdFromLogin(string name, string password)
+        {
+
+            using (var connection = new SqliteConnection(DataSource))
+            {
+                connection.Open();
+
+                var command = connection.CreateCommand();
+                command.CommandText = "SELECT \"Id\" FROM \"Contact\" WHERE Name = @name AND ( Password = @password OR Password IS NULL )";
+
+                command.Parameters.AddWithValue("@name", name);
+                command.Parameters.AddWithValue("@password",Encrypt(password));
+
+                using (var reader = command.ExecuteReader())
+                {
+                    if (!reader.HasRows) return 0; // Niemanden mit diesem Namen und diesem Passwort gefunden
+
+                    while (reader.Read())
+                    {
+                        //Ist die Nachricht zum jetzigen Zeitpunt geblockt?
+                        if (!int.TryParse(reader.GetString(0), out int LogedInId)) return 0;
+
+                        return LogedInId;
+                    }
+                }
+            }
+            return 0;
+        }
+
+        public bool IsMessageBlockedNow(string Message)
+        {
+            int contentId = GetContentId(Message);
+
+            if (contentId == 0) return false;
+
+            using (var connection = new SqliteConnection(DataSource))
+            {
+                connection.Open();
+
+                //Finde Blockierte Nachricht anhand der ContentId und der Tageszeit
+                var command1 = connection.CreateCommand();
+                command1.CommandText = @"SELECT Days FROM BlockedMessages " +
+                                        "WHERE Id = $contentId AND " +
+                                        "(StartHour = EndHour OR " + 
+                                        "CAST(strftime('%H','now', 'localtime') AS INTEGER) > StartHour OR "+
+                                        "CAST(strftime('%H','now', 'localtime') AS INTEGER) < EndHour); ";
+
+                command1.Parameters.AddWithValue("$contentId", contentId);
+
+                using (var reader = command1.ExecuteReader())
+                {
+                    if (!reader.HasRows) return false;
+
+                    while (reader.Read())
+                    {
+                        //Lese Eintrag
+                        if (byte.TryParse(reader.GetString(0), out byte blockedDays))
+                        {
+                            DateTime now = DateTime.Now;
+                            DayOfWeek dayOfWeek = now.DayOfWeek;
+                            if (IsHolyday(now)) dayOfWeek = DayOfWeek.Sunday; //Feiertage sind wie Sonntage
+
+                           return ((byte)dayOfWeek & blockedDays) > 0; // Ist das Bit dayOfWeek im byte blockedDays vorhanden?
+                        }
+                    }
+                }
+            }
+            return false;
         }
 
         /// <summary>
@@ -268,7 +383,7 @@ namespace MelBox2
 
             if (StartTime.CompareTo(EndTime) >= 0) // > 0; t1 ist später als oder gleich t2.
             {
-                StartTime = EndTime.AddDays(-1);
+                StartTime = EndTime.AddDays(-3);
             }
 
             DataTable recTable = new DataTable
@@ -285,7 +400,7 @@ namespace MelBox2
 
                     var command1 = connection.CreateCommand();
 
-                    command1.CommandText = "SELECT * FROM \"Log\" WHERE LogTime BETWEEN @startTime AND @endTime ORDER BY LogTime DESC LIMIT 1000";
+                    command1.CommandText = "SELECT * FROM \"Log\" WHERE LogTime BETWEEN @startTime AND @endTime ORDER BY Id DESC LIMIT 1000";
 
                     command1.Parameters.AddWithValue("@startTime", SqlTime(StartTime));
                     command1.Parameters.AddWithValue("@endTime", SqlTime(EndTime));
@@ -308,7 +423,7 @@ namespace MelBox2
         {
             DataTable recTable = new DataTable
             {
-                TableName = "Empfangen"
+                TableName = "Empfangen",               
             };
 
             try
@@ -317,19 +432,19 @@ namespace MelBox2
                 {
                     connection.Open();
 
-
                     var command1 = connection.CreateCommand();
 
-                    command1.CommandText = "SELECT * FROM \"ViewMessagesRecieved\" ORDER BY Empfangen DESC LIMIT 1000";
+                    command1.CommandText = "SELECT * FROM \"ViewMessagesRecieved\" ORDER BY Nr DESC LIMIT 1000";
 
                     using (var reader = command1.ExecuteReader())
                     {
-                        recTable.Load(reader);
+                        recTable.Load(reader);                       
                     }
                 }
             }
             catch (Exception ex)
             {
+                Log(LogTopic.Sql, LogPrio.Error, "Sql - Fehler GetViewMsgRec() " + ex.GetType() + "\r\n" + ex.Message);
                 throw new Exception("Sql-Fehler GetViewMsgRec() " + ex.GetType() + "\r\n" + ex.Message);
             }
 
@@ -384,7 +499,7 @@ namespace MelBox2
 
                     var command1 = connection.CreateCommand();
 
-                    command1.CommandText = "SELECT * FROM \"ViewMessageOverdue\" ORDER BY LastRecieved DESC LIMIT 1000";
+                    command1.CommandText = "SELECT * FROM \"ViewMessagesOverdue\" ORDER BY Fällig_seit DESC LIMIT 1000";
 
                     using (var reader = command1.ExecuteReader())
                     {
@@ -395,6 +510,38 @@ namespace MelBox2
             catch (Exception ex)
             {
                 throw new Exception("Sql-Fehler GetViewMsgOverdue() " + ex.GetType() + "\r\n" + ex.Message);
+            }
+
+            return overdueTable;
+        }
+
+        public DataTable GetViewShift()
+        {
+            DataTable overdueTable = new DataTable
+            {
+                TableName = "Bereitschaft"
+            };
+
+            try
+            {
+                using (var connection = new SqliteConnection(DataSource))
+                {
+                    connection.Open();
+
+
+                    var command1 = connection.CreateCommand();
+
+                    command1.CommandText = "SELECT * FROM \"ViewShift\" ORDER BY Datum LIMIT 1000";
+
+                    using (var reader = command1.ExecuteReader())
+                    {
+                        overdueTable.Load(reader);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Sql-Fehler GetViewShift() " + ex.GetType() + "\r\n" + ex.Message);
             }
 
             return overdueTable;
@@ -448,10 +595,8 @@ namespace MelBox2
 
                     var command1 = connection.CreateCommand();
 
-                    command1.CommandText = "SELECT Contact.Id AS ContactId, Contact.Name AS Name, Password, CompanyId, Company.Name AS CompanyName, Email, Phone, Contact.SendWay AS SendWay " +
-                                           "FROM \"Contact\" " +
-                                           "JOIN \"Company\" ON CompanyId = Company.Id " +
-                                           "WHERE Contact.Id = @id; ";
+                    command1.CommandText = "SELECT Contact.Id AS ContactId, Contact.Name AS Name, '********' AS Passwort, CompanyId, Company.Name AS Firma, Email, Phone AS Telefon, Contact.SendSms AS SendSms , Contact.SendEmail AS SendEmail, MaxInactiveHours AS Max_Inaktivität " +
+                        "FROM \"Contact\" JOIN \"Company\" ON CompanyId = Company.Id WHERE Contact.Id = @id; ";
 
                     command1.Parameters.AddWithValue("@id", contactId);
 
