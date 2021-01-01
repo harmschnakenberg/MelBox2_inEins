@@ -18,7 +18,7 @@ namespace MelBox2
 
 
 #if DEBUG
-        private int LogedInContactId = 1;
+        private int LogedInContactId = 0;
 #else
         private int LogedInContactId = 0;
 #endif
@@ -97,7 +97,8 @@ namespace MelBox2
 
             StringBuilder builder = new StringBuilder();
             builder.Append(MelBoxWeb.HtmlHead(dt.TableName));
-            builder.Append(MelBoxWeb.HtmlTableBlocked(dt));
+            builder.Append(MelBoxWeb.HtmlTableBlocked(dt, true));
+            builder.Append(MelBoxWeb.HtmlEditor("/blocked/remove", "Aus Sperrliste entfernen"));
             builder.Append(MelBoxWeb.HtmlFoot());
 
             context.Response.SendResponse(MelBoxWeb.EncodeUmlaute(builder.ToString()));
@@ -105,7 +106,7 @@ namespace MelBox2
         }
 
         [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/blocked/add")]
-        public IHttpContext EditMelBoxBlocked(IHttpContext context)
+        public IHttpContext AddMelBoxBlocked(IHttpContext context)
         {
             string payload = context.Request.Payload;
             Dictionary<string, string> args = MelBoxWeb.ReadPayload(payload);
@@ -133,6 +134,44 @@ namespace MelBox2
                 {
                     Program.Sql.InsertMessageBlocked(contentId);
                     builder.Append(MelBoxWeb.HtmlAlert(3, "Nachricht in die Sperrliste aufgenommen", "Die Nachricht mit der Id " + contentId + " wird nicht mehr in die Bereitschaft weitergeleitet."));
+                }
+            }
+
+            DataTable dt = Program.Sql.GetViewMsgBlocked();
+            builder.Append(MelBoxWeb.HtmlTableBlocked(dt));
+            builder.Append(MelBoxWeb.HtmlFoot());
+
+            context.Response.SendResponse(MelBoxWeb.EncodeUmlaute(builder.ToString()));
+            return context;
+        }
+
+        [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/blocked/remove")]
+        public IHttpContext RemoveMelBoxBlocked(IHttpContext context)
+        {
+            string payload = context.Request.Payload;
+            Dictionary<string, string> args = MelBoxWeb.ReadPayload(payload);
+
+            StringBuilder builder = new StringBuilder();
+            builder.Append(MelBoxWeb.HtmlHead("Nachricht entsperren"));
+
+            if (!MelBoxWeb.LogedInGuids.ContainsKey(args["guid"]))
+            {
+                builder.Append(MelBoxWeb.HtmlAlert(4, "Bitte einloggen", "Änderungen sind nur eingelogged möglich."));
+            }
+            else if (!args.ContainsKey("selectedRow") || !int.TryParse(args["selectedRow"], out int contentId))
+            {
+                builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler", "Es wurde keine gültige Nachricht zum entsperren übergeben."));
+            }
+            else
+            {
+                if (contentId == 0)
+                {
+                    builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler", "Die übergebene Nachricht konnte nicht zugeordnet werden."));
+                }
+                else
+                {
+                    Program.Sql.DeleteMessageBlocked(contentId);
+                    builder.Append(MelBoxWeb.HtmlAlert(3, "Nachricht aus der Sperrliste genommen", "Die Nachricht mit der Id " + contentId + " wird wieder in die Bereitschaft weitergeleitet."));
                 }
             }
 
@@ -422,6 +461,7 @@ namespace MelBox2
         {
             #region Payload
             string payload = context.Request.Payload;
+            payload = MelBoxWeb.DecodeUmlaute(payload);
             Dictionary<string, string> args = MelBoxWeb.ReadPayload(payload);
 
             string guid = string.Empty;
@@ -430,15 +470,17 @@ namespace MelBox2
 
             if (args.ContainsKey("name") && args.ContainsKey("password"))
             {
-                string name = args["name"];
+                string name = args["name"].Replace('+', ' ');
                 string password = args["password"];
 
                 int myId = Program.Sql.GetContactIdFromLogin(name, password);
 
                 if (myId != 0) //Es wurde ein Benutzer mit diesen Zugangsdaten gefunden
                 {
+                    Program.Sql.Log(MelBoxSql.LogTopic.Sql, MelBoxSql.LogPrio.Info, "Benutzer " + myId + "(" + name + ") angemeledt.");
+
                     guid = MelBoxWeb.GenerateID(myId);
-                    alert = MelBoxWeb.HtmlAlert(3, "LogIn erfolgreich", string.Format("Sie haben sich erfolgreich als Benutzer {0} mit der ID {1} eingeloggt.", myId, guid));
+                    alert = MelBoxWeb.HtmlAlert(3, "LogIn erfolgreich", string.Format("Sie haben sich erfolgreich als Benutzer {0} '" + name + "' mit der ID {1} eingeloggt.", myId, guid));
                 }
                 else
                 {

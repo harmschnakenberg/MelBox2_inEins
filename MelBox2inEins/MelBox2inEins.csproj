@@ -95,6 +95,7 @@
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
     <Compile Include="Sql_Connect.cs" />
+    <Compile Include="Sql_Delete.cs" />
     <Compile Include="Sql_Helper.cs" />
     <Compile Include="Sql_Insert.cs" />
     <Compile Include="Sql_Select.cs" />

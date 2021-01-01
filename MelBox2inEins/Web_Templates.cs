@@ -140,8 +140,8 @@ namespace MelBox2
             StringBuilder builder = new StringBuilder();
 
             builder.Append("</center>\n");
-            builder.Append("<div class='w3-container w3-cyan w3-margin-top'>\n");
-            builder.Append(" <input id='guid' name='guid' form='form1' class='w3-opacity w3-right-align w3-tiny' readonly>\n");
+            builder.Append("<div class='w3-container w3-cyan w3-margin-top w3-right-align '>\n");
+            builder.Append(" <input id='guid' name='guid' form='form1' class='w3-cyan w3-text-blue w3-tiny' readonly>\n"); //w3-opacity
             builder.Append("</div>\n</body>\n</html>");
             return builder.ToString();
         }
@@ -270,13 +270,20 @@ namespace MelBox2
             builder.Append("<table class='w3-table-all w3-hoverable w3-cell' id='myTable'>\n");
             builder.Append("<tr class='w3-teak'>\n\t");
 
+            if (canUserEdit)
+            {
+                builder.Append("<th>Edit</th>");
+            }
+
             foreach (DataColumn c in dt.Columns)
             {
                 builder.Append("<th>");
                 builder.Append(c.ColumnName);
                 builder.Append("</th>");
             }
+
             builder.Append("\n</tr>\n");
+
             foreach (DataRow r in dt.Rows)
             {
                 builder.Append("<tr class='myRow'>\n\t");
@@ -368,14 +375,24 @@ namespace MelBox2
             return builder.ToString();
         }
 
-        public static string HtmlTableBlocked(DataTable dt)
+        public static string HtmlTableBlocked(DataTable dt, bool canUserEdit = false)
         {
             //Quelle: https://stackoverflow.com/questions/19682996/datatable-to-html-table
 
             StringBuilder builder = new StringBuilder();
 
+            builder.Append("<div class='w3-container'>\n");
+            builder.Append(" <div class='w3-third'>&nbsp;</div>\n");
+            builder.Append(" <input oninput=\"w3.filterHTML('#myTable', '.myRow', this.value)\" class='w3-input w3-third w3-margin w3-border w3-round-large' placeholder='Suche nach..'>\n");
+            builder.Append("</div>");
+
             builder.Append("<table class='w3-table-all w3-hoverable w3-cell' id='myTable'>\n");
             builder.Append("<tr class='w3-teak'>\n\t");
+
+            if (canUserEdit)
+            {
+                builder.Append("<th>FRG</th>");
+            }
 
             foreach (DataColumn c in dt.Columns)
             {
@@ -384,9 +401,16 @@ namespace MelBox2
                 builder.Append("</th>");
             }
             builder.Append("\n</tr>\n");
+
             foreach (DataRow r in dt.Rows)
             {
-                builder.Append("<tr>\n\t");
+                builder.Append("<tr class='myRow'>\n\t");
+
+                if (canUserEdit)
+                {
+                    builder.Append("<td><input class='w3-radio' type='radio' name='selectedRow' value='" + r[dt.Columns[0]] + "' form='form1' onclick=\"w3.show('#Editor')\"></td>");
+                }
+
                 foreach (DataColumn c in dt.Columns)
                 {
                     builder.Append("<td>");
@@ -404,8 +428,20 @@ namespace MelBox2
                             if (r[c.ColumnName].ToString() == "1")
                                 check = "checked='checked' ";
 
-                            builder.Append("<input class='w3-check' type='checkbox' " + check + " disabled>");
+                            builder.Append("<input class='w3-check' form='form1' name='" + c.ColumnName + "' type='checkbox' " + check + " disabled>\n");
                             break;
+                        case "Beginn":
+                        case "Ende":
+                                builder.Append("<select class='w3-select' form='form1' name='" + c.ColumnName + "' " + (canUserEdit ? string.Empty : "disabled") + ">\n");
+
+                                int current = int.Parse(r[c.ColumnName].ToString().Substring(0, 2));
+                                for (int i = 0; i < 24; i++)
+                                {
+                                    builder.Append("<option value='" + i + "' " + ((current == i) ? "selected" : string.Empty) + ">" + i +" Uhr</option>\n");
+                                }
+
+                                builder.Append("</select>\n");
+                                break;
                         default:
                             builder.Append(r[c.ColumnName]);
                             break;

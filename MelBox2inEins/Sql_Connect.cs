@@ -124,10 +124,10 @@ namespace MelBox2
 
                     //\"Id\", \"EntryTime\", \"Name\", \"Password\", \"CompanyId\", \"Email\", \"Phone\", \"KeyWord\", \"MaxInactiveHours\", \"SendSms\", \"SendEmail\"
                     InsertContact("SMSZentrale", "7307", 2, "smszentrale@kreutztraeger.de", 4915142265412, 0, false, false);
-                    InsertContact("MelBox2Admin", null, 2, "harm.schnakenberg@kreutztraeger.de", 0, 0, false, true);
+                    InsertContact("MelBox2Admin", "7307", 2, "harm.schnakenberg@kreutztraeger.de", 0, 0, false, true);
                     InsertContact("Bereitschaftshandy", "7307", 2, "bereitschaftshandy@kreutztraeger.de", 491728362586, 0, false, false);
-                    InsertContact("Kreutzträger Service", null, 2, "service@kreutztraeger.de", 0, 0, false, false);
-                    InsertContact("Henry Kreutzträger", null, 2, "henry.kreutztraeger@kreutztraeger.de", 491727889419, 0, false, false);
+                    InsertContact("Kreutzträger Service", "7307", 2, "service@kreutztraeger.de", 0, 0, false, false);
+                    InsertContact("Henry Kreutzträger", "7307", 2, "henry.kreutztraeger@kreutztraeger.de", 491727889419, 0, false, false);
                     InsertContact("Bernd Kreutzträger", null, 2, "bernd.kreutztraeger@kreutztraeger.de", 491727875067, 0, false, false);
                     InsertContact("Harm privat", "7307", 1, "harm.schnakenberg@kreutztraeger.de", 4916095285304, 0, true, false);
 

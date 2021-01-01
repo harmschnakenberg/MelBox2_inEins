@@ -49,8 +49,8 @@ namespace MelBox2
                 InitDailyCheck();
 
                 //TEST
+                Sql.InsertMessageRec("Testnachricht am " + DateTime.Now.Date , 4916095285304);
 
-                Sql.InsertMessageRec("Testnachricht", 4916095285304);
                 //Auskommentiert für Test WebServer
            //     Gsm.Connect();
 
