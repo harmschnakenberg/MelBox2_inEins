@@ -67,16 +67,19 @@ namespace MelBox2
         }
 
         /// <summary>
-        /// BAUSTELLE
+        /// Ändere Benutzerinformationen
         /// </summary>
-        /// <param name="contactId"></param>
-        /// <param name="name"></param>
-        /// <param name="password"></param>
-        /// <param name="companyId"></param>
+        /// <param name="contactId">Kontakt-Id auf die sich die Änderungen beziehen</param>
+        /// <param name="name">Anzeigename</param>
+        /// <param name="password">Passwort wird im Klartext übergeben und verschlüsselt gespeichert</param>
+        /// <param name="companyId">Id der Firma</param>
+        /// <param name="phone">Telefonnumer als Zahl mit Ländervorwahl</param>
+        /// <param name="sendSms">0=nein, 1 = ja, -1= nicht ändern</param>
         /// <param name="email"></param>
-        /// <param name="phone"></param>
-        /// <param name="keyWord"></param>
-        public int UpdateContact(int contactId, string name = "", string password = "", int companyId = 0, string email = "", ulong phone = 0, string keyWord = "")
+        /// <param name="sendEmail">0=nein, 1 = ja, -1= nicht ändern</param>
+        /// <param name="keyWord">Soll nur aus empfangener SMS ermittelt werden.</param>
+        /// <returns>anzahl der betroffenen Zeilen in der Tabelle</returns>
+        public int UpdateContact(int contactId, string name = "", string password = "", int companyId = 0, ulong phone = 0, int sendSms = -1, string email = "", int sendEmail = -1, string keyWord = "", int maxInactivity = -1)
         {
             StringBuilder builder = new StringBuilder();
 
@@ -98,6 +101,7 @@ namespace MelBox2
 
                     if (password.Length > 3)
                     {
+                        Console.WriteLine("Passwort\t" + password + "=" + Encrypt(password));
                         command.Parameters.AddWithValue("@password", Encrypt(password));
                         builder.Append("UPDATE \"Contact\" SET Password = @password WHERE Id = @contactId; ");
                     }
@@ -114,16 +118,35 @@ namespace MelBox2
                         builder.Append("UPDATE \"Contact\" SET Phone = @phone WHERE Id = @contactId; ");
                     }
 
+                    if (sendSms > -1)
+                    {
+                        command.Parameters.AddWithValue("@sendSms", sendSms);
+                        builder.Append("UPDATE \"Contact\" SET SendSms = @sendSms WHERE Id = @contactId; ");
+                    }
+
+
                     if (IsEmail(email))
                     {
                         command.Parameters.AddWithValue("@email", email);
                         builder.Append("UPDATE \"Contact\" SET Email = @email WHERE Id = @contactId; ");
                     }
 
+                    if (sendEmail > -1)
+                    {
+                        command.Parameters.AddWithValue("@sendEmail", sendEmail);
+                        builder.Append("UPDATE \"Contact\" SET SendEmail = @sendEmail WHERE Id = @contactId; ");
+                    }
+
                     if (keyWord.Length > 3)
                     {
                         command.Parameters.AddWithValue("@keyWord", keyWord);
                         builder.Append("UPDATE \"Contact\" SET KeyWord = @keyWord WHERE Id = @contactId; ");
+                    }
+
+                    if (maxInactivity > -1)
+                    {
+                        command.Parameters.AddWithValue("@maxInactivity", maxInactivity);
+                        builder.Append("UPDATE \"Contact\" SET MaxInactiveHours = @maxInactivity WHERE Id = @contactId; ");
                     }
 
                     command.CommandText = builder.ToString();

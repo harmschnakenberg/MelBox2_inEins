@@ -17,7 +17,8 @@ namespace MelBox2
 
         public static string DecodeUmlaute(string input)
         {
-            return input.Replace("&Auml;", "Ä").Replace("&Ouml;", "Ö").Replace("&Uuml;", "Ü").Replace("&auml;", "ä").Replace("&ouml;", "ö").Replace("&uuml;", "ü").Replace("&szlig;", "ß").Replace("%40", "@");
+            return input.Replace("%C4", "Ä").Replace("%D6", "Ö").Replace("%DC", "Ü").Replace("%E4", "ä").Replace("%F6", "ö").Replace("%FC", "ü")
+                .Replace("%DF", "ß").Replace("%40", "@").Replace("%2B", "+");
         }
 
         public static string GenerateID(int contactId)
@@ -83,6 +84,7 @@ namespace MelBox2
 
             builder.Append(" if ( sessionStorage.getItem('guid') !== null) {\n");
             builder.Append("  document.getElementById('guid').value = sessionStorage.getItem('guid');");
+            builder.Append("  document.getElementById('buttonaccount').href = '/account/' + sessionStorage.getItem('guid');");
             builder.Append("  w3.removeClass('.w3-disabled','w3-disabled'); \n");            
             builder.Append(" }\n");
             builder.Append("}\n");
@@ -106,16 +108,19 @@ namespace MelBox2
             StringBuilder builder = new StringBuilder();
 
             builder.Append("<div class='w3-bar w3-border'>\n");
-            builder.Append("<a href='/' class='w3-button class='w3-bar-item'><i class='w3-xxlarge material-icons-outlined'>login</i></a>");
+            builder.Append("<a href='/' class='w3-button w3-bar-item'><i class='w3-xxlarge material-icons-outlined'>login</i></a>");
+            builder.Append("<span class='w3-bar-item' style='width:50px;'></span>");
 
-            builder.Append("<a href='/in' class='w3-button class='w3-bar-item'><i class='w3-xxlarge material-icons-outlined'>drafts</i></a>");
-            builder.Append("<a href='/out' class='w3-button class='w3-bar-item'><i class='w3-xxlarge material-icons-outlined'>redo</i></a>");
-            builder.Append("<a href='/overdue' class='w3-button class='w3-bar-item'><i class='w3-xxlarge material-icons-outlined'>alarm</i></a>");
+            builder.Append("<a href='/in' class='w3-button w3-bar-item'><i class='w3-xxlarge material-icons-outlined'>drafts</i></a>");
+            builder.Append("<a href='/out' class='w3-button w3-bar-item'><i class='w3-xxlarge material-icons-outlined'>forward_to_inbox</i></a>");
+            builder.Append("<a href='/overdue' class='w3-button w3-bar-item'><i class='w3-xxlarge material-icons-outlined'>alarm</i></a>");
+            builder.Append("<span class='w3-bar-item' style='width:50px;'></span>");
 
+            builder.Append("<a href='/blocked' class='w3-button w3-bar-item'><i class='w3-xxlarge material-icons-outlined'>alarm_off</i></a>");
+            builder.Append("<a href='/account' id='buttonaccount' class='w3-button w3-bar-item w3-disabled'><i class='w3-xxlarge material-icons-outlined'>assignment_ind</i></a>");
 
-            builder.Append("<a href='/blocked' class='w3-button class='w3-bar-item'><i class='w3-xxlarge material-icons-outlined'>alarm_off</i></a>");
-
-            builder.Append("<a href='/log' class='w3-button class='w3-bar-item'><i class='w3-xxlarge material-icons-outlined'>assignment</i></a>");
+            builder.Append("<span class='w3-bar-item' style='width:50px;'></span>");
+            builder.Append("<a href='/log' class='w3-button w3-bar-item'><i class='w3-xxlarge material-icons-outlined'>assignment</i></a>");
 
             //builder.Append("<a href='\\" + guid + "\\' class='w3-bar-item w3-button'><i class='w3-xxlarge material-icons-outlined'>login</i></a>");
             //builder.Append("<a href='\\" + guid + "\\log' class='w3-bar-item w3-button " + disabled + "'><i class='w3-xxlarge material-icons-outlined'>assignment</i></a>");
@@ -197,24 +202,6 @@ namespace MelBox2
             return builder.ToString();
         }
 
-        public static string HtmlEditor(string actionPath, string buttonText ="editieren")
-        {
-            StringBuilder builder = new StringBuilder();
-
-            builder.Append("<div id='Editor' class='w3-modal'>\n"); //
-            builder.Append("  <div class='w3-modal-content w3-card-4' style='max-width:600px'>\n");
-            builder.Append("  <div class='w3-container'>\n");
-            builder.Append("   <span onclick=\"w3.hide('#Editor')\" class='w3-button w3-display-topright'>&times;</span>");
-            builder.Append("   <form id='form1' method='post' class='w3-margin' action='" + actionPath + "'>\n");
-            builder.Append("    <button class='w3-button w3-block w3-teal w3-section w3-padding-large w3-margin' type='submit'>" + MelBoxWeb.EncodeUmlaute(buttonText) + "</button>");
-
-            builder.Append("   </form>\n");
-            builder.Append("  </div>\n");
-            builder.Append("  </div>\n");
-            builder.Append("</div>\n");
-
-            return builder.ToString();
-        }
 
         #endregion
 
@@ -305,7 +292,6 @@ namespace MelBox2
 
             return builder.ToString();
         }
-
 
         public static string HtmlTableShift(DataTable dt)
         {
@@ -457,6 +443,241 @@ namespace MelBox2
 
         #endregion
 
+        #region Formulare
+        public static string HtmlEditor(string actionPath, string buttonText = "editieren")
+        {
+            StringBuilder builder = new StringBuilder();
+
+            builder.Append("<div id='Editor' class='w3-modal'>\n"); //
+            builder.Append("  <div class='w3-modal-content w3-card-4' style='max-width:600px'>\n");
+            builder.Append("  <div class='w3-container'>\n");
+            builder.Append("   <span onclick=\"w3.hide('#Editor')\" class='w3-button w3-display-topright'>&times;</span>");
+            builder.Append("   <form id='form1' method='post' class='w3-margin' action='" + actionPath + "'>\n");
+            builder.Append("    <button class='w3-button w3-block w3-teal w3-section w3-padding-large w3-margin' type='submit'>" + MelBoxWeb.EncodeUmlaute(buttonText) + "</button>");
+
+            builder.Append("   </form>\n");
+            builder.Append("  </div>\n");
+            builder.Append("  </div>\n");
+            builder.Append("</div>\n");
+
+            return builder.ToString();
+        }
+
+        public static string HtmlFormAccount(DataTable dtAccount, DataTable dtCompany)
+        {
+            StringBuilder builder = new StringBuilder();
+                      
+            builder.Append("</center>\n<div class='w3-card w3-container w3-light-grey w3-text-teal w3-margin'>\n");
+            builder.Append("<h2 class='w3-center'>Benutzerkonto</h2>\n");
+
+            int companyId = 0;
+            foreach (DataRow r in dtAccount.Rows)
+            {
+                foreach (DataColumn c in dtAccount.Columns)
+                {
+                    switch (c.ColumnName)
+                    {
+                        //ContactId,  Name, Passwort, CompanyId, Firma, Email, Telefon, SendSms, SendEmail, Max_Inaktivität 
+
+                        case "ContactId":
+                            builder.Append("<div class='w3-row w3-section'>\n");
+                            builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'><i class='w3-xxlarge material-icons-outlined'>flag</i></div>\n");
+                            builder.Append(" <div class='w3-rest'>\n");
+                            builder.Append("  <input form='form1' class='w3-input w3-border w3-grey w3-disabled' type='text' placeholder='Laufende Nummer' name='" + c.ColumnName + "' id='" + c.ColumnName + "' value='" + r[c.ColumnName] + "' readonly>\n");    
+                            builder.Append(" </div>\n</div>\n");
+                            break;
+
+                        case "Name":
+                            builder.Append("<div class='w3-row w3-section'>\n");
+                            builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'><i class='w3-xxlarge material-icons-outlined'>person</i></div>\n");
+                            builder.Append(" <div class='w3-rest'>\n");
+                            builder.Append("  <input form='form1' class='w3-input w3-border w3-disabled' type='text'  placeholder='Anzeigename' name='" + c.ColumnName + "' id='" + c.ColumnName + "' value='" + r[c.ColumnName] + "' >\n");
+                            builder.Append(" </div>\n</div>\n");
+                            break;
+
+                        case "Passwort":
+                            builder.Append("<div class='w3-row w3-section'>\n");
+                            builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'><i class='w3-xxlarge material-icons-outlined'>vpn_key</i></div>\n");
+                            builder.Append(" <div class='w3-rest'>\n");
+                            builder.Append("  <input form='form1' class='w3-input w3-border w3-disabled' type='password'  placeholder='Passwort' name='" + c.ColumnName + "' id='" + c.ColumnName + "' >\n");
+                            builder.Append(" </div>\n</div>\n");
+                            break;
+
+                        case "CompanyId":
+                            companyId = int.Parse( r[c.ColumnName].ToString() );
+                            break;
+
+                        case "Firma":
+                            builder.Append("<div class='w3-row w3-section'>\n");
+                            builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'><i class='w3-xxlarge material-icons-outlined'>work</i></div>\n");
+
+                            builder.Append("<script>\n");
+                            builder.Append("function myFunction() {\n");
+                            //builder.Append(" alert('Setze Wert ');\n");
+                            builder.Append(" document.getElementById('buttonCompanySettings').href = '/company/' + document.getElementById('" + c.ColumnName + "' ).value;\n");
+                            builder.Append("}\n</script>\n");
+                            builder.Append(" <a href='/company/" + companyId + "' id='buttonCompanySettings' style='max-width:60px' class='w3-col w3-button'><i class='w3-xlarge material-icons-outlined'>settings</i></a>");                           
+                       
+                            builder.Append(" <div class='w3-rest'>\n");                        
+                            builder.Append("  <select form='form1' class='w3-select w3-border w3-disabled' name='CompanyId' id='" + c.ColumnName + "'  onchange='myFunction()'>\n");
+
+                            foreach (DataRow row in dtCompany.Rows)
+                            {           
+                                builder.Append("   <option value='" + row["Id"] + "' ");
+                                builder.Append( ( companyId.ToString() == row["Id"].ToString() ) ? "selected" : string.Empty);
+                                builder.Append(">" + row["Name"].ToString() + "</option>\n");
+                            }
+
+                            builder.Append("  </select>\n");
+                            builder.Append(" </div>\n</div>\n");
+                            break;
+
+
+                        case "Telefon":
+                            builder.Append("<div class='w3-row w3-section'>\n");
+                            builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'><i class='w3-xxlarge material-icons-outlined'>phone</i></div>\n");
+                            builder.Append(" <div class='w3-rest'>\n");
+                            builder.Append("  <input form='form1' class='w3-input w3-border w3-disabled' type='tel'  placeholder='Mobiltelefonnummer' name='" + c.ColumnName + "' id='" + c.ColumnName + "' value='+" + r[c.ColumnName] + "' >\n");
+                            builder.Append(" </div>\n</div>\n");
+                            break;
+
+                        case "Email":
+                            builder.Append("<div class='w3-row w3-section'>\n");
+                            builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'><i class='w3-xxlarge material-icons-outlined'>email</i></div>\n");
+                            builder.Append(" <div class='w3-rest'>\n");
+                            builder.Append("  <input form='form1' class='w3-input w3-border w3-disabled' type='email' pattern='[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}$' placeholder='Emailadresse' " +
+                                           "name='" + c.ColumnName + "' id='" + c.ColumnName + "' value='" + r[c.ColumnName] + "' >\n");
+                            builder.Append(" </div>\n</div>\n");
+                            break;
+
+                        case "SendSms":                        
+                            builder.Append("<div class='w3-row w3-section'>\n");
+                            builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'><i class='w3-xxlarge material-icons-outlined'>contact_phone</i></div>\n");
+                            builder.Append(" <div class='w3-rest'>\n");
+                            builder.Append("  <input form='form1' class='w3-check w3-border w3-margin w3-disabled' type='checkbox' placeholder='SMS empfangen' " +
+                                           "name='" + c.ColumnName + "' id='" + c.ColumnName + "' " + (int.Parse(r[c.ColumnName].ToString()) != 0 ? "checked" : string.Empty) + " >\n");
+                            builder.Append(" </div>\n</div>\n");
+                            break;
+
+                        case "SendEmail":
+                            builder.Append("<div class='w3-row w3-section'>\n");
+                            builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'><i class='w3-xxlarge material-icons-outlined'>contact_mail</i></div>\n");
+                            builder.Append(" <div class='w3-rest'>\n");
+                            builder.Append("  <input form='form1' class='w3-check w3-border w3-margin w3-disabled' type='checkbox' placeholder='Email empfangen' " +
+                                           "name='" + c.ColumnName + "' id='" + c.ColumnName + "' " + (int.Parse(r[c.ColumnName].ToString()) != 0 ? "checked" : string.Empty) + " >\n");
+                            builder.Append(" </div>\n</div>\n");
+                            break;
+
+                        case "Max_Inaktivität":
+                            builder.Append("<div class='w3-row w3-section'>\n");
+                            builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'><i class='w3-xxlarge material-icons-outlined'>more_time</i></div>\n");
+                            builder.Append(" <div class='w3-rest'>\n");
+                            builder.Append("  <input form='form1' class='w3-input w3-border w3-disabled' type='number' min='0' step='8' placeholder='Maximale Inaktivität in Stunden' name='" + c.ColumnName + "' id='" + c.ColumnName + "' value='" + r[c.ColumnName] + "' >\n");
+                            builder.Append(" </div>\n</div>\n");
+                            break;
+
+                        default:
+                            builder.Append("<div class='w3-row w3-section'>\n");
+                            builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'>" + c.ColumnName + "</div>\n");
+                            builder.Append(" <div class='w3-rest'>\n");
+                            builder.Append("  <input form='form1' class='w3-input w3-border w3-disabled' type='text'  placeholder='Anzeigename' name='" + c.ColumnName + "' id='" + c.ColumnName + "' value='" + r[c.ColumnName] + "' >\n");
+                            builder.Append(" </div>\n</div>\n");
+                            break;
+                    }
+
+                }
+            }
+
+            builder.Append(" <input type='reset' form='form1' class='w3-button w3-block w3-section w3-pale-blue w3-ripple w3-padding w3-half'>\n");
+            builder.Append(" <button class='w3-button w3-block w3-section w3-teal w3-ripple w3-padding w3-half' onclick =\"document.getElementById('Editor').style.display = 'block'\">Speichern</button>\n");
+            builder.Append("</div>\n<center>\n");
+
+            return builder.ToString();
+        }
+               
+        public static string HtmlFormCompany(DataTable dtCompany, int companyId)
+        {
+            StringBuilder builder = new StringBuilder();
+
+            builder.Append("</center>\n<div class='w3-card w3-container w3-light-grey w3-text-teal w3-margin'>\n");
+            builder.Append("<h2 class='w3-center'>Firmenkonto</h2>\n");
+
+            #region Firmenauswahl
+            builder.Append(" <div class='w3-pale-blue'>\n");
+            builder.Append("<script>\n");
+            builder.Append("function myFunction() {\n");
+            builder.Append(" document.getElementById('buttonCompanySettings').href = '/company/' + document.getElementById('selectedCompany').value;\n");
+            builder.Append("}\n</script>\n");
+            builder.Append(" <a href='/company/" + companyId + "' id='buttonCompanySettings' style='max-width:60px' class='w3-col w3-button'><i class='w3-xlarge material-icons-outlined'>settings</i></a>");
+            builder.Append("  <select class='w3-select w3-border w3-disabled' id='selectedCompany'  onchange='myFunction()'>\n");
+
+            foreach (DataRow row in dtCompany.Rows)
+            {
+                builder.Append("   <option value='" + row["Id"] + "' ");
+                builder.Append((companyId.ToString() == row["Id"].ToString()) ? "selected" : string.Empty);
+                builder.Append(">" + row["Name"].ToString() + "</option>\n");
+            }
+
+            builder.Append("  </select>\n");
+            builder.Append(" </div>\n");
+            #endregion
+
+            foreach (DataRow r in dtCompany.Rows)
+            {
+                if (companyId.ToString() != r["Id"].ToString()) continue;
+
+                foreach (DataColumn c in dtCompany.Columns)
+                {
+                    string icon;
+                    string placeholder;
+                    string inputReadonly = string.Empty;
+
+                    switch (c.ColumnName)
+                    {
+                        case "Id":
+                            icon = "flag";
+                            placeholder = "Eindeutige Nummer";
+                            inputReadonly = "readonly";
+                            break;
+
+                        case "Name":
+                            icon = "local_offer";
+                            placeholder = "Firmenname";
+                            break;
+
+                        case "Address":
+                            icon = "location_on";
+                            placeholder = "Adresse oder Werk";
+                            break;
+
+                        case "City":
+                            icon = "location_city";
+                            placeholder = "Ort";
+                            break;
+
+                        default:
+                            icon = "info";
+                            placeholder = c.ColumnName;
+                            break;
+                    }
+
+
+                    builder.Append("<div class='w3-row w3-section'>\n");
+                    builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'><i class='w3-xxlarge material-icons-outlined'>" + icon + "/i></div>\n");
+                    builder.Append(" <div class='w3-rest'>\n");
+                    builder.Append("  <input form='form1' class='w3-input w3-border w3-grey w3-disabled' type='text' name='" + c.ColumnName + "' id='" + c.ColumnName + "' value='" + r[c.ColumnName] + "' placeholder='" + placeholder + "' " + inputReadonly + ">\n");
+                    builder.Append(" </div>\n</div>\n");
+                }
+                break;
+            }
+
+            builder.Append(" <input type='reset' form='form1' class='w3-button w3-block w3-section w3-pale-blue w3-ripple w3-padding w3-half'>\n");
+            builder.Append(" <button class='w3-button w3-block w3-section w3-teal w3-ripple w3-padding w3-half' onclick =\"document.getElementById('Editor').style.display = 'block'\">Speichern</button>\n");
+            builder.Append("</div>\n<center>\n");
+
+            return builder.ToString();
+        }
+        #endregion
 
     }
 }

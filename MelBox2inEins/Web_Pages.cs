@@ -18,7 +18,7 @@ namespace MelBox2
 
 
 #if DEBUG
-        private int LogedInContactId = 0;
+       // private int LogedInContactId = 0;
 #else
         private int LogedInContactId = 0;
 #endif
@@ -208,132 +208,55 @@ namespace MelBox2
             return context;
         }
 
-        [RestRoute(HttpMethod = HttpMethod.GET, PathInfo = "/account")]
+        [RestRoute(HttpMethod = HttpMethod.GET, PathInfo = @"^/account/\w+$")] //@"^/user/\d+$"
         public IHttpContext ShowMelBoxAccount(IHttpContext context)
         {
-            //  var request = context.Request.QueryString["contactid"] ?? "1";
-            var request = "7"; //TEST
-
             StringBuilder builder = new StringBuilder();
 
-            if (!int.TryParse(request, out int contactId))
+            builder.Append(MelBoxWeb.HtmlHead("Benutzerkonto"));
+
+            string guid = context.Request.RawUrl.Remove(0, 9); 
+            //Console.WriteLine("Account: Übergebene GUID: " + guid);
+
+            if (!MelBoxWeb.LogedInGuids.ContainsKey(guid))
             {
-                builder.Append(MelBoxWeb.HtmlHead("Ungültige Eingabe"));
-                builder.Append("<div class='w3-panel w3-yellow'><h3>Fehleingabe!</h3 >");
-                builder.Append("<p>Die Seite wurde mit einem ung&uuml;ltigen Parameter aufgerufen.</p>");
-                builder.Append(MelBoxWeb.HtmlFoot());
+                builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler beim Lesen des Benutzerkontos", "Bitte erneut einloggen."));
             }
             else
             {
+                int contactId = MelBoxWeb.LogedInGuids[guid];
+
                 DataTable dt = Program.Sql.GetViewContactInfo(contactId);
                 DataTable dtCompany = Program.Sql.GetAllCompanys();
 
-                builder.Append(MelBoxWeb.HtmlHead(dt.TableName));
-
-                builder.Append("</center><div class='w3-card'>\n");
-                builder.Append("<form class='w3-container' id='form1' action='/account/safe'>\n");
-
-                foreach (DataRow r in dt.Rows)
-                {
-                    foreach (DataColumn c in dt.Columns)
-                    {
-                        switch (c.ColumnName)
-                        {
-                            case "ContactId":
-                                builder.Append("<p class='w3-half w3-margin'>\n <label class='w3-text-grey'><b>Laufende Nummer</b></label>\n");
-                                builder.Append(" <input class='w3-input w3-border w3-light-grey' name='" + c.ColumnName + "' id='" + c.ColumnName + "' type='text' value='" + r[c.ColumnName] + "' disabled>\n</p>\n");
-                                break;
-                            case "Passwort":
-                                builder.Append("<p class='w3-half w3-margin'>\n <label class='w3-text-grey'><b>" + c.ColumnName + "</b></label>\n");
-                                builder.Append(" <input class='w3-input w3-border w3-sand' name='" + c.ColumnName + "' id='" + c.ColumnName + "' placeholder='Passwort' type='password' >\n</p>\n");
-                                break;
-                            case "CompanyId":
-                                builder.Append("<div style='display:none;' name='" + c.ColumnName + "' id='" + c.ColumnName + "'>" + r[c.ColumnName] + "</div>");
-                                break;
-                            case "Firma":
-                                builder.Append("<p class='w3-half w3-margin'>\n <label class='w3-text-grey'><b>" + c.ColumnName + "</b></label>\n");
-                                builder.Append("  <select class='w3-select w3-border w3-sand' name='" + c.ColumnName + "' id='" + c.ColumnName + "'>\n");
-                                // builder.Append("   <option value='" + r[c.ColumnName] + "' selected>" + r[c.ColumnName] + "</option>\n"); //TEST
-
-                                foreach (DataRow row in dtCompany.Rows)
-                                {
-                                    string companyName = MelBoxWeb.EncodeUmlaute(row["Name"].ToString());
-
-                                    builder.Append("   <option value='" + row["Id"] + "' ");
-                                    builder.Append(r[c.ColumnName] == row["Id"] ? "selected" : string.Empty);
-                                    builder.Append(">" + companyName + "</option>\n");
-                                }
-
-                                builder.Append("  </select>\n");
-                                break;
-                            case "SendSms":
-                            case "SendEmail":
-                                builder.Append("<p class='w3-half w3-margin'>\n <label class='w3-text-grey'><b>" + c.ColumnName + "</b></label>\n");
-                                builder.Append(string.Format("<input class='w3-check w3-block' type='checkbox' name='{0}' id='{0}' {1}></p>", c.ColumnName, (int.Parse(r[c.ColumnName].ToString()) > 0) ? "checked" : string.Empty));
-                                break;
-                            case "Max_Inaktivität":
-                                builder.Append("<p class='w3-half w3-margin'>\n <label class='w3-text-grey'><b>Maximale Inaktiviät (Stunden)</b></label>\n");
-                                builder.Append(" <input class='w3-input w3-border w3-sand' name='" + c.ColumnName + "' id='" + c.ColumnName + "' type='number' min='0' step='8' value ='" + r[c.ColumnName] + "'>\n</p>\n");
-                                break;
-                            default:
-                                builder.Append("<p class='w3-half w3-margin'>\n <label class='w3-text-grey'><b>" + c.ColumnName + "</b></label>\n");
-                                builder.Append(" <input class='w3-input w3-border w3-sand' name='" + c.ColumnName + "' id='" + c.ColumnName + "' placeholder='" + c.ColumnName + "' type='text' value='" + r[c.ColumnName] + "'>\n</p>\n");
-                                break;
-                        }
-
-                    }
-                }
-                builder.Append("<p class='w3-half w3-margin'>\n");
-                builder.Append("  <input type='button' class='w3-button w3-teal' onclick =\"document.getElementById('modal1').style.display = 'block'\" value='Speichern'></input> </p>");
-
-                builder.Append("</form></div>\n");
-
-
-                builder.Append("<div id='modal1' class='w3-modal'>\n");
-                builder.Append(" <div class='w3-modal-content w3-card-4'>\n");
-                builder.Append("  <header class='w3-container w3-teal'>\n");
-                builder.Append("  <span onclick=\"document.getElementById('modal1').style.display = 'none'\" class='w3-button w3-display-topright'>&times;</span>\n");
-                builder.Append("  <h2>Wirklich speichern?</h2>\n</header>\n");
-                builder.Append("  <div class='w3-container'><p>");
-                builder.Append("  <script> </script>");
-                builder.Append("  <input class='w3-input w3-border w3-teal' type='submit' formmethod='post' form='form1' value='Speichern'>\n</p>\n");
-                builder.Append("  </p></div>");
-                builder.Append("</div></div></div>");
-
-                builder.Append("<center>\n");
-
-                builder.Append(MelBoxWeb.HtmlFoot());
+                builder.Append(MelBoxWeb.HtmlFormAccount(dt, dtCompany));
+                builder.Append(MelBoxWeb.HtmlEditor("/account/update", "Wirklich speichern?"));
             }
+
+            builder.Append(MelBoxWeb.HtmlFoot());
 
             context.Response.SendResponse(MelBoxWeb.EncodeUmlaute(builder.ToString()));
             return context;
         }
 
-        /// <summary>
-        /// BAUSTELLE
-        /// </summary>
-        /// <param name="context"></param>
-        /// <returns></returns>
-        [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/account/safe")]
+        [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/account/update")]
         public IHttpContext AccountSafe(IHttpContext context)
-        {
-            // ContactId, Name, Passwort, CompanyId, Firma, Email, Telefon, SendSms , SendEmail, Max_Inaktivität 
-
+        {          
             string payload = context.Request.Payload;
             payload = MelBoxWeb.DecodeUmlaute(payload);
+            //Console.WriteLine("\r\n2: account/update payload:\r\n" + payload);
+
             string[] args = payload.Split('&');
 
             int contactId = 0;
             string name = "-KEIN NAME-";
             string password = null;
-            int companyId = 1;
-            //string firma;
+            int companyId = -1;
             string email = null;
             ulong phone = 0;
-            string sendSms;
-            string sendEmail;
-            string maxInactivity;
-
+            int sendSms = 0; //<input type='checkbox' > wird nur übertragen, wenn angehakt => immer zurücksetzten, wenn nicht gesetzt
+            int sendEmail = 0;
+            int maxInactivity = -1;
 
             foreach (string arg in args)
             {
@@ -366,26 +289,46 @@ namespace MelBox2
                 {
                     phone = GsmConverter.StrToPhone(arg.Split('=')[1]);
                 }
+
+                if (arg.StartsWith("SendSms="))
+                {
+                    string boolStr = arg.Split('=')[1];
+
+                    if (boolStr.ToLower() == "on")
+                        sendSms = 1;
+                    else
+                        sendSms = 0;
+                }
+
+                if (arg.StartsWith("SendEmail="))
+                {
+                    string boolStr = arg.Split('=')[1];
+
+                    if (boolStr.ToLower() == "on")
+                        sendEmail = 1;
+                    else
+                        sendEmail = 0;
+                }
+
+                if (arg.StartsWith("Max_Inaktivität="))
+                {
+                    maxInactivity = int.Parse( arg.Split('=')[1].ToString() );
+                }
             }
 
             StringBuilder builder = new StringBuilder();
             builder.Append(MelBoxWeb.HtmlHead("&Auml;nderung Benutzer"));
 
-            if (0 == Program.Sql.UpdateContact(contactId, name, password, companyId, email, phone))
+            if (0 == Program.Sql.UpdateContact(contactId, name, password, companyId, phone, sendSms, email, sendEmail, string.Empty, maxInactivity))
             {
                 builder.Append("<div class='w3-panel w3-yellow w3-border'><h3>Keine &Auml;nderungen für Benutzer '" + name + "'</h3></div>");
                 builder.Append("<p>Es wurden keine &Auml;nderungen &uuml;bergeben oder der Aufruf war fehlerhaft.</p>");
             }
             else
             {
-                builder.Append("<div class='w3-panel w3-pale-green w3-border'><h3>&Auml;nderungen für Benutzer '" + name + "' gespeichert</h3></div>");
-                builder.Append("<p>Die &Auml;nderungen an Benutzer '" + name + "' wurden in der Datenbank gespeichert.</p>");
+                builder.Append("<div class='w3-panel w3-pale-green w3-border'><h3>Änderungen für Benutzer '" + name + "' gespeichert</h3></div>");
+                builder.Append("<p>Die Änderungen an Benutzer '" + name + "' wurden in der Datenbank gespeichert.</p>");
             }
-
-            builder.Append("<p>Id\t" + contactId);
-            builder.Append("<br>Name\t" + name);
-            builder.Append("<br>Email\t" + email);
-            builder.Append("<br<Telefon\t" + phone + "</p>");
 
             builder.Append(MelBoxWeb.HtmlFoot());
 
@@ -393,67 +336,94 @@ namespace MelBox2
             return context;
         }
 
-        [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/login")]
-        public IHttpContext LogIn(IHttpContext context)
+        /// <summary>
+        /// BAUSTELLE PathInfo
+        /// </summary>
+        /// <param name="context"></param>
+        /// <returns></returns>
+        [RestRoute(HttpMethod = HttpMethod.GET, PathInfo = @"^/company/\w+$")] //@"^/user/\d+$"
+        public IHttpContext ShowMelBoxCompany(IHttpContext context)
         {
-            string name = string.Empty;
-            string password = string.Empty;
-            string payload = context.Request.Payload;
-            string[] args = payload.Split('&');
-
-            foreach (string arg in args)
-            {
-                if (arg.StartsWith("name="))
-                {
-                    name = arg.Split('=')[1];
-                }
-
-                if (arg.StartsWith("password="))
-                {
-                    password = arg.Split('=')[1];
-                }
-            }
-
-            LogedInContactId = 0;
-
             StringBuilder builder = new StringBuilder();
 
-#if DEBUG
-            LogedInContactId = 1;
-#else
+            builder.Append(MelBoxWeb.HtmlHead("Firmeninformationen"));
 
-            if (name.Length > 3 && password.Length > 3)
+            if (!int.TryParse(context.Request.RawUrl.Remove(0, 9), out int companyId) )
             {
-                if (password == MelBoxWebServer.MasterPassword)
-                {
-                    LogedInContactId = 1;
-                }
-                else
-                {
-                    LogedInContactId = Program.Sql.GetContactIdFromLogin(name, password);
-                }
+                builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler", "Die Seite wurde mit ungültigen Parametern aufgerufen.<br>" + context.Request.RawUrl.Remove(0, 9)));
             }
-#endif
-            //   builder.Append(MelBoxWeb.HtmlHead("Log-In", LogedInContactId));
-            builder.Append("<div class='w3-panel " + (LogedInContactId != 0 ? "w3-pale-green" : "w3-yellow") + " w3-border'>\n");
-            builder.Append(" <h2>LogIn " + (LogedInContactId != 0 ? "erfolgreich" : "fehlgeschlagen") + "</h2>");
-            builder.Append(" <p></p>");
-            //builder.Append("<script>\n"); 
-            //builder.Append("  if (typeof(Storage) !== \"undefined\") {");
-            //builder.Append("    localStorage.LogIn = \"" + LogedInContactId + "\"");
+            else
+            {
+                DataTable dtCompany = Program.Sql.GetAllCompanys();
+                builder.Append(MelBoxWeb.HtmlFormCompany(dtCompany, companyId) );
+                builder.Append(MelBoxWeb.HtmlEditor("/company/update", "Wirklich speichern?"));
+            }
 
-            ////document.getElementById("result").innerHTML = localStorage.lastname
-            //builder.Append("</script>\n");
-            builder.Append("</div>\n");
             builder.Append(MelBoxWeb.HtmlFoot());
-            context.Response.SendResponse(builder.ToString());
             return context;
-
-            //http://localhost:1234/repeat?word=parrot
-            //var password = context.GetPropertyValueAs<string>("password");
-
-            //var password = context.Request.QueryString["password"] ?? "what?";
         }
+
+//        [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/login")]
+//        public IHttpContext LogIn(IHttpContext context)
+//        {
+//            string name = string.Empty;
+//            string password = string.Empty;
+//            string payload = context.Request.Payload;
+//            string[] args = payload.Split('&');
+
+//            foreach (string arg in args)
+//            {
+//                if (arg.StartsWith("name="))
+//                {
+//                    name = arg.Split('=')[1];
+//                }
+
+//                if (arg.StartsWith("password="))
+//                {
+//                    password = arg.Split('=')[1];
+//                }
+//            }
+
+//            LogedInContactId = 0;
+
+//            StringBuilder builder = new StringBuilder();
+
+//#if DEBUG
+//            LogedInContactId = 1;
+//#else
+
+//            if (name.Length > 3 && password.Length > 3)
+//            {
+//                if (password == MelBoxWebServer.MasterPassword)
+//                {
+//                    LogedInContactId = 1;
+//                }
+//                else
+//                {
+//                    LogedInContactId = Program.Sql.GetContactIdFromLogin(name, password);
+//                }
+//            }
+//#endif
+//            //   builder.Append(MelBoxWeb.HtmlHead("Log-In", LogedInContactId));
+//            builder.Append("<div class='w3-panel " + (LogedInContactId != 0 ? "w3-pale-green" : "w3-yellow") + " w3-border'>\n");
+//            builder.Append(" <h2>LogIn " + (LogedInContactId != 0 ? "erfolgreich" : "fehlgeschlagen") + "</h2>");
+//            builder.Append(" <p></p>");
+//            //builder.Append("<script>\n"); 
+//            //builder.Append("  if (typeof(Storage) !== \"undefined\") {");
+//            //builder.Append("    localStorage.LogIn = \"" + LogedInContactId + "\"");
+
+//            ////document.getElementById("result").innerHTML = localStorage.lastname
+//            //builder.Append("</script>\n");
+//            builder.Append("</div>\n");
+//            builder.Append(MelBoxWeb.HtmlFoot());
+//            context.Response.SendResponse(builder.ToString());
+//            return context;
+
+//            //http://localhost:1234/repeat?word=parrot
+//            //var password = context.GetPropertyValueAs<string>("password");
+
+//            //var password = context.Request.QueryString["password"] ?? "what?";
+//        }
 
 
         [RestRoute]
@@ -477,7 +447,7 @@ namespace MelBox2
 
                 if (myId != 0) //Es wurde ein Benutzer mit diesen Zugangsdaten gefunden
                 {
-                    Program.Sql.Log(MelBoxSql.LogTopic.Sql, MelBoxSql.LogPrio.Info, "Benutzer " + myId + "(" + name + ") angemeledt.");
+                    Program.Sql.Log(MelBoxSql.LogTopic.Sql, MelBoxSql.LogPrio.Info, "Benutzer " + myId + " '" + name + "' ist angemeledt.");
 
                     guid = MelBoxWeb.GenerateID(myId);
                     alert = MelBoxWeb.HtmlAlert(3, "LogIn erfolgreich", string.Format("Sie haben sich erfolgreich als Benutzer {0} '" + name + "' mit der ID {1} eingeloggt.", myId, guid));
@@ -508,6 +478,8 @@ namespace MelBox2
                 }
                 builder.Append("</ul>\n");
             }
+
+            builder.Append("<p>RawUrl: " + context.Request.RawUrl + "</p>");
 #endif
             #endregion
 
