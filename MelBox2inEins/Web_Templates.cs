@@ -12,13 +12,17 @@ namespace MelBox2
         #region Werkzeuge
         public static string EncodeUmlaute(string input)
         {
-            return input.Replace("Ä", "&Auml;").Replace("Ö", "&Ouml;").Replace("Ü", "&Uuml;").Replace("ä", "&auml;").Replace("ö", "&ouml;").Replace("ü", "&uuml;").Replace("ß", "&szlig;");
+            //"     &quot;
+            //<     &lt;
+            //>     &gt;
+            //' 	&apos;
+            return input.Replace("&", "&amp;").Replace("Ä", "&Auml;").Replace("Ö", "&Ouml;").Replace("Ü", "&Uuml;").Replace("ä", "&auml;").Replace("ö", "&ouml;").Replace("ü", "&uuml;").Replace("ß", "&szlig;");
         }
 
         public static string DecodeUmlaute(string input)
         {
             return input.Replace("%C4", "Ä").Replace("%D6", "Ö").Replace("%DC", "Ü").Replace("%E4", "ä").Replace("%F6", "ö").Replace("%FC", "ü")
-                .Replace("%DF", "ß").Replace("%40", "@").Replace("%2B", "+");
+                .Replace("%DF", "ß").Replace("%40", "@").Replace("%2B", "+").Replace("%26", "&").Replace("%22", "\"");
         }
 
         public static string GenerateID(int contactId)
@@ -418,16 +422,18 @@ namespace MelBox2
                             break;
                         case "Beginn":
                         case "Ende":
-                                builder.Append("<select class='w3-select' form='form1' name='" + c.ColumnName + "' " + (canUserEdit ? string.Empty : "disabled") + ">\n");
+                            builder.Append("<select class='w3-select' form='form1' name='" + c.ColumnName + "' " + (canUserEdit ? string.Empty : "disabled") + ">\n");
 
-                                int current = int.Parse(r[c.ColumnName].ToString().Substring(0, 2));
-                                for (int i = 0; i < 24; i++)
-                                {
-                                    builder.Append("<option value='" + i + "' " + ((current == i) ? "selected" : string.Empty) + ">" + i +" Uhr</option>\n");
-                                }
+                            int current = int.Parse(r[c.ColumnName].ToString().Substring(0, 2));
+                            //for (int i = 0; i < 24; i++)
+                            //{
+                            //    builder.Append("<option value='" + i + "' " + ((current == i) ? "selected" : string.Empty) + ">" + i +" Uhr</option>\n");
+                            //}
 
-                                builder.Append("</select>\n");
-                                break;
+                            builder.Append("<option value='" + current + "' selected>" + current + " Uhr</option>\n");
+
+                            builder.Append("</select>\n");
+                            break;
                         default:
                             builder.Append(r[c.ColumnName]);
                             break;
@@ -444,16 +450,27 @@ namespace MelBox2
         #endregion
 
         #region Formulare
-        public static string HtmlEditor(string actionPath, string buttonText = "editieren")
+        /// <summary>
+        /// Wird als Rückfrage eingeblendet, sendet das Html-Form 'form1' an einen Link
+        /// </summary>
+        /// <param name="action">Kombination aus Link, Button-Text</param>
+        /// <returns>Html-Baustein</returns>
+        public static string HtmlEditor(Dictionary<string, string> action)
         {
             StringBuilder builder = new StringBuilder();
 
             builder.Append("<div id='Editor' class='w3-modal'>\n"); //
             builder.Append("  <div class='w3-modal-content w3-card-4' style='max-width:600px'>\n");
             builder.Append("  <div class='w3-container'>\n");
-            builder.Append("   <span onclick=\"w3.hide('#Editor')\" class='w3-button w3-display-topright'>&times;</span>");
-            builder.Append("   <form id='form1' method='post' class='w3-margin' action='" + actionPath + "'>\n");
-            builder.Append("    <button class='w3-button w3-block w3-teal w3-section w3-padding-large w3-margin' type='submit'>" + MelBoxWeb.EncodeUmlaute(buttonText) + "</button>");
+            builder.Append("  <div class='w3-margin' >space</div>\n");
+            builder.Append("   <span onclick=\"w3.hide('#Editor')\" class='w3-button w3-margin-bottom w3-display-topright'><i class='w3-xxlarge material-icons-outlined'>close</i></span>");
+            builder.Append("   <form id='form1' method='post' class='w3-margin' action=''>\n");
+
+            foreach (var path in action.Keys)
+            {
+                builder.Append("    <button class='w3-button w3-block w3-teal w3-section w3-padding-large w3-margin' ");
+                builder.Append("formaction='" + path +"' type='submit'>" + action[path] + "</button>");
+            }
 
             builder.Append("   </form>\n");
             builder.Append("  </div>\n");
@@ -603,13 +620,18 @@ namespace MelBox2
             builder.Append("<h2 class='w3-center'>Firmenkonto</h2>\n");
 
             #region Firmenauswahl
-            builder.Append(" <div class='w3-pale-blue'>\n");
+
+            builder.Append("<div class='w3-row w3-section'>\n");
+            builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'>\n");      
+            builder.Append("<i class='w3-xxlarge material-icons-outlined'>list_alt</i>\n</div>\n");
+            
+            builder.Append(" <div class='w3-rest'>\n");
             builder.Append("<script>\n");
             builder.Append("function myFunction() {\n");
-            builder.Append(" document.getElementById('buttonCompanySettings').href = '/company/' + document.getElementById('selectedCompany').value;\n");
+            builder.Append(" var myLink = '/company/' + document.getElementById('selectedCompany').value;\n");
+            builder.Append(" window.open(myLink, '_self');\n");
             builder.Append("}\n</script>\n");
-            builder.Append(" <a href='/company/" + companyId + "' id='buttonCompanySettings' style='max-width:60px' class='w3-col w3-button'><i class='w3-xlarge material-icons-outlined'>settings</i></a>");
-            builder.Append("  <select class='w3-select w3-border w3-disabled' id='selectedCompany'  onchange='myFunction()'>\n");
+            builder.Append("  <select class='w3-select w3-border w3-pale-blue w3-disabled' id='selectedCompany'  onchange='myFunction()'>\n");
 
             foreach (DataRow row in dtCompany.Rows)
             {
@@ -619,7 +641,7 @@ namespace MelBox2
             }
 
             builder.Append("  </select>\n");
-            builder.Append(" </div>\n");
+            builder.Append(" </div>\n</div>\n");
             #endregion
 
             foreach (DataRow r in dtCompany.Rows)
@@ -645,12 +667,12 @@ namespace MelBox2
                             placeholder = "Firmenname";
                             break;
 
-                        case "Address":
+                        case "Adresse":
                             icon = "location_on";
                             placeholder = "Adresse oder Werk";
                             break;
 
-                        case "City":
+                        case "Ort":
                             icon = "location_city";
                             placeholder = "Ort";
                             break;
@@ -661,18 +683,18 @@ namespace MelBox2
                             break;
                     }
 
-
                     builder.Append("<div class='w3-row w3-section'>\n");
-                    builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'><i class='w3-xxlarge material-icons-outlined'>" + icon + "/i></div>\n");
+                    builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'><i class='w3-xxlarge material-icons-outlined'>" + icon + "</i></div>\n");
                     builder.Append(" <div class='w3-rest'>\n");
-                    builder.Append("  <input form='form1' class='w3-input w3-border w3-grey w3-disabled' type='text' name='" + c.ColumnName + "' id='" + c.ColumnName + "' value='" + r[c.ColumnName] + "' placeholder='" + placeholder + "' " + inputReadonly + ">\n");
+                    builder.Append("  <input form='form1' class='w3-input w3-border " + (inputReadonly.Length > 0 ? "w3-grey" : string.Empty) + " w3-disabled' type='text' name='" + c.ColumnName + "' id='" + c.ColumnName + "' value='" + r[c.ColumnName] + "' placeholder='" + placeholder + "' " + inputReadonly + ">\n");
                     builder.Append(" </div>\n</div>\n");
                 }
                 break;
             }
 
-            builder.Append(" <input type='reset' form='form1' class='w3-button w3-block w3-section w3-pale-blue w3-ripple w3-padding w3-half'>\n");
-            builder.Append(" <button class='w3-button w3-block w3-section w3-teal w3-ripple w3-padding w3-half' onclick =\"document.getElementById('Editor').style.display = 'block'\">Speichern</button>\n");
+            builder.Append(" <div class='w3-quarter'>&nbsp;</div>\n");
+            builder.Append(" <input type='reset' form='form1' class='w3-button w3-block w3-section w3-pale-blue w3-ripple w3-padding w3-quarter'>\n");
+            builder.Append(" <button class='w3-button w3-block w3-section w3-teal w3-ripple w3-padding w3-quarter' onclick =\"document.getElementById('Editor').style.display = 'block'\">Übernehmen</button>\n");
             builder.Append("</div>\n<center>\n");
 
             return builder.ToString();

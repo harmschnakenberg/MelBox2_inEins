@@ -162,7 +162,7 @@ namespace MelBox2
                     var command = connection.CreateCommand();
                     command.CommandText = "INSERT INTO \"Contact\" (\"Name\", \"Password\", \"CompanyId\", \"Email\", \"Phone\", \"MaxInactiveHours\", \"SendSms\", \"SendEmail\" ) " +
                                                            "VALUES ( @name , @password, @companyId, @email, @phone, @maxinactivehours, @sendSms, @sendEmail); " +
-                                                           "SELECT ID FROM \"Contact\" ORDER BY ID DESC; ";
+                                                           "SELECT Id FROM \"Contact\" ORDER BY Id DESC LIMIT 1; ";
 
                     command.Parameters.AddWithValue("@name", name);
                     command.Parameters.AddWithValue("@password", passwordPlain == null ? (object)DBNull.Value : Encrypt(passwordPlain));

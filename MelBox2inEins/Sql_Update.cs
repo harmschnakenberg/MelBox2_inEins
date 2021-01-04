@@ -149,7 +149,9 @@ namespace MelBox2
                         builder.Append("UPDATE \"Contact\" SET MaxInactiveHours = @maxInactivity WHERE Id = @contactId; ");
                     }
 
+#pragma warning disable CA2100 // Review SQL queries for security vulnerabilities
                     command.CommandText = builder.ToString();
+#pragma warning restore CA2100 // Review SQL queries for security vulnerabilities
                     return command.ExecuteNonQuery();
                 }
             }
@@ -159,6 +161,47 @@ namespace MelBox2
             }
         }
 
+        public int UpdateCompany(int companyId, string name = "", string address = "", string city = "")
+        {
+            try
+            {
+                using (var connection = new SqliteConnection(DataSource))
+                {
+                    StringBuilder builder = new StringBuilder();
+
+                    connection.Open();
+                    var command = connection.CreateCommand();
+                    command.Parameters.AddWithValue("@companyId", companyId);
+
+                    if (name.Length > 3)
+                    {
+                        command.Parameters.AddWithValue("@name", name);
+                        builder.Append("UPDATE \"Company\" SET Name = @name WHERE Id = @companyId; ");
+                    }
+
+                    if (address.Length > 3)
+                    {
+                        command.Parameters.AddWithValue("@address", address);
+                        builder.Append("UPDATE \"Company\" SET Address = @address WHERE Id = @companyId; ");
+                    }
+
+                    if (city.Length > 3)
+                    {
+                        command.Parameters.AddWithValue("@city", city);
+                        builder.Append("UPDATE \"Company\" SET City = @city WHERE Id = @companyId; ");
+                    }
+
+#pragma warning disable CA2100 // Review SQL queries for security vulnerabilities
+                    command.CommandText = builder.ToString();
+#pragma warning restore CA2100 // Review SQL queries for security vulnerabilities
+                    return command.ExecuteNonQuery();
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Sql-Fehler UpdateContact() " + ex.GetType() + "\r\n" + ex.Message);
+            }
+        }
 
     }
 }

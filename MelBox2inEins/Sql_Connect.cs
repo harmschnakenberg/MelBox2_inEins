@@ -114,7 +114,9 @@ namespace MelBox2
                     query.Append("CREATE VIEW \"ViewShift\" AS SELECT s.Id AS Id, c.Name AS Name, SendSms, SendEmail, date(StartTime) AS Datum, CAST(strftime('%H',StartTime, 'localtime') AS INTEGER) AS Beginn, CAST(strftime('%H',EndTime, 'localtime') AS INTEGER) AS Ende FROM Shifts AS s JOIN Contact AS c ON ContactId = c.Id WHERE EndTime > CURRENT_TIMESTAMP; ");
 
                     var command = connection.CreateCommand();
+#pragma warning disable CA2100 // Review SQL queries for security vulnerabilities
                     command.CommandText = query.ToString();
+#pragma warning restore CA2100 // Review SQL queries for security vulnerabilities
                     command.ExecuteNonQuery();
 
                     Log(LogTopic.Start, LogPrio.Info, "Datenbank neu erstellt.");

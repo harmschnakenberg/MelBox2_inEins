@@ -630,7 +630,7 @@ namespace MelBox2
 
                     var command1 = connection.CreateCommand();
 
-                    command1.CommandText = "SELECT * " +
+                    command1.CommandText = "SELECT Id, Name, Address AS Adresse, City AS Ort " +
                                            "FROM \"Company\" ";
 
                     using (var reader = command1.ExecuteReader())
