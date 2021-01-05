@@ -116,7 +116,29 @@ namespace MelBox2
             return Feiertage(date).Contains(date);
         }
 
+        public static DateTime ShiftStandardStartTime (DateTime date)
+        {
+            DateTime Today = date.Date;
+           // DateTime EndTime = Today.AddDays(1).AddHours(7);
+            DateTime StartTime = Today.AddHours(17);
 
+            if (Today.DayOfWeek == DayOfWeek.Friday)
+            {
+                StartTime = Today.AddHours(15);
+            }
+
+            if (Today.DayOfWeek == DayOfWeek.Saturday || Today.DayOfWeek == DayOfWeek.Sunday || IsHolyday(Today))
+            {
+                StartTime = Today.AddHours(7);
+            }
+
+            return StartTime;
+        }
+
+        public static DateTime ShiftStandardEndTime(DateTime date)
+        {
+            return date.Date.AddDays(1).AddHours(7);          
+        }
 
         #endregion
 

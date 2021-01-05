@@ -33,5 +33,33 @@ namespace MelBox2
             }
         }
 
+        /// <summary>
+        /// Baustelle: vor löschen prüfen, ob Benutezr in aktiver ode rzukünftiger Schicht eingeteilt ist!
+        /// </summary>
+        /// <param name="contactId"></param>
+        /// <returns></returns>
+        public int DeleteContact(int contactId)
+        {
+            try
+            {
+                using (var connection = new SqliteConnection(DataSource))
+                {
+                    connection.Open();
+
+                    var command = connection.CreateCommand();
+
+                    command.CommandText = "DELETE FROM \"Contact\" WHERE Id = @contactId; ";
+                    command.Parameters.AddWithValue("@contactId", contactId);
+
+                    return command.ExecuteNonQuery();
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Sql-Fehler DeleteContact() " + ex.GetType() + "\r\n" + ex.Message);
+            }
+        }
+
+
     }
 }

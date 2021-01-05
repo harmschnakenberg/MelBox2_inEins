@@ -515,9 +515,42 @@ namespace MelBox2
             return overdueTable;
         }
 
+        public DataTable GetViewShift(int shiftId)
+        {
+            DataTable shiftTable = new DataTable
+            {
+                TableName = "Bereitschaft " + shiftId
+            };
+
+            try
+            {
+                using (var connection = new SqliteConnection(DataSource))
+                {
+                    connection.Open();
+
+
+                    var command1 = connection.CreateCommand();
+
+                    command1.CommandText = "SELECT * FROM \"ViewShift\" WHERE Id = $id";
+                    command1.Parameters.AddWithValue("$id", shiftId);
+
+                    using (var reader = command1.ExecuteReader())
+                    {
+                        shiftTable.Load(reader);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Sql-Fehler GetViewShift(shiftId) " + ex.GetType() + "\r\n" + ex.Message);
+            }
+
+            return shiftTable;
+        }
+
         public DataTable GetViewShift()
         {
-            DataTable overdueTable = new DataTable
+            DataTable shiftTable = new DataTable
             {
                 TableName = "Bereitschaft"
             };
@@ -535,7 +568,7 @@ namespace MelBox2
 
                     using (var reader = command1.ExecuteReader())
                     {
-                        overdueTable.Load(reader);
+                        shiftTable.Load(reader);
                     }
                 }
             }
@@ -544,7 +577,7 @@ namespace MelBox2
                 throw new Exception("Sql-Fehler GetViewShift() " + ex.GetType() + "\r\n" + ex.Message);
             }
 
-            return overdueTable;
+            return shiftTable;
         }
 
         public DataTable GetViewMsgBlocked()

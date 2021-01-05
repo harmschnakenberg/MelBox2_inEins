@@ -61,6 +61,7 @@ namespace MelBox2
         [Flags]
         public enum BlockedDays : byte
         {
+            None = 0,
             Sunday = 1,
             Monday = 2,
             Tuesday = 4,
@@ -475,20 +476,8 @@ namespace MelBox2
         public void InsertShift(int contactId)
         {
             DateTime Today = DateTime.Now.Date;
-            DateTime EndTime = Today.AddDays(1).AddHours(7);
-            DateTime StartTime = Today.AddHours(17);
 
-            if (Today.DayOfWeek == DayOfWeek.Friday)
-            {
-                StartTime = Today.AddHours(15);
-            }
-
-            if (Today.DayOfWeek == DayOfWeek.Saturday || Today.DayOfWeek == DayOfWeek.Sunday || IsHolyday(Today))
-            {
-                StartTime = Today.AddHours(7);
-            }
-
-            InsertShift(contactId, StartTime, EndTime);
+            InsertShift(contactId, ShiftStandardStartTime(Today), ShiftStandardEndTime(Today));
         }
     }
 }

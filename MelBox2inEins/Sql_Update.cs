@@ -203,5 +203,34 @@ namespace MelBox2
             }
         }
 
+
+        public bool UpdateMessageBlocked(int msgId, int startHour = 7, int endHour = 7, BlockedDays blockedDays = BlockedDays.AllDays)
+        {
+            try
+            {
+                using (var connection = new SqliteConnection(DataSource))
+                {
+                    connection.Open();
+
+                    var command = connection.CreateCommand();
+
+                    //Nur neuen Eintrag erzeugen, wenn msgId noch nicht vorhanden ist.
+                    command.CommandText = "UPDATE \"BlockedMessages\" SET \"StartHour\" = @startHour, \"EndHour\" = @endHour, \"Days\" = @days " +
+                                          "WHERE \"Id\" = @msgId; ";
+
+                    command.Parameters.AddWithValue("@msgId", msgId);
+                    command.Parameters.AddWithValue("@startHour", startHour);
+                    command.Parameters.AddWithValue("@endHour", endHour);
+                    command.Parameters.AddWithValue("@days", blockedDays);
+
+                   return 0 != command.ExecuteNonQuery();
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Sql-Fehler Update BlockedMessage()\r\n" + ex.Message);
+            }
+        }
+
     }
 }

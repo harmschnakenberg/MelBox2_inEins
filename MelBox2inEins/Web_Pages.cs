@@ -14,6 +14,7 @@ namespace MelBox2
     [RestResource]
     public class MelBoxResource
     {
+        #region nicht änderbare Tabellen
         [RestRoute(HttpMethod = HttpMethod.GET, PathInfo = "/log")]
         public IHttpContext ShowMelBoxLog(IHttpContext context)
 #pragma warning restore CA1822 // Mark members as static
@@ -35,7 +36,7 @@ namespace MelBox2
             StringBuilder builder = new StringBuilder();
             Dictionary<string, string> action = new Dictionary<string, string>
             {
-                { "/blocked/add", "Ausgewählte Nachricht sperren" }
+                { "/blocked/create", "Ausgewählte Nachricht sperren" }
             };
 
             try
@@ -86,28 +87,24 @@ namespace MelBox2
             return context;
         }
 
+        #endregion
+
         #region Gesperrte Nachrichten
         [RestRoute(HttpMethod = HttpMethod.GET, PathInfo = "/blocked")]
         public IHttpContext ShowMelBoxBlocked(IHttpContext context)
         {
             DataTable dt = Program.Sql.GetViewMsgBlocked();
-            Dictionary<string, string> action = new Dictionary<string, string>
-            {
-                { "/blocked/update", "Sperrzeit der Nachricht bearbeiten" },
-                { "/blocked/remove", "Aus Sperrliste entfernen" }
-            };
 
             StringBuilder builder = new StringBuilder();
             builder.Append(MelBoxWeb.HtmlHead(dt.TableName));
-            builder.Append(MelBoxWeb.HtmlTableBlocked(dt, true));
-            builder.Append(MelBoxWeb.HtmlEditor(action));
+            builder.Append(MelBoxWeb.HtmlUnitBlocked(dt) );
             builder.Append(MelBoxWeb.HtmlFoot());
 
             context.Response.SendResponse(MelBoxWeb.EncodeUmlaute(builder.ToString()));
             return context;
         }
 
-        [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/blocked/add")]
+        [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/blocked/create")]
         public IHttpContext AddMelBoxBlocked(IHttpContext context)
         {
             string payload = context.Request.Payload;
@@ -135,19 +132,84 @@ namespace MelBox2
                 else
                 {
                     Program.Sql.InsertMessageBlocked(contentId);
-                    builder.Append(MelBoxWeb.HtmlAlert(3, "Nachricht in die Sperrliste aufgenommen", "Die Nachricht mit der Id " + contentId + " wird nicht mehr in die Bereitschaft weitergeleitet."));
+                    builder.Append(MelBoxWeb.HtmlAlert(3, "Nachricht in die Sperrliste aufgenommen", "Die Nachricht mit der Nr. " + contentId + " wird nicht mehr in die Bereitschaft weitergeleitet."));
                 }
             }
 
             DataTable dt = Program.Sql.GetViewMsgBlocked();
-            builder.Append(MelBoxWeb.HtmlTableBlocked(dt));
-            builder.Append(MelBoxWeb.HtmlFoot());
 
+            builder.Append(MelBoxWeb.HtmlUnitBlocked(dt));
+            builder.Append(MelBoxWeb.HtmlFoot());
             context.Response.SendResponse(MelBoxWeb.EncodeUmlaute(builder.ToString()));
             return context;
         }
 
-        [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/blocked/remove")]
+        [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/blocked/update")]
+        public IHttpContext UpdateMelBoxBlocked(IHttpContext context)
+        {
+            string payload = context.Request.Payload;
+            Dictionary<string, string> args = MelBoxWeb.ReadPayload(payload);
+#if DEBUG
+            Console.WriteLine("/blocked/update Payload:");
+            foreach (var key in args.Keys)
+            {
+                Console.WriteLine(key + ":\t" + args[key]);
+            }
+#endif
+            StringBuilder builder = new StringBuilder();
+            builder.Append(MelBoxWeb.HtmlHead("Sperrzeiten ändern"));
+
+            if (!MelBoxWeb.LogedInGuids.ContainsKey(args["guid"]))
+            {
+                builder.Append(MelBoxWeb.HtmlAlert(4, "Bitte einloggen", "Änderungen sind nur eingelogged möglich."));
+            }
+            else if (!args.ContainsKey("selectedRow") || !int.TryParse(args["selectedRow"], out int contentId))
+            {
+                builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler", "Es wurde keine gültige Nachricht zum ändern übergeben."));
+            }
+            else
+            {
+                if (contentId == 0)
+                {
+                    builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler", "Die übergebene Nachricht konnte nicht zugeordnet werden."));
+                }
+                else
+                {
+                    if (args.ContainsKey("Beginn") && args.ContainsKey("Ende"))
+                    {
+                        int beginHour = int.Parse(args["Beginn"].ToString());
+                        int endHour = int.Parse(args["Ende"].ToString());
+
+                        MelBoxSql.BlockedDays days = MelBoxSql.BlockedDays.None;
+                        if (args.ContainsKey("Mo")) days |= MelBoxSql.BlockedDays.Monday;
+                        if (args.ContainsKey("Di")) days |= MelBoxSql.BlockedDays.Tuesday;
+                        if (args.ContainsKey("Mi")) days |= MelBoxSql.BlockedDays.Wendsday;
+                        if (args.ContainsKey("Do")) days |= MelBoxSql.BlockedDays.Thursday;
+                        if (args.ContainsKey("Fr")) days |= MelBoxSql.BlockedDays.Friday;
+                        if (args.ContainsKey("Sa")) days |= MelBoxSql.BlockedDays.Saturday;
+                        if (args.ContainsKey("So")) days |= MelBoxSql.BlockedDays.Sunday;
+
+                        if (Program.Sql.UpdateMessageBlocked(contentId, beginHour, endHour, days))
+                        {
+                            builder.Append(MelBoxWeb.HtmlAlert(3, "Sperrzeiten geändert", "Die Sperrzeiten für Nachricht Nr. " + contentId + " wurden geändert."));
+                        }
+                        else
+                        {
+                            builder.Append(MelBoxWeb.HtmlAlert(2, "Sperrzeiten nicht geändert", "Die Sperrzeiten für Nachricht Nr. " + contentId + " konnten nicht geändert werden."));
+                        }
+                    }
+                }
+                //nur ausgwählte Nachricht anzeigen
+                DataTable dt = Program.Sql.GetViewMsgBlocked();
+                builder.Append(MelBoxWeb.HtmlUnitBlocked(dt, contentId));
+            }
+
+            builder.Append(MelBoxWeb.HtmlFoot());
+            context.Response.SendResponse(MelBoxWeb.EncodeUmlaute(builder.ToString()));
+            return context;
+        }
+
+        [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/blocked/delete")]
         public IHttpContext RemoveMelBoxBlocked(IHttpContext context)
         {
             string payload = context.Request.Payload;
@@ -173,78 +235,79 @@ namespace MelBox2
                 else
                 {
                     Program.Sql.DeleteMessageBlocked(contentId);
-                    builder.Append(MelBoxWeb.HtmlAlert(3, "Nachricht aus der Sperrliste genommen", "Die Nachricht mit der Id " + contentId + " wird wieder in die Bereitschaft weitergeleitet."));
+                    builder.Append(MelBoxWeb.HtmlAlert(3, "Nachricht aus der Sperrliste genommen", "Die Nachricht mit der Nr. " + contentId + " wird wieder in die Bereitschaft weitergeleitet."));
                 }
             }
 
             DataTable dt = Program.Sql.GetViewMsgBlocked();
-            builder.Append(MelBoxWeb.HtmlTableBlocked(dt));
+            builder.Append(MelBoxWeb.HtmlUnitBlocked(dt));
             builder.Append(MelBoxWeb.HtmlFoot());
 
             context.Response.SendResponse(MelBoxWeb.EncodeUmlaute(builder.ToString()));
             return context;
         }
 
-        /// <summary>
-        /// BAUSTELLE
-        /// </summary>
-        /// <param name="context"></param>
-        /// <returns></returns>
-        [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/blocked/update")]
-        public IHttpContext UpdateMelBoxBlocked(IHttpContext context)
-        {
-            string payload = context.Request.Payload;
-            Dictionary<string, string> args = MelBoxWeb.ReadPayload(payload);
-
-            StringBuilder builder = new StringBuilder();
-            //builder.Append(MelBoxWeb.HtmlHead("Nachricht entsperren"));
-
-            //if (!MelBoxWeb.LogedInGuids.ContainsKey(args["guid"]))
-            //{
-            //    builder.Append(MelBoxWeb.HtmlAlert(4, "Bitte einloggen", "Änderungen sind nur eingelogged möglich."));
-            //}
-            //else if (!args.ContainsKey("selectedRow") || !int.TryParse(args["selectedRow"], out int contentId))
-            //{
-            //    builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler", "Es wurde keine gültige Nachricht zum entsperren übergeben."));
-            //}
-            //else
-            //{
-            //    if (contentId == 0)
-            //    {
-            //        builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler", "Die übergebene Nachricht konnte nicht zugeordnet werden."));
-            //    }
-            //    else
-            //    {
-            //        Program.Sql.DeleteMessageBlocked(contentId);
-            //        builder.Append(MelBoxWeb.HtmlAlert(3, "Nachricht aus der Sperrliste genommen", "Die Nachricht mit der Id " + contentId + " wird wieder in die Bereitschaft weitergeleitet."));
-            //    }
-            //}
-
-            //DataTable dt = Program.Sql.GetViewMsgBlocked();
-            //builder.Append(MelBoxWeb.HtmlTableBlocked(dt));
-            //builder.Append(MelBoxWeb.HtmlFoot());
-
-            //context.Response.SendResponse(MelBoxWeb.EncodeUmlaute(builder.ToString()));
-            return context;
-        }
-
-
-
         #endregion
 
+        #region Bereitschaft
         [RestRoute(HttpMethod = HttpMethod.GET, PathInfo = "/shift")]
         public IHttpContext ShowMelBoxShift(IHttpContext context)
         {
             DataTable dt = Program.Sql.GetViewShift();
 
             StringBuilder builder = new StringBuilder();
-            //     builder.Append(MelBoxWeb.HtmlHead(dt.TableName, LogedInContactId));
-            builder.Append(MelBoxWeb.HtmlTableShift(dt));
+            builder.Append(MelBoxWeb.HtmlHead(dt.TableName));
+            builder.Append(MelBoxWeb.HtmlUnitShift(dt));
             builder.Append(MelBoxWeb.HtmlFoot());
 
             context.Response.SendResponse(MelBoxWeb.EncodeUmlaute(builder.ToString()));
             return context;
         }
+
+        [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/shift/create")]
+        public IHttpContext CreateMelBoxShift(IHttpContext context)
+        {
+            string payload = context.Request.Payload;
+            payload = MelBoxWeb.DecodeUmlaute(payload);
+            Dictionary<string, string> args = MelBoxWeb.ReadPayload(payload);
+
+#if DEBUG
+            Console.WriteLine("/shift/create Payload:");
+            foreach (var key in args.Keys)
+            {
+                Console.WriteLine(key + ":\t" + args[key]);
+            }
+#endif
+            StringBuilder builder = new StringBuilder();
+            builder.Append(MelBoxWeb.HtmlHead("Neue Bereitschaft"));
+
+            if (!MelBoxWeb.LogedInGuids.ContainsKey(args["guid"]))
+            {
+                builder.Append(MelBoxWeb.HtmlAlert(4, "Bitte einloggen", "Änderungen sind nur eingelogged möglich."));
+            }
+            else
+            {
+                int contactId = MelBoxWeb.LogedInGuids[args["guid"]];
+
+                if (contactId == 0)
+                {
+                    builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler", "Der eingeloggte Benutzer konnte nicht zugeordnet werden."));
+                }
+                else
+                {                   
+                    builder.Append(MelBoxWeb.HtmlFormShift(0,contactId));
+                    //BAUSTELE
+
+
+                }
+            }
+
+            builder.Append(MelBoxWeb.HtmlFoot());
+            context.Response.SendResponse(MelBoxWeb.EncodeUmlaute(builder.ToString()));
+            return context;
+        }
+
+        #endregion
 
         #region Kontakte
 
@@ -255,9 +318,8 @@ namespace MelBox2
 
             builder.Append(MelBoxWeb.HtmlHead("Benutzerkonto"));
 
-            string guid = context.Request.RawUrl.Remove(0, 9); 
-            //Console.WriteLine("Account: Übergebene GUID: " + guid);
-
+            string guid = context.Request.RawUrl.Remove(0, 9);
+          
             if (!MelBoxWeb.LogedInGuids.ContainsKey(guid))
             {
                 builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler beim Lesen des Benutzerkontos", "Bitte erneut einloggen."));
@@ -265,22 +327,117 @@ namespace MelBox2
             else
             {
                 int contactId = MelBoxWeb.LogedInGuids[guid];
-
-                Dictionary<string, string> action = new Dictionary<string, string>
-                {
-                    { "/account/add", "Neuen Kontakt einrichten?" },
-                    { "/account/update", "Wirklich speichern?" }
-                };
-
-                DataTable dt = Program.Sql.GetViewContactInfo(contactId);
-                DataTable dtCompany = Program.Sql.GetAllCompanys();
-
-                builder.Append(MelBoxWeb.HtmlFormAccount(dt, dtCompany));
-                builder.Append(MelBoxWeb.HtmlEditor(action));
+                builder.Append(MelBoxWeb.HtmlUnitAccount(contactId));                
             }
 
             builder.Append(MelBoxWeb.HtmlFoot());
+            context.Response.SendResponse(MelBoxWeb.EncodeUmlaute(builder.ToString()));
+            return context;
+        }
 
+        [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/account/create")]
+        public IHttpContext CreateMelBoxAccount(IHttpContext context)
+        {
+            string payload = context.Request.Payload;
+            payload = MelBoxWeb.DecodeUmlaute(payload);
+
+            string[] args = payload.Split('&');
+
+            int newId = 0;
+            string name = "-KEIN NAME-";
+            string password = null;
+            int companyId = -1;
+            string email = string.Empty;
+            ulong phone = 0;
+            int sendSms = 0; //<input type='checkbox' > wird nur übertragen, wenn angehakt => immer zurücksetzten, wenn nicht gesetzt
+            int sendEmail = 0;
+            int maxInactivity = -1;
+
+            foreach (string arg in args)
+            {
+
+                if (arg.StartsWith("ContactId="))
+                {
+                    newId = int.Parse(arg.Split('=')[1]); //alte Id einlesen
+                }
+
+                if (arg.StartsWith("Name="))
+                {
+                    name = arg.Split('=')[1].Replace('+', ' ');
+                }
+
+                if (arg.StartsWith("Passwort="))
+                {
+                    password = arg.Split('=')[1];
+                }
+
+                if (arg.StartsWith("CompanyId="))
+                {
+                    companyId = int.Parse(arg.Split('=')[1]);
+                }
+
+                if (arg.StartsWith("Email="))
+                {
+                    email = arg.Split('=')[1];
+                }
+
+                if (arg.StartsWith("Telefon="))
+                {
+                    phone = GsmConverter.StrToPhone(arg.Split('=')[1]);
+                }
+
+                if (arg.StartsWith("SendSms="))
+                {
+                    string boolStr = arg.Split('=')[1];
+
+                    if (boolStr.ToLower() == "on")
+                        sendSms = 1;
+                    else
+                        sendSms = 0;
+                }
+
+                if (arg.StartsWith("SendEmail="))
+                {
+                    string boolStr = arg.Split('=')[1];
+
+                    if (boolStr.ToLower() == "on")
+                        sendEmail = 1;
+                    else
+                        sendEmail = 0;
+                }
+
+                if (arg.StartsWith("Max_Inaktivität="))
+                {
+                    maxInactivity = int.Parse(arg.Split('=')[1].ToString());
+                }
+            }
+
+            StringBuilder builder = new StringBuilder();
+            builder.Append(MelBoxWeb.HtmlHead("Neuer Benutzer"));
+
+            if (password.Length < 4)
+            {
+                builder.Append(MelBoxWeb.HtmlAlert(2, "Fehler - Passwort ungültig", "Das vergebene Passwort entspricht nicht den Vorgaben. Der Benutzer wird nicht erstellt."));
+            }
+            else
+            {
+                newId = Program.Sql.InsertContact(name, password, companyId, email, phone, maxInactivity, sendSms == 1, sendEmail == 1);
+                if (newId == 0)
+                {
+                    builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler beim Schreiben in die Datenbank", "Der Benutzer '" + name + "' konnte nicht erstellt werden."));
+                }
+                else
+                {
+                    builder.Append(MelBoxWeb.HtmlAlert(3, "Benutzer '" + name + "' erstellt", "Der Benutzer '" + name + "' wurde in der Datenbank neu erstellt."));
+                }
+            }
+
+            if (newId != 0)
+            {
+                builder.Append(MelBoxWeb.HtmlUnitAccount(newId));
+            }
+
+            builder.Append(MelBoxWeb.HtmlFoot());
             context.Response.SendResponse(MelBoxWeb.EncodeUmlaute(builder.ToString()));
             return context;
         }
@@ -364,141 +521,75 @@ namespace MelBox2
             }
 
             StringBuilder builder = new StringBuilder();
-            builder.Append(MelBoxWeb.HtmlHead("&Auml;nderung Benutzer"));
+            builder.Append(MelBoxWeb.HtmlHead("Änderung Benutzer"));
 
-            if (0 == Program.Sql.UpdateContact(contactId, name, password, companyId, phone, sendSms, email, sendEmail, string.Empty, maxInactivity))
+            if (contactId == 0)
             {
-                builder.Append("<div class='w3-panel w3-yellow w3-border'><h3>Keine &Auml;nderungen für Benutzer '" + name + "'</h3></div>");
-                builder.Append("<p>Es wurden keine &Auml;nderungen &uuml;bergeben oder der Aufruf war fehlerhaft.</p>");
+                builder.Append(MelBoxWeb.HtmlAlert(2, "Keine Änderungen für Benutzer '" + name + "'", "Der Aufruf war fehlerhaft."));
+                builder.Append(MelBoxWeb.HtmlFoot());
             }
             else
             {
-                builder.Append("<div class='w3-panel w3-pale-green w3-border'><h3>Änderungen für Benutzer '" + name + "' gespeichert</h3></div>");
-                builder.Append("<p>Die Änderungen an Benutzer '" + name + "' wurden in der Datenbank gespeichert.</p>");
+                if (0 == Program.Sql.UpdateContact(contactId, name, password, companyId, phone, sendSms, email, sendEmail, string.Empty, maxInactivity))
+                {
+                    builder.Append(MelBoxWeb.HtmlAlert(2, "Keine Änderungen für Benutzer '" + name + "'", "Die Änderungen konnten nicht in die Datenbank übertragen werden."));
+                }
+                else
+                {
+                    builder.Append(MelBoxWeb.HtmlAlert(3, "Änderungen für Benutzer '" + name + "' übernommen", "Die Änderungen an Benutzer '" + name + "' wurden in der Datenbank gespeichert."));
+                }
+
+                builder.Append(MelBoxWeb.HtmlUnitAccount(contactId));
             }
 
-            #region Kontakt anzeigen
-            Dictionary<string, string> action = new Dictionary<string, string>
-                {
-                    { "/account/add", "Neuen Kontakt einrichten?" },
-                    { "/account/update", "Wirklich speichern?" }
-                };
-
-            DataTable dt = Program.Sql.GetViewContactInfo(contactId);
-            DataTable dtCompany = Program.Sql.GetAllCompanys();
-
-            builder.Append(MelBoxWeb.HtmlFormAccount(dt, dtCompany));
-            builder.Append(MelBoxWeb.HtmlEditor(action));
-            #endregion
-
             builder.Append(MelBoxWeb.HtmlFoot());
-
             context.Response.SendResponse(MelBoxWeb.EncodeUmlaute(builder.ToString()));
             return context;
         }
 
-        [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/account/add")]
-        public IHttpContext AddMelBoxAccount(IHttpContext context)
+        [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/account/delete")]
+        public IHttpContext DeleteMelBoxAccount(IHttpContext context)
         {
             string payload = context.Request.Payload;
             payload = MelBoxWeb.DecodeUmlaute(payload);
-
+          
             string[] args = payload.Split('&');
 
+            int contactId = 0;
             string name = "-KEIN NAME-";
-            string password = null;
-            int companyId = -1;
-            string email = string.Empty;
-            ulong phone = 0;
-            int sendSms = 0; //<input type='checkbox' > wird nur übertragen, wenn angehakt => immer zurücksetzten, wenn nicht gesetzt
-            int sendEmail = 0;
-            int maxInactivity = -1;
-
+          
             foreach (string arg in args)
             {
+                if (arg.StartsWith("ContactId="))
+                {
+                    contactId = int.Parse(arg.Split('=')[1]);
+                }
+
                 if (arg.StartsWith("Name="))
                 {
                     name = arg.Split('=')[1].Replace('+', ' ');
                 }
-
-                if (arg.StartsWith("Passwort="))
-                {
-                    password = arg.Split('=')[1];
-                }
-
-                if (arg.StartsWith("CompanyId="))
-                {
-                    companyId = int.Parse(arg.Split('=')[1]);
-                }
-
-                if (arg.StartsWith("Email="))
-                {
-                    email = arg.Split('=')[1];
-                }
-
-                if (arg.StartsWith("Telefon="))
-                {
-                    phone = GsmConverter.StrToPhone(arg.Split('=')[1]);
-                }
-
-                if (arg.StartsWith("SendSms="))
-                {
-                    string boolStr = arg.Split('=')[1];
-
-                    if (boolStr.ToLower() == "on")
-                        sendSms = 1;
-                    else
-                        sendSms = 0;
-                }
-
-                if (arg.StartsWith("SendEmail="))
-                {
-                    string boolStr = arg.Split('=')[1];
-
-                    if (boolStr.ToLower() == "on")
-                        sendEmail = 1;
-                    else
-                        sendEmail = 0;
-                }
-
-                if (arg.StartsWith("Max_Inaktivität="))
-                {
-                    maxInactivity = int.Parse(arg.Split('=')[1].ToString());
-                }
             }
 
             StringBuilder builder = new StringBuilder();
-            builder.Append(MelBoxWeb.HtmlHead("Änderung Benutzer"));
+            builder.Append(MelBoxWeb.HtmlHead("Lösche Benutzer"));
 
-            if (password.Length < 4)
+            if (contactId == 0)
             {
-                builder.Append(MelBoxWeb.HtmlAlert(2, "Fehler - Passwort ungültig", "Das vergebene Passwort entspricht nicht den Vorgaben. Der Benutzer wird nicht erstellt."));
+                builder.Append(MelBoxWeb.HtmlAlert(2, "Fehler", "Der Benutzer '" + name + "' konnte nicht gelöscht werden. Der Aufruf war fehlerhaft."));
             }
             else
             {
-                int newId = Program.Sql.InsertContact(name, password, companyId, email, phone, maxInactivity, sendSms == 1, sendEmail == 1);
-                if (newId == 0)
+                if (0 == Program.Sql.DeleteContact(contactId) )
                 {
-                    builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler beim Schreiben in die Datenbank", "Der Benutzer '" + name + "' konnte nicht erstellt werden."));
+                    builder.Append(MelBoxWeb.HtmlAlert(2, "Fehler beim löschen von '" + name + "'", "Der Benutzer " + contactId + " '" + name + "' konnte nicht aus der Datenbank gelöscht werden."));
                 }
                 else
                 {
-                    builder.Append(MelBoxWeb.HtmlAlert(3, "Benutzer '" + name + "' erstellt", "Der Benutzer '" + name + "' wurde in der Datenbank neu erstellt."));
-
-                    #region Kontakt anzeigen
-                    Dictionary<string, string> action = new Dictionary<string, string>
-                    { 
-                        { "/account/add", "Neuen Kontakt einrichten?" },
-                        { "/account/update", "Wirklich speichern?" }
-                     };
-
-                    DataTable dt = Program.Sql.GetViewContactInfo(newId);
-                    DataTable dtCompany = Program.Sql.GetAllCompanys();
-
-                    builder.Append(MelBoxWeb.HtmlFormAccount(dt, dtCompany));
-                    builder.Append(MelBoxWeb.HtmlEditor(action));
-                    #endregion
+                    builder.Append(MelBoxWeb.HtmlAlert(3, "Benutzer '" + name + "' gelöscht", "Der Benutzer " + contactId + " '" + name + "' wurde aus der Datenbank gelöscht."));
                 }
+
+                builder.Append(MelBoxWeb.HtmlUnitAccount(contactId));
             }
 
             builder.Append(MelBoxWeb.HtmlFoot());
@@ -506,6 +597,7 @@ namespace MelBox2
             context.Response.SendResponse(MelBoxWeb.EncodeUmlaute(builder.ToString()));
             return context;
         }
+
 
         #endregion
 
@@ -525,18 +617,21 @@ namespace MelBox2
             if (!int.TryParse(queryString, out int companyId))
             {
                 builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler", "Die Seite wurde mit ungültigen Parametern aufgerufen.<br>" + context.Request.RawUrl.Remove(0, 9)));
+                
             }
             else
             {
-                Dictionary<string, string> action = new Dictionary<string, string>
-                {
-                    { "/company/add", "Firma neu anlegen?" },
-                    { "/company/update", "Wirklich speichern?" }
-                };
+                builder.Append(MelBoxWeb.HtmlUnitCompany(companyId));
 
-                DataTable dtCompany = Program.Sql.GetAllCompanys();
-                builder.Append(MelBoxWeb.HtmlFormCompany(dtCompany, companyId));
-                builder.Append(MelBoxWeb.HtmlEditor(action));
+                //Dictionary<string, string> action = new Dictionary<string, string>
+                //{
+                //    { "/company/create", "Firma neu anlegen?" },
+                //    { "/company/update", "Wirklich speichern?" }
+                //};
+
+                //DataTable dtCompany = Program.Sql.GetAllCompanys();
+                //builder.Append(MelBoxWeb.HtmlFormCompany(dtCompany, companyId));
+                //builder.Append(MelBoxWeb.HtmlEditor(action));
             }
 
             builder.Append(MelBoxWeb.HtmlFoot());
@@ -593,17 +688,26 @@ namespace MelBox2
                 builder.Append(MelBoxWeb.HtmlAlert(2, "Änderungen für Firma '" + name + "' gespeichert", "Die Änderungen an Firma '" + name + "' wurden in der Datenbank gespeichert."));
             }
 
-            Dictionary<string, string> action = new Dictionary<string, string>
-                {
-                    { "/company/add", "Firma neu anlegen?" },
-                    { "/company/update", "Wirklich speichern?" }
-                };
+            if (companyId == 0)
+            {
+                builder.Append(MelBoxWeb.HtmlAlert(1, "Aufruffehler", "Der Aufruf dieser Seite war fehlerhaft."));                
+            }
+            else
+            {
+                builder.Append(MelBoxWeb.HtmlUnitCompany(companyId));
+            }
+
+            //Dictionary<string, string> action = new Dictionary<string, string>
+            //    {
+            //        { "/company/create", "Firma neu anlegen?" },
+            //        { "/company/update", "Wirklich speichern?" }
+            //    };
             
-            #region Firma anzeigen
-            DataTable dtCompany = Program.Sql.GetAllCompanys();
-            builder.Append(MelBoxWeb.HtmlFormCompany(dtCompany, companyId));
-            builder.Append(MelBoxWeb.HtmlEditor(action));
-            #endregion
+            //#region Firma anzeigen
+            //DataTable dtCompany = Program.Sql.GetAllCompanys();
+            //builder.Append(MelBoxWeb.HtmlFormCompany(dtCompany, companyId));
+            //builder.Append(MelBoxWeb.HtmlEditor(action));
+            //#endregion
 
             builder.Append(MelBoxWeb.HtmlFoot());
 
@@ -611,12 +715,12 @@ namespace MelBox2
             return context;
         }
 
-        [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/company/add")]
+        [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/company/create")]
         public IHttpContext AddMelBoxCompany(IHttpContext context)
         {
             string payload = context.Request.Payload;
             payload = MelBoxWeb.DecodeUmlaute(payload);
-            Console.WriteLine("\r\n company/add payload:\r\n" + payload);
+            Console.WriteLine("\r\n company/create payload:\r\n" + payload);
 
             string[] args = payload.Split('&');
             string name = string.Empty;
@@ -661,7 +765,7 @@ namespace MelBox2
 
             Dictionary<string, string> action = new Dictionary<string, string>
                 {
-                    { "/company/add", "Firma neu anlegen?" },
+                    { "/company/create", "Firma neu anlegen?" },
                     { "/company/update", "Wirklich speichern?" }
                 };
 
@@ -675,8 +779,8 @@ namespace MelBox2
                 lastId = Math.Max(lastId, id);
             }
 
-            builder.Append(MelBoxWeb.HtmlFormCompany(dtCompany, lastId));
-            builder.Append(MelBoxWeb.HtmlEditor(action));
+            builder.Append(MelBoxWeb.HtmlUnitCompany(lastId));
+
             builder.Append(MelBoxWeb.HtmlFoot());
             #endregion
 
@@ -686,6 +790,74 @@ namespace MelBox2
 
         #endregion
 
+        [RestRoute]
+        public IHttpContext Home(IHttpContext context)
+        {
+            #region Payload
+            string payload = context.Request.Payload;
+            payload = MelBoxWeb.DecodeUmlaute(payload);
+            Dictionary<string, string> args = MelBoxWeb.ReadPayload(payload);
+
+            string guid = string.Empty;
+            string alert = string.Empty;
+
+
+            if (args.ContainsKey("name") && args.ContainsKey("password"))
+            {
+                string name = args["name"].Replace('+', ' ');
+                string password = args["password"];
+
+                int myId = Program.Sql.GetContactIdFromLogin(name, password);
+
+                if (myId != 0) //Es wurde ein Benutzer mit diesen Zugangsdaten gefunden
+                {
+                    Program.Sql.Log(MelBoxSql.LogTopic.Sql, MelBoxSql.LogPrio.Info, "Benutzer " + myId + " '" + name + "' ist angemeledt.");
+
+                    guid = MelBoxWeb.GenerateID(myId);
+                    alert = MelBoxWeb.HtmlAlert(3, "LogIn erfolgreich", string.Format("Sie haben sich erfolgreich als Benutzer {0} '" + name + "' mit der ID {1} eingeloggt.", myId, guid));
+                }
+                else
+                {
+                    alert = MelBoxWeb.HtmlAlert(2, "LogIn fehlgeschlagen", string.Format("Der Benutzername oder das Passwort sind unbekannt.", myId, guid));
+                }
+            }
+
+            #endregion
+
+            StringBuilder builder = new StringBuilder();
+
+            builder.Append(MelBoxWeb.HtmlHead("St&ouml;rmeldesystem f&uuml;r Kreutztr&auml;ger K&auml;ltetechnik", guid));
+            builder.Append(alert);
+            builder.Append(MelBoxWeb.HtmlLogIn());
+
+            #region TEST
+#if DEBUG
+            if (MelBoxWeb.LogedInGuids.Count > 0)
+            {
+                builder.Append("<p>LogedIn</p> <ul class='w3-ul'>\n");
+
+                foreach (var item in MelBoxWeb.LogedInGuids.Keys)
+                {
+                    builder.Append("<li>" + MelBoxWeb.LogedInGuids[item] + "\t" + item + "</li>\n");
+                }
+                builder.Append("</ul>\n");
+            }
+
+            builder.Append("<p>RawUrl: " + context.Request.RawUrl + "</p>");
+#endif
+            #endregion
+
+            builder.Append(MelBoxWeb.HtmlFoot());
+
+            context.Response.SendResponse(MelBoxWeb.EncodeUmlaute(builder.ToString()));
+            return context;
+        }
+    }
+
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////
+/*** MAGAZIN
         //        [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/login")]
         //        public IHttpContext LogIn(IHttpContext context)
         //        {
@@ -757,69 +929,4 @@ namespace MelBox2
             context.Response.SendResponse(word);
             return context;
         }
-
-        [RestRoute]
-        public IHttpContext Home(IHttpContext context)
-        {
-            #region Payload
-            string payload = context.Request.Payload;
-            payload = MelBoxWeb.DecodeUmlaute(payload);
-            Dictionary<string, string> args = MelBoxWeb.ReadPayload(payload);
-
-            string guid = string.Empty;
-            string alert = string.Empty;
-
-
-            if (args.ContainsKey("name") && args.ContainsKey("password"))
-            {
-                string name = args["name"].Replace('+', ' ');
-                string password = args["password"];
-
-                int myId = Program.Sql.GetContactIdFromLogin(name, password);
-
-                if (myId != 0) //Es wurde ein Benutzer mit diesen Zugangsdaten gefunden
-                {
-                    Program.Sql.Log(MelBoxSql.LogTopic.Sql, MelBoxSql.LogPrio.Info, "Benutzer " + myId + " '" + name + "' ist angemeledt.");
-
-                    guid = MelBoxWeb.GenerateID(myId);
-                    alert = MelBoxWeb.HtmlAlert(3, "LogIn erfolgreich", string.Format("Sie haben sich erfolgreich als Benutzer {0} '" + name + "' mit der ID {1} eingeloggt.", myId, guid));
-                }
-                else
-                {
-                    alert = MelBoxWeb.HtmlAlert(2, "LogIn fehlgeschlagen", string.Format("Der Benutzername oder das Passwort sind unbekannt.", myId, guid));
-                }
-            }
-
-            #endregion
-
-            StringBuilder builder = new StringBuilder();
-
-            builder.Append(MelBoxWeb.HtmlHead("St&ouml;rmeldesystem f&uuml;r Kreutztr&auml;ger K&auml;ltetechnik", guid));
-            builder.Append(alert);
-            builder.Append(MelBoxWeb.HtmlLogIn());
-
-            #region TEST
-#if DEBUG
-            if (MelBoxWeb.LogedInGuids.Count > 0)
-            {
-                builder.Append("<p>LogedIn</p> <ul class='w3-ul'>\n");
-
-                foreach (var item in MelBoxWeb.LogedInGuids.Keys)
-                {
-                    builder.Append("<li>" + MelBoxWeb.LogedInGuids[item] + "\t" + item + "</li>\n");
-                }
-                builder.Append("</ul>\n");
-            }
-
-            builder.Append("<p>RawUrl: " + context.Request.RawUrl + "</p>");
-#endif
-            #endregion
-
-            builder.Append(MelBoxWeb.HtmlFoot());
-
-            context.Response.SendResponse(MelBoxWeb.EncodeUmlaute(builder.ToString()));
-            return context;
-        }
-    }
-
-}
+//*/

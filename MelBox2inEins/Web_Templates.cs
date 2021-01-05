@@ -12,11 +12,12 @@ namespace MelBox2
         #region Werkzeuge
         public static string EncodeUmlaute(string input)
         {
+            //&     &amp;   Zerstört Sonderzeichen in HTML!
             //"     &quot;
             //<     &lt;
             //>     &gt;
             //' 	&apos;
-            return input.Replace("&", "&amp;").Replace("Ä", "&Auml;").Replace("Ö", "&Ouml;").Replace("Ü", "&Uuml;").Replace("ä", "&auml;").Replace("ö", "&ouml;").Replace("ü", "&uuml;").Replace("ß", "&szlig;");
+            return input.Replace("Ä", "&Auml;").Replace("Ö", "&Ouml;").Replace("Ü", "&Uuml;").Replace("ä", "&auml;").Replace("ö", "&ouml;").Replace("ü", "&uuml;").Replace("ß", "&szlig;");
         }
 
         public static string DecodeUmlaute(string input)
@@ -37,10 +38,10 @@ namespace MelBox2
             MelBoxWeb.LogedInGuids.Add(guid, contactId);
             return guid;
         }
-      
+
         public static Dictionary<string, string> ReadPayload(string payload)
         {
-            payload = payload ?? string.Empty;            
+            payload = payload ?? string.Empty;
             Dictionary<string, string> dict = new Dictionary<string, string>();
 
             payload = MelBoxWeb.DecodeUmlaute(payload);
@@ -52,7 +53,7 @@ namespace MelBox2
                 string[] items = arg.Split('=');
 
                 if (items.Length > 1)
-                dict.Add(items[0], items[1]);              
+                    dict.Add(items[0], items[1]);
             }
 
             return dict;
@@ -83,13 +84,13 @@ namespace MelBox2
 
             if (guid.Length > 0)
             {
-                builder.Append(" sessionStorage.setItem('guid','" + guid + "');\n ");                
+                builder.Append(" sessionStorage.setItem('guid','" + guid + "');\n ");
             }
 
             builder.Append(" if ( sessionStorage.getItem('guid') !== null) {\n");
             builder.Append("  document.getElementById('guid').value = sessionStorage.getItem('guid');");
             builder.Append("  document.getElementById('buttonaccount').href = '/account/' + sessionStorage.getItem('guid');");
-            builder.Append("  w3.removeClass('.w3-disabled','w3-disabled'); \n");            
+            builder.Append("  w3.removeClass('.w3-disabled','w3-disabled'); \n");
             builder.Append(" }\n");
             builder.Append("}\n");
             builder.Append("</script>\n");
@@ -106,38 +107,26 @@ namespace MelBox2
 
             return builder.ToString();
         }
-      
+
         private static string HtmlMainMenu()
         {
             StringBuilder builder = new StringBuilder();
 
             builder.Append("<div class='w3-bar w3-border'>\n");
             builder.Append("<a href='/' class='w3-button w3-bar-item'><i class='w3-xxlarge material-icons-outlined'>login</i></a>");
-            builder.Append("<span class='w3-bar-item' style='width:50px;'></span>");
+            builder.Append("<div class='w3-bar-item'></div>");
 
             builder.Append("<a href='/in' class='w3-button w3-bar-item'><i class='w3-xxlarge material-icons-outlined'>drafts</i></a>");
             builder.Append("<a href='/out' class='w3-button w3-bar-item'><i class='w3-xxlarge material-icons-outlined'>forward_to_inbox</i></a>");
-            builder.Append("<a href='/overdue' class='w3-button w3-bar-item'><i class='w3-xxlarge material-icons-outlined'>alarm</i></a>");
-            builder.Append("<span class='w3-bar-item' style='width:50px;'></span>");
+            builder.Append("<a href='/overdue' class='w3-button w3-bar-item'><i class='w3-xxlarge material-icons-outlined'>pending_actions</i></a>");
+            builder.Append("<div class='w3-bar-item'></div>");
 
-            builder.Append("<a href='/blocked' class='w3-button w3-bar-item'><i class='w3-xxlarge material-icons-outlined'>alarm_off</i></a>");
+            builder.Append("<a href='/blocked' class='w3-button w3-bar-item'><i class='w3-xxlarge material-icons-outlined'>notifications_off</i></a>");
+            builder.Append("<a href='/shift' class='w3-button w3-bar-item'><i class='w3-xxlarge material-icons-outlined'>event_note</i></a>");
             builder.Append("<a href='/account' id='buttonaccount' class='w3-button w3-bar-item w3-disabled'><i class='w3-xxlarge material-icons-outlined'>assignment_ind</i></a>");
 
-            builder.Append("<span class='w3-bar-item' style='width:50px;'></span>");
+            builder.Append("<div class='w3-bar-item'></div>");
             builder.Append("<a href='/log' class='w3-button w3-bar-item'><i class='w3-xxlarge material-icons-outlined'>assignment</i></a>");
-
-            //builder.Append("<a href='\\" + guid + "\\' class='w3-bar-item w3-button'><i class='w3-xxlarge material-icons-outlined'>login</i></a>");
-            //builder.Append("<a href='\\" + guid + "\\log' class='w3-bar-item w3-button " + disabled + "'><i class='w3-xxlarge material-icons-outlined'>assignment</i></a>");
-
-            //builder.Append("<a href='.\\' class='w3-bar-item w3-button'><i class='w3-xxlarge material-icons-outlined'>login</i></a>\n");
-            //builder.Append("<button onclick=\"document.location='/in'\" class='w3-bar-item w3-button' ><i class='w3-xxlarge material-icons-outlined'>drafts</i></button>\n");
-            //builder.Append("<button onclick=\"document.location='/out'\" class='w3-bar-item w3-button' ><i class='w3-xxlarge material-icons-outlined'>redo</i></button>\n");
-            //builder.Append("<button onclick=\"document.location='/overdue'\" class='w3-bar-item w3-button' ><i class='w3-xxlarge material-icons-outlined'>alarm</i></button>\n");
-            //builder.Append("<button onclick=\"document.location='/blocked'\" class='w3-bar-item w3-button' ><i class='w3-xxlarge material-icons-outlined'>alarm_off</i></button>\n");
-            //builder.Append("<button onclick=\"document.location='/shift'\" class='w3-bar-item w3-button' " + disabled + "><i class='w3-xxlarge material-icons-outlined'>event</i></button>\n");
-            //builder.Append("<button onclick=\"document.location='/account'\" class='w3-bar-item w3-button' " + disabled + "><i class='w3-xxlarge material-icons-outlined'>assignment_ind</i></button>\n");
-            //builder.Append("<button onclick=\"document.location='/log'\" class='w3-bar-item w3-button' " + disabled + "><i class='w3-xxlarge material-icons-outlined'>assignment</i></button>\n");
-            //builder.Append("<button onclick=\"document.location='/'\" class='w3-bar-item w3-button'><i class='w3-xxlarge material-icons-outlined'>person</i></button>\n");
 
             builder.Append("</div>\n");
 
@@ -150,7 +139,7 @@ namespace MelBox2
 
             builder.Append("</center>\n");
             builder.Append("<div class='w3-container w3-cyan w3-margin-top w3-right-align '>\n");
-            builder.Append(" <input id='guid' name='guid' form='form1' class='w3-cyan w3-text-blue w3-tiny' readonly>\n"); //w3-opacity
+            builder.Append(" <input id='guid' name='guid' form='form1' class='w3-cyan w3-text-light-blue w3-tiny w3-border-0' readonly>\n");
             builder.Append("</div>\n</body>\n</html>");
             return builder.ToString();
         }
@@ -206,47 +195,9 @@ namespace MelBox2
             return builder.ToString();
         }
 
-
         #endregion
 
         #region Tabellen
-        //public static string HtmlTablePlain(DataTable dt)
-        //{
-        //    //Quelle: https://stackoverflow.com/questions/19682996/datatable-to-html-table
-
-        //    StringBuilder builder = new StringBuilder();
-
-        //    builder.Append("<div class='w3-container'>\n");
-        //    builder.Append(" <div class='w3-third'>&nbsp;</div>\n");
-        //    builder.Append(" <input oninput=\"w3.filterHTML('#myTable', '.myRow', this.value)\" class='w3-input w3-third w3-margin w3-border w3-round-large' placeholder='Suche nach..'>\n");
-        //    builder.Append("</div>");
-
-        //    builder.Append("<table class='w3-table-all w3-hoverable w3-cell' id='myTable'>\n");
-        //    builder.Append("<tr class='w3-teak'>\n\t");
-
-        //    foreach (DataColumn c in dt.Columns)
-        //    {
-        //        builder.Append("<th>");
-        //        builder.Append(c.ColumnName);
-        //        builder.Append("</th>");
-        //    }
-        //    builder.Append("\n</tr>\n");
-        //    foreach (DataRow r in dt.Rows)
-        //    {
-        //        builder.Append("<tr class='myRow'>\n\t");
-        //        foreach (DataColumn c in dt.Columns)
-        //        {
-        //            builder.Append("<td>");
-        //            builder.Append(r[c.ColumnName]);
-        //            builder.Append("</td>");
-        //        }
-        //        builder.Append("\n</tr>\n");
-        //    }
-        //    builder.Append("</table>\n");
-
-        //    return builder.ToString();
-        //}
-
         public static string HtmlTablePlain(DataTable dt, bool canUserEdit = false)
         {
             //Quelle: https://stackoverflow.com/questions/19682996/datatable-to-html-table
@@ -297,12 +248,23 @@ namespace MelBox2
             return builder.ToString();
         }
 
-        public static string HtmlTableShift(DataTable dt)
+        private static string HtmlTableShift(DataTable dt, int shiftId = 0, bool canUserEdit = false)
         {
             StringBuilder builder = new StringBuilder();
 
-            builder.Append("<table class='w3-table-all w3-hoverable w3-cell'>\n");
-            builder.Append("<tr class='w3-teak'>\n");
+            builder.Append("<div class='w3-container'>\n");
+            builder.Append(" <div class='w3-third'>&nbsp;</div>\n");
+            builder.Append(" <input oninput=\"w3.filterHTML('#myTable', '.myRow', this.value)\" class='w3-input w3-third w3-margin w3-border w3-round-large' placeholder='Suche nach..'>\n");
+            builder.Append("</div>");
+
+            builder.Append("<table class='w3-table-all w3-hoverable w3-cell' id='myTable'>\n");
+            builder.Append("<tr class='w3-teak'>\n\t");
+
+            if (canUserEdit)
+            {
+                builder.Append("<th>Edit</th>");
+            }
+
             foreach (DataColumn c in dt.Columns)
             {
                 builder.Append("<th>");
@@ -327,7 +289,15 @@ namespace MelBox2
 
             foreach (DataRow r in dt.Rows)
             {
-                builder.Append("<tr>\n\t");
+                if (shiftId != 0 && shiftId != int.Parse(r[dt.Columns["Id"]].ToString())) continue; // Wenn nur eine Id angezeigt werden soll
+
+                builder.Append("<tr class='myRow'>\n\t");
+
+                if (canUserEdit)
+                {
+                    builder.Append("<td><input class='w3-radio' type='radio' name='selectedRow' value='" + r[dt.Columns[0]] + "' form='form1' onclick=\"w3.show('#Editor')\"></td>");
+                }
+
                 foreach (DataColumn c in dt.Columns)
                 {
                     builder.Append("<td>");
@@ -346,11 +316,11 @@ namespace MelBox2
                             break;
                         case "Beginn":
                             procent = int.Parse(r[c.ColumnName].ToString()) * 100 / 24;
-                            builder.Append("<div class='w3-teal' style='width:240px;'>\n  <div class='w3-grey' style='width:" + procent + "%'>" + r[c.ColumnName] + "&nbsp;Uhr</div>\n</div>\n");
+                            builder.Append("<div class='w3-cyan' style='width:240px;'>\n  <div class='w3-pale-blue' style='width:" + procent + "%'><span>" + r[c.ColumnName] + "&nbsp;Uhr</span></div>\n</div>\n");
                             break;
                         case "Ende":
                             procent = int.Parse(r[c.ColumnName].ToString()) * 100 / 24;
-                            builder.Append("<div class='w3-grey' style='width:240px;'>\n <div class='w3-teal' style='width:" + procent + "%'>" + r[c.ColumnName] + "&nbsp;Uhr</div>\n</div>\n");
+                            builder.Append("<div class='w3-pale-blue' style='width:240px;'>\n <div class='w3-cyan' style='width:" + procent + "%'>" + r[c.ColumnName] + "&nbsp;Uhr</div>\n</div>\n");
                             break;
                         default:
                             builder.Append(r[c.ColumnName]);
@@ -365,7 +335,7 @@ namespace MelBox2
             return builder.ToString();
         }
 
-        public static string HtmlTableBlocked(DataTable dt, bool canUserEdit = false)
+        private static string HtmlTableBlocked(DataTable dt, int contentId = 0, bool canUserEdit = false)
         {
             //Quelle: https://stackoverflow.com/questions/19682996/datatable-to-html-table
 
@@ -381,7 +351,7 @@ namespace MelBox2
 
             if (canUserEdit)
             {
-                builder.Append("<th>FRG</th>");
+                builder.Append("<th>Edit</th>");
             }
 
             foreach (DataColumn c in dt.Columns)
@@ -394,6 +364,8 @@ namespace MelBox2
 
             foreach (DataRow r in dt.Rows)
             {
+                if (contentId != 0 && contentId != int.Parse(r[dt.Columns["Id"]].ToString())) continue; // Wenn nur eine Id angezeigt werden soll
+
                 builder.Append("<tr class='myRow'>\n\t");
 
                 if (canUserEdit)
@@ -418,24 +390,32 @@ namespace MelBox2
                             if (r[c.ColumnName].ToString() == "1")
                                 check = "checked='checked' ";
 
-                            builder.Append("<input class='w3-check' form='form1' name='" + c.ColumnName + "' type='checkbox' " + check + " disabled>\n");
+                            builder.Append("<input class='w3-check' form='form1' name='" + c.ColumnName + "' type='checkbox' " + check + " " + ((contentId == 0) ? "disabled" : string.Empty) + ">\n");
                             break;
                         case "Beginn":
                         case "Ende":
-                            builder.Append("<select class='w3-select' form='form1' name='" + c.ColumnName + "' " + (canUserEdit ? string.Empty : "disabled") + ">\n");
+                            builder.Append("<select class='w3-select' form='form1' name='" + c.ColumnName + "' " + ((contentId == 0) ? "disabled" : string.Empty) + ">\n");
 
                             int current = int.Parse(r[c.ColumnName].ToString().Substring(0, 2));
-                            //for (int i = 0; i < 24; i++)
-                            //{
-                            //    builder.Append("<option value='" + i + "' " + ((current == i) ? "selected" : string.Empty) + ">" + i +" Uhr</option>\n");
-                            //}
 
-                            builder.Append("<option value='" + current + "' selected>" + current + " Uhr</option>\n");
+                            if (contentId == 0)
+                            {
+                                builder.Append("<option value='" + current + "' selected disabled>" + current + " Uhr</option>\n");
+                            }
+                            else
+                            {
+                                for (int i = 0; i < 24; i++)
+                                {
+                                    builder.Append("<option value='" + i + "' " + ((current == i) ? "selected" : string.Empty) + ">" + i + " Uhr</option>\n");
+                                }
+                            }
 
                             builder.Append("</select>\n");
                             break;
                         default:
+                            builder.Append("<div class='w3-margin'>");
                             builder.Append(r[c.ColumnName]);
+                            builder.Append("</div>");
                             break;
                     }
                     builder.Append("</td>");
@@ -462,14 +442,14 @@ namespace MelBox2
             builder.Append("<div id='Editor' class='w3-modal'>\n"); //
             builder.Append("  <div class='w3-modal-content w3-card-4' style='max-width:600px'>\n");
             builder.Append("  <div class='w3-container'>\n");
-            builder.Append("  <div class='w3-margin' >space</div>\n");
+            builder.Append("  <div class='w3-margin'><p>Optionen</p></div>\n");
             builder.Append("   <span onclick=\"w3.hide('#Editor')\" class='w3-button w3-margin-bottom w3-display-topright'><i class='w3-xxlarge material-icons-outlined'>close</i></span>");
             builder.Append("   <form id='form1' method='post' class='w3-margin' action=''>\n");
 
             foreach (var path in action.Keys)
             {
                 builder.Append("    <button class='w3-button w3-block w3-teal w3-section w3-padding-large w3-margin' ");
-                builder.Append("formaction='" + path +"' type='submit'>" + action[path] + "</button>");
+                builder.Append("formaction='" + path + "' type='submit'>" + action[path] + "</button>");
             }
 
             builder.Append("   </form>\n");
@@ -480,10 +460,10 @@ namespace MelBox2
             return builder.ToString();
         }
 
-        public static string HtmlFormAccount(DataTable dtAccount, DataTable dtCompany)
+        private static string HtmlFormAccount(DataTable dtAccount, DataTable dtCompany)
         {
             StringBuilder builder = new StringBuilder();
-                      
+
             builder.Append("</center>\n<div class='w3-card w3-container w3-light-grey w3-text-teal w3-margin'>\n");
             builder.Append("<h2 class='w3-center'>Benutzerkonto</h2>\n");
 
@@ -500,7 +480,7 @@ namespace MelBox2
                             builder.Append("<div class='w3-row w3-section'>\n");
                             builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'><i class='w3-xxlarge material-icons-outlined'>flag</i></div>\n");
                             builder.Append(" <div class='w3-rest'>\n");
-                            builder.Append("  <input form='form1' class='w3-input w3-border w3-grey w3-disabled' type='text' placeholder='Laufende Nummer' name='" + c.ColumnName + "' id='" + c.ColumnName + "' value='" + r[c.ColumnName] + "' readonly>\n");    
+                            builder.Append("  <input form='form1' class='w3-input w3-border w3-grey w3-disabled' type='text' placeholder='Laufende Nummer' name='" + c.ColumnName + "' id='" + c.ColumnName + "' value='" + r[c.ColumnName] + "' readonly>\n");
                             builder.Append(" </div>\n</div>\n");
                             break;
 
@@ -521,7 +501,7 @@ namespace MelBox2
                             break;
 
                         case "CompanyId":
-                            companyId = int.Parse( r[c.ColumnName].ToString() );
+                            companyId = int.Parse(r[c.ColumnName].ToString());
                             break;
 
                         case "Firma":
@@ -533,15 +513,15 @@ namespace MelBox2
                             //builder.Append(" alert('Setze Wert ');\n");
                             builder.Append(" document.getElementById('buttonCompanySettings').href = '/company/' + document.getElementById('" + c.ColumnName + "' ).value;\n");
                             builder.Append("}\n</script>\n");
-                            builder.Append(" <a href='/company/" + companyId + "' id='buttonCompanySettings' style='max-width:60px' class='w3-col w3-button'><i class='w3-xlarge material-icons-outlined'>settings</i></a>");                           
-                       
-                            builder.Append(" <div class='w3-rest'>\n");                        
+                            builder.Append(" <a href='/company/" + companyId + "' id='buttonCompanySettings' style='max-width:60px' class='w3-col w3-button'><i class='w3-xlarge material-icons-outlined'>settings</i></a>");
+
+                            builder.Append(" <div class='w3-rest'>\n");
                             builder.Append("  <select form='form1' class='w3-select w3-border w3-disabled' name='CompanyId' id='" + c.ColumnName + "'  onchange='myFunction()'>\n");
 
                             foreach (DataRow row in dtCompany.Rows)
-                            {           
+                            {
                                 builder.Append("   <option value='" + row["Id"] + "' ");
-                                builder.Append( ( companyId.ToString() == row["Id"].ToString() ) ? "selected" : string.Empty);
+                                builder.Append((companyId.ToString() == row["Id"].ToString()) ? "selected" : string.Empty);
                                 builder.Append(">" + row["Name"].ToString() + "</option>\n");
                             }
 
@@ -567,7 +547,7 @@ namespace MelBox2
                             builder.Append(" </div>\n</div>\n");
                             break;
 
-                        case "SendSms":                        
+                        case "SendSms":
                             builder.Append("<div class='w3-row w3-section'>\n");
                             builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'><i class='w3-xxlarge material-icons-outlined'>contact_phone</i></div>\n");
                             builder.Append(" <div class='w3-rest'>\n");
@@ -611,8 +591,8 @@ namespace MelBox2
 
             return builder.ToString();
         }
-               
-        public static string HtmlFormCompany(DataTable dtCompany, int companyId)
+
+        private static string HtmlFormCompany(DataTable dtCompany, int companyId)
         {
             StringBuilder builder = new StringBuilder();
 
@@ -622,9 +602,9 @@ namespace MelBox2
             #region Firmenauswahl
 
             builder.Append("<div class='w3-row w3-section'>\n");
-            builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'>\n");      
+            builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'>\n");
             builder.Append("<i class='w3-xxlarge material-icons-outlined'>list_alt</i>\n</div>\n");
-            
+
             builder.Append(" <div class='w3-rest'>\n");
             builder.Append("<script>\n");
             builder.Append("function myFunction() {\n");
@@ -699,7 +679,199 @@ namespace MelBox2
 
             return builder.ToString();
         }
+
+        /// <summary>
+        /// BAUSTELLE
+        /// </summary>
+        /// <param name="shiftId"></param>
+        /// <param name="shiftContactId"></param>
+        /// <returns></returns>
+        public static string HtmlFormShift(int shiftId, int shiftContactId = 0)
+        {
+
+            int id = 0;
+            string name = "-KEIN NAME-";
+            bool sendSms = false;
+            bool sendEmail = false;
+            DateTime date;
+            int beginHour = 17;
+            int endHour = 7;
+
+            StringBuilder builder = new StringBuilder();
+
+            builder.Append("</center>\n<div class='w3-card w3-container w3-light-grey w3-text-teal w3-margin'>\n");
+            builder.Append("<h2 class='w3-center'>Bereitschaft</h2>\n");
+
+            #region Füllwerte ermitteln
+            if (shiftId != 0)
+            {
+                //Bestandsdaten in Formular laden
+                DataTable dtShift = Program.Sql.GetViewShift(shiftId);
+                id = int.Parse(dtShift.Rows[0]["Id"].ToString());
+                name = dtShift.Rows[0]["Name"].ToString();
+                sendSms = (int.Parse(dtShift.Rows[0]["SendSms"].ToString()) > 0);
+                sendEmail = (int.Parse(dtShift.Rows[0]["SendEmail"].ToString()) > 0);
+                date = DateTime.Parse(dtShift.Rows[0]["Datum"].ToString());
+                beginHour = int.Parse(dtShift.Rows[0]["Beginn"].ToString());
+                endHour = int.Parse(dtShift.Rows[0]["Ende"].ToString());
+            }
+            else if (shiftContactId == 0)
+            {
+                //ungültig
+                builder.Append(MelBoxWeb.HtmlAlert(2, "Kein gültiger Empfänger ausgewählt", "Die Bereitschaft kann nur einem gültigen Empänger zugeteilt werden."));
+                return builder.ToString();
+            }
+            else
+            {
+                //neue Bereitschaftdaten erstellen
+                DataTable dtContact = Program.Sql.GetViewContactInfo(shiftContactId);
+                id = int.Parse(dtContact.Rows[0]["ContactId"].ToString());
+                name = dtContact.Rows[0]["Name"].ToString();
+                sendSms = (int.Parse(dtContact.Rows[0]["SendSms"].ToString()) > 0);
+                sendEmail = (int.Parse(dtContact.Rows[0]["SendEmail"].ToString()) > 0);
+                date = DateTime.Now.Date.AddDays(1);
+                beginHour = MelBoxSql.ShiftStandardStartTime(date).Hour;
+                endHour = MelBoxSql.ShiftStandardEndTime(date).Hour;
+            }
+
+            #endregion
+
+            #region Formular
+            //Id
+            builder.Append("<div class='w3-row w3-section'>\n");
+            builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'><i class='w3-xxlarge material-icons-outlined'>flag</i></div>\n");
+            builder.Append(" <div class='w3-rest'>\n");
+            builder.Append("  <input form='form1' class='w3-input w3-border w3-grey w3-disabled' type='text' placeholder='Laufende Nummer' name='Id' id='Id' value='" + id + "' readonly>\n");
+            builder.Append(" </div>\n</div>\n");
+            //Name
+            builder.Append("<div class='w3-row w3-section'>\n");
+            builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'><i class='w3-xxlarge material-icons-outlined'>person</i></div>\n");
+            builder.Append(" <div class='w3-rest'>\n");
+            builder.Append("  <input form='form1' class='w3-input w3-border w3-disabled' type='text'  placeholder='Anzeigename' name='Name' id='Name' value='" + name + "' >\n");
+            builder.Append(" </div>\n</div>\n");
+            //SendSms
+            builder.Append("<div class='w3-row w3-section'>\n");
+            builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'><i class='w3-xxlarge material-icons-outlined'>smartphone</i></div>\n");
+            builder.Append(" <div class='w3-rest'>\n");
+            builder.Append("  <input form='form1' class='w3-check w3-center w3-margin w3-border w3-disabled' type='checkbox' name='SendSms' id='SendSms' value='" + (sendSms ? "checked" : string.Empty) + "' >\n");
+            builder.Append(" </div>\n</div>\n");
+            //SendEmail
+            builder.Append("<div class='w3-row w3-section'>\n");
+            builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'><i class='w3-xxlarge material-icons-outlined'>email</i></div>\n");
+            builder.Append(" <div class='w3-rest'>\n");
+            builder.Append("  <input form='form1' class='w3-check w3-center w3-margin w3-border w3-disabled' type='checkbox' name='SendEmail' id='SendEmail' value='" + (sendEmail ? "checked" : string.Empty) + "' >\n");
+            builder.Append(" </div>\n</div>\n");
+            //Datum
+            builder.Append("<div class='w3-row w3-section'>\n");
+            builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'><i class='w3-xxlarge material-icons-outlined'>today</i></div>\n");
+            builder.Append(" <div class='w3-rest'>\n");
+            builder.Append("  <input form='form1' class='w3-input w3-border w3-disabled' type='date'  placeholder='Beginndatum' name='Datum' id='Datum' value='" + date.ToString("yyyy-MM-dd") + "' >\n");
+            builder.Append(" </div>\n</div>\n");
+            //Beginn
+            builder.Append("<div class='w3-row w3-section'>\n");
+            builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'><i class='w3-xxlarge material-icons-outlined'>hourglass_top</i></div>\n");
+            builder.Append(" <div class='w3-rest'>\n");
+            builder.Append("  <input form='form1' class='w3-input w3-border w3-disabled' type='number' min='0' max='23' name='Beginn' id='Beginn' value='" + beginHour + "' >\n");
+            builder.Append(" </div>\n</div>\n");
+            //Ende
+            builder.Append("<div class='w3-row w3-section'>\n");
+            builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'><i class='w3-xxlarge material-icons-outlined'>hourglass_bottom</i></div>\n");
+            builder.Append(" <div class='w3-rest'>\n");
+            builder.Append("  <input form='form1' class='w3-input w3-border w3-disabled' type='number' min='0' max='23' name='Ende' id='Ende' value='" + endHour + "' >\n");
+            builder.Append(" </div>\n</div>\n");
+
+            builder.Append(" <div class='w3-quarter'>&nbsp;</div>\n");
+            builder.Append(" <input type='reset' form='form1' class='w3-button w3-block w3-section w3-pale-blue w3-ripple w3-padding w3-quarter'>\n");
+            builder.Append(" <button class='w3-button w3-block w3-section w3-teal w3-ripple w3-padding w3-quarter' onclick =\"document.getElementById('Editor').style.display = 'block'\">Übernehmen</button>\n");
+            builder.Append("</div>\n<center>\n");
+
+            #endregion
+
+            return builder.ToString();
+        }
+
         #endregion
 
+        #region Vorgefertigte Blöcke
+
+        /// <summary>
+        /// Zusammengefasste Templates für geblockte Nachrichten
+        /// </summary>
+        /// <param name="dt"></param>
+        /// <returns></returns>
+        public static string HtmlUnitBlocked(DataTable dt, int contendId = 0)
+        {
+
+            Dictionary<string, string> action = new Dictionary<string, string>();
+
+            if (contendId == 0)            
+                action.Add("/blocked/update", "Sperrzeit der Nachricht bearbeiten");            
+            else            
+                action.Add("/blocked/update", "Bearbeitete Zeiten speichern");            
+
+            action.Add("/blocked/delete", "Aus Sperrliste entfernen");
+
+            StringBuilder builder = new StringBuilder();
+            builder.Append(HtmlTableBlocked(dt, contendId, true));
+            builder.Append(HtmlEditor(action));
+
+            return builder.ToString();
+        }
+
+        public static string HtmlUnitAccount(int contactId)
+        {
+            
+            Dictionary<string, string> action = new Dictionary<string, string>
+                {
+                    { "/account/create", "Neuen Kontakt mit diesen Angaben einrichten" },
+                    { "/account/update", "Änderungen an Kontakt speichern" },
+                    { "/account/delete", "Diesen Kontakt löschen" }
+                };
+
+            DataTable dt = Program.Sql.GetViewContactInfo(contactId);
+            DataTable dtCompany = Program.Sql.GetAllCompanys();
+
+            StringBuilder builder = new StringBuilder();
+            builder.Append(MelBoxWeb.HtmlFormAccount(dt, dtCompany));
+            builder.Append(MelBoxWeb.HtmlEditor(action));        
+
+            return builder.ToString();
+        }
+
+        public static string HtmlUnitCompany(int companyId)
+        {
+
+            Dictionary<string, string> action = new Dictionary<string, string>
+                {
+                    { "/company/create", "Firma neu anlegen" },
+                    { "/company/update", "Firmeninformationen ändern" },
+                    { "/company/delete", "Firma löschen" }
+                };
+
+            DataTable dtCompany = Program.Sql.GetAllCompanys();
+
+            StringBuilder builder = new StringBuilder();
+            builder.Append(MelBoxWeb.HtmlFormCompany(dtCompany, companyId));
+            builder.Append(MelBoxWeb.HtmlEditor(action));        
+
+            return builder.ToString();
+        }
+
+        public static string HtmlUnitShift(DataTable dt)
+        {
+            Dictionary<string, string> action = new Dictionary<string, string>
+                {
+                    { "/shift/create", "Bereitschaft neu anlegen" },
+                    { "/shift/update", "Bereitschaft ändern" },
+                    { "/shift/delete", "Bereitschaft löschen" }
+                };
+
+            StringBuilder builder = new StringBuilder();
+            builder.Append(HtmlTableShift(dt, 0, true));
+            builder.Append(HtmlEditor(action));
+
+            return builder.ToString();
+        }
+        #endregion
     }
 }
