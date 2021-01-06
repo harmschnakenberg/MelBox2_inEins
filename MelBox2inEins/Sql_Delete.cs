@@ -60,6 +60,27 @@ namespace MelBox2
             }
         }
 
+        public int DeleteCompany(int companyId)
+        {
+            try
+            {
+                using (var connection = new SqliteConnection(DataSource))
+                {
+                    StringBuilder builder = new StringBuilder();
+
+                    connection.Open();
+                    var command = connection.CreateCommand();
+                    command.CommandText = "DELETE FROM \"Company\" WHERE Id = @companyId; ";                   
+                    command.Parameters.AddWithValue("@companyId", companyId);
+
+                    return command.ExecuteNonQuery();
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Sql-Fehler DeleteCompany() " + ex.GetType() + "\r\n" + ex.Message);
+            }
+        }
 
     }
 }

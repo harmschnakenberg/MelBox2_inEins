@@ -135,6 +135,11 @@ namespace MelBox2
             return StartTime;
         }
 
+        /// <summary>
+        /// Standard-Endzeit der Bereitschaft am Folgetag von date
+        /// </summary>
+        /// <param name="date"></param>
+        /// <returns></returns>
         public static DateTime ShiftStandardEndTime(DateTime date)
         {
             return date.Date.AddDays(1).AddHours(7);          

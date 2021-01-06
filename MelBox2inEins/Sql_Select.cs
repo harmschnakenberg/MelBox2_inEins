@@ -206,6 +206,39 @@ namespace MelBox2
             return 0;
         }
 
+        public int GetLastCompany()
+        {
+            int id = 0;
+
+            try
+            {
+                using (var connection = new SqliteConnection(DataSource))
+                {
+                    connection.Open();
+                    var command1 = connection.CreateCommand();
+
+                    command1.CommandText = "SELECT Id " +
+                                           "FROM \"Company\" ORDER BY Id DESC LIMIT 1; ";
+
+                    using (var reader = command1.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            int.TryParse(reader.GetString(0), out id);
+                        }
+
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Sql-Fehler GetLastCompany() " + ex.GetType() + "\r\n" + ex.Message);
+            }
+
+            return id;
+        }
+
+
         public bool IsMessageBlockedNow(string Message)
         {
             int contentId = GetContentId(Message);
@@ -487,7 +520,7 @@ namespace MelBox2
         {
             DataTable overdueTable = new DataTable
             {
-                TableName = "Fehlende Meldungen"
+                TableName = "Überfällige Meldungen"
             };
 
             try
@@ -531,7 +564,7 @@ namespace MelBox2
 
                     var command1 = connection.CreateCommand();
 
-                    command1.CommandText = "SELECT * FROM \"ViewShift\" WHERE Id = $id";
+                    command1.CommandText = "SELECT * FROM \"ViewShift\" WHERE Nr = $id";
                     command1.Parameters.AddWithValue("$id", shiftId);
 
                     using (var reader = command1.ExecuteReader())

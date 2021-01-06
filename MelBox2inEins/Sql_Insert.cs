@@ -120,7 +120,10 @@ namespace MelBox2
                     connection.Open();
 
                     var command = connection.CreateCommand();
-                    command.CommandText = "INSERT INTO \"Company\" (\"Name\", \"Address\", \"City\") VALUES (@name, @address, @city );";
+                    command.CommandText = "INSERT INTO \"Company\" (\"Name\", \"Address\", \"City\") VALUES (SELECT @name, @address, @city WHERE NOT EXISTS(SELECT 1 FROM \"Company\" WHERE \"Name\" = $name) ); ";
+
+                    //@"INSERT INTO MessageContent(Content) SELECT $Content WHERE NOT EXISTS(SELECT 1 FROM MessageContent WHERE Content = $Content); " +
+                    //"SELECT ID FROM MessageContent WHERE Content = $Content; ";
 
                     command.Parameters.AddWithValue("@name", name);
                     command.Parameters.AddWithValue("@address", address);
@@ -129,9 +132,9 @@ namespace MelBox2
                     return 0 != command.ExecuteNonQuery();
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw new Exception("Sql-Fehler InsertCompany()");
+                throw new Exception("InsertRecMessage()" + ex.GetType() + "\r\n" + ex.Message);
             }
         }
 

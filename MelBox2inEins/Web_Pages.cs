@@ -81,6 +81,7 @@ namespace MelBox2
             StringBuilder builder = new StringBuilder();
             builder.Append(MelBoxWeb.HtmlHead(dt.TableName));
             builder.Append(MelBoxWeb.HtmlTablePlain(dt));
+            builder.Append(MelBoxWeb.HtmlAccordeonInfo("Überfällige Meldungen", "Für überwachte Meldelinien werden überfällige Meldungen hier angezeigt. <br>Keine Einträge bedeutet: alles in Ordnung."));
             builder.Append(MelBoxWeb.HtmlFoot());
 
             context.Response.SendResponse(MelBoxWeb.EncodeUmlaute(builder.ToString()));
@@ -98,6 +99,7 @@ namespace MelBox2
             StringBuilder builder = new StringBuilder();
             builder.Append(MelBoxWeb.HtmlHead(dt.TableName));
             builder.Append(MelBoxWeb.HtmlUnitBlocked(dt) );
+            builder.Append(MelBoxWeb.HtmlAccordeonInfo("Gesperrte Meldungen", "Gesperrte Meldungen werden zu den eingestellten Zeiten nicht an die Bereitschaft weitergeleitet."));
             builder.Append(MelBoxWeb.HtmlFoot());
 
             context.Response.SendResponse(MelBoxWeb.EncodeUmlaute(builder.ToString()));
@@ -258,11 +260,50 @@ namespace MelBox2
             StringBuilder builder = new StringBuilder();
             builder.Append(MelBoxWeb.HtmlHead(dt.TableName));
             builder.Append(MelBoxWeb.HtmlUnitShift(dt));
+            builder.Append(MelBoxWeb.HtmlAccordeonInfo("Bereitschaft", "Eine Bereitschafts-Einheit geht immer über einen Tageswechsel. Ab Uhrzeit 'Beginn' bis zum Folgetag Uhrzeit 'Ende' werden eingehende Nachrichten an den eingeteilten Kontakt gesendet."));
             builder.Append(MelBoxWeb.HtmlFoot());
 
             context.Response.SendResponse(MelBoxWeb.EncodeUmlaute(builder.ToString()));
             return context;
         }
+
+        //[RestRoute(HttpMethod = HttpMethod.GET, PathInfo = "/shift")]
+        //[RestRoute(HttpMethod = HttpMethod.GET, PathInfo = @"^/shift/\w+$")] //@"^/user/\d+$"
+        //public IHttpContext ShowMelBoxShiftLogedIn(IHttpContext context)
+        //{
+        //    StringBuilder builder = new StringBuilder();
+        //    DataTable dt = Program.Sql.GetViewShift();
+
+        //    builder.Append(MelBoxWeb.HtmlHead(dt.TableName));
+
+        //    int logedInUserId = 0;
+        //    string url = context.Request.RawUrl;
+        //    if (url.Length > 7)
+        //    {
+        //        string guid = context.Request.RawUrl.Remove(0, 7);
+        //        if (!MelBoxWeb.LogedInGuids.ContainsKey(guid))
+        //        {
+        //            builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler beim Lesen des Benutzerkontos", "Bitte erneut einloggen."));
+        //            builder.Append(MelBoxWeb.HtmlFoot());
+
+        //            context.Response.SendResponse(MelBoxWeb.EncodeUmlaute(builder.ToString()));
+        //            return context;
+        //        }
+        //        else
+        //        {
+        //            logedInUserId = MelBoxWeb.LogedInGuids[guid];
+        //        }
+        //    }
+
+
+        //    builder.Append(MelBoxWeb.HtmlUnitShift(dt, logedInUserId));
+        //    builder.Append(MelBoxWeb.HtmlAccordeonInfo("Bereitschaft", "Eine Bereitschafts-Einheit geht immer über einen Tageswechsel. Ab Uhrzeit 'Beginn' bis zum Folgetag Uhrzeit 'Ende' werden eingehende Nachrichten an den eingeteilten Kontakt gesendet."));
+
+        //    builder.Append(MelBoxWeb.HtmlFoot());
+
+        //    context.Response.SendResponse(MelBoxWeb.EncodeUmlaute(builder.ToString()));
+        //    return context;
+        //}
 
         [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/shift/create")]
         public IHttpContext CreateMelBoxShift(IHttpContext context)
@@ -287,18 +328,164 @@ namespace MelBox2
             }
             else
             {
-                int contactId = MelBoxWeb.LogedInGuids[args["guid"]];
+                int logedInContactId = MelBoxWeb.LogedInGuids[args["guid"]];
 
-                if (contactId == 0)
+                if (logedInContactId == 0)
                 {
                     builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler", "Der eingeloggte Benutzer konnte nicht zugeordnet werden."));
                 }
                 else
-                {                   
-                    builder.Append(MelBoxWeb.HtmlFormShift(0,contactId));
-                    //BAUSTELE
+                {
+                    #region Antwort verarbeiten
+                    if (args.ContainsKey("Datum") && args.ContainsKey("Beginn") && args.ContainsKey("Ende"))
+                    {
+                        DateTime date = DateTime.Now.Date;
+                        int beginHour = 17;
+                        int endHour = 7;
+
+                        date = DateTime.Parse(args["Datum"].ToString()).Date;
+                        beginHour = int.Parse(args["Beginn"].ToString());
+                        endHour = int.Parse(args["Ende"].ToString());
+                        DateTime firstStartTime = DateTime.Now;
+                        DateTime lastEndTime = DateTime.Now;
+
+                        bool createWeekShift = args.ContainsKey("CreateWeekShift");
+
+                        if (createWeekShift)
+                        {
+                             date.AddDays(DayOfWeek.Monday - date.DayOfWeek);
+
+                            for (int i = 0; i < 7; i++)
+                            {
+
+                                DateTime StartTime = MelBoxSql.ShiftStandardStartTime(date);
+                                DateTime EndTime = MelBoxSql.ShiftStandardEndTime(date);
+
+                                if (i == 0) firstStartTime = StartTime;
+                                if (i == 6) lastEndTime = EndTime;
+
+                                Program.Sql.InsertShift(logedInContactId, StartTime, EndTime);
+                                date = date.AddDays(1);
+                            }
+                        }
+                        else
+                        {
+                            DateTime StartTime = date.AddHours(beginHour);
+                            DateTime EndTime = date.AddDays(1).AddHours(endHour);
+
+                            firstStartTime = StartTime;
+                            lastEndTime = EndTime;
+
+                            Program.Sql.InsertShift(logedInContactId, StartTime, EndTime);
+                        }
+
+                        builder.Append(MelBoxWeb.HtmlAlert(3, "Neue Bereitschaft erstellt", string.Format("Neue Bereitschaft vom {0} bis {1} erstellt.", firstStartTime, lastEndTime) ) );
+                    }
+
+                    #endregion
+
+                    builder.Append(MelBoxWeb.HtmlFormShift(0, logedInContactId));
+
+                    Dictionary<string, string> action = new Dictionary<string, string>
+                    {
+                        { "/shift/create", "Neue Bereitschaft wirklich speichern?" }
+                    };
+
+                    builder.Append(MelBoxWeb.HtmlEditor(action));
+                }
+            }
+
+            builder.Append(MelBoxWeb.HtmlFoot());
+            context.Response.SendResponse(MelBoxWeb.EncodeUmlaute(builder.ToString()));
+            return context;
+        }
+
+        [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/shift/update")]
+        public IHttpContext UpdateMelBoxShift(IHttpContext context)
+        {
+            string payload = context.Request.Payload;
+            payload = MelBoxWeb.DecodeUmlaute(payload);
+            Dictionary<string, string> args = MelBoxWeb.ReadPayload(payload);
+
+#if DEBUG
+            Console.WriteLine("/shift/update Payload:");
+            foreach (var key in args.Keys)
+            {
+                Console.WriteLine(key + ":\t" + args[key]);
+            }
+#endif
+            StringBuilder builder = new StringBuilder();
+            builder.Append(MelBoxWeb.HtmlHead("Bereitschaft ändern"));
+
+            if (!MelBoxWeb.LogedInGuids.ContainsKey(args["guid"]))
+            {
+                builder.Append(MelBoxWeb.HtmlAlert(4, "Bitte einloggen", "Änderungen sind nur eingelogged möglich."));
+            }
+            else if (!args.ContainsKey("selectedRow") || !int.TryParse(args["selectedRow"], out int contentId))
+            {
+                builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler", "Es wurde keine gültige Bereitschaft zum ändern übergeben."));
+            }
+            else
+            {
+                int logedInContactId = MelBoxWeb.LogedInGuids[args["guid"]];
+
+                if (logedInContactId == 0)
+                {
+                    builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler", "Der eingeloggte Benutzer konnte nicht zugeordnet werden."));
+                }
+                else
+                {
+                    int shiftId = 0;
+                    int.TryParse(args["selectedRow"].ToString(), out shiftId);
+
+                    #region Antwort verarbeiten
+                    if (args.ContainsKey("selectedRow") && args.ContainsKey("ContactId") && args.ContainsKey("Datum") && args.ContainsKey("Beginn") && args.ContainsKey("Ende"))
+                    {
+                        int contactId = 0;
+                        int.TryParse(args["ContactId"].ToString(), out contactId); ;
+
+                        if (contactId != logedInContactId)
+                        {
+                            builder.Append(MelBoxWeb.HtmlAlert(2, "Nicht änderbar", string.Format("Sie können nur ihre eigenen Bereitschaftszeiten bearbeiten.")));
+                        }
+                        else
+                        {
+                            DateTime date = DateTime.Now.Date;
+                            int beginHour = 17;
+                            int endHour = 7;
 
 
+                            date = DateTime.Parse(args["Datum"].ToString()).Date;
+                            beginHour = int.Parse(args["Beginn"].ToString());
+                            endHour = int.Parse(args["Ende"].ToString());
+                            string name = MelBoxWeb.DecodeUmlaute(args["Name"].ToString());
+
+                            DateTime StartTime = date.AddHours(beginHour);
+                            DateTime EndTime = date.AddDays(1).AddHours(endHour);
+
+                            if (!Program.Sql.UpdateShift(shiftId, logedInContactId, StartTime, EndTime))
+                            {
+                                builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler Bereitschaft  Nr. " + shiftId + " bearbeiten",
+                                    string.Format("Die Bereitschaft konnte nicht in der Datenbank geändetr werden.")));
+                            }
+                            else
+                            {
+                                builder.Append(MelBoxWeb.HtmlAlert(3, "Bereitschaft Nr. " + shiftId + " geändert",
+                                   string.Format("Die Bereitschaft Nr. {0} wurde geändert auf {1} im Zeitraum {2} bis {3}.", shiftId, name.Replace('+', ' '), StartTime, EndTime)));
+                            }
+
+                        }
+                    }
+                    #endregion
+
+                    builder.Append(MelBoxWeb.HtmlFormShift(shiftId, logedInContactId));
+
+                    Dictionary<string, string> action = new Dictionary<string, string>
+                    {
+                        { "/shift/update", "Diesen Eintrag wirklich ändern?" }
+                    };
+
+                    builder.Append(MelBoxWeb.HtmlEditor(action));
                 }
             }
 
@@ -598,7 +785,6 @@ namespace MelBox2
             return context;
         }
 
-
         #endregion
 
         #region Firmen
@@ -622,19 +808,76 @@ namespace MelBox2
             else
             {
                 builder.Append(MelBoxWeb.HtmlUnitCompany(companyId));
-
-                //Dictionary<string, string> action = new Dictionary<string, string>
-                //{
-                //    { "/company/create", "Firma neu anlegen?" },
-                //    { "/company/update", "Wirklich speichern?" }
-                //};
-
-                //DataTable dtCompany = Program.Sql.GetAllCompanys();
-                //builder.Append(MelBoxWeb.HtmlFormCompany(dtCompany, companyId));
-                //builder.Append(MelBoxWeb.HtmlEditor(action));
             }
 
             builder.Append(MelBoxWeb.HtmlFoot());
+
+            context.Response.SendResponse(MelBoxWeb.EncodeUmlaute(builder.ToString()));
+            return context;
+        }
+
+        [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/company/create")]
+        public IHttpContext AddMelBoxCompany(IHttpContext context)
+        {
+            string payload = context.Request.Payload;
+           // payload = MelBoxWeb.DecodeUmlaute(payload);
+            Console.WriteLine("\r\n company/create payload:\r\n" + payload);
+
+            string[] args = payload.Split('&');
+            string name = string.Empty;
+            string address = string.Empty;
+            string city = string.Empty;
+
+            foreach (string arg in args)
+            {
+                if (arg.StartsWith("Name="))
+                {
+                    name = MelBoxWeb.DecodeUmlaute(arg.Split('=')[1]);
+                }
+
+                if (arg.StartsWith("Adresse="))
+                {
+                    address = MelBoxWeb.DecodeUmlaute(arg.Split('=')[1]);
+                }
+
+                if (arg.StartsWith("Ort="))
+                {
+                    city = MelBoxWeb.DecodeUmlaute(arg.Split('=')[1]);
+                }
+            }
+
+            StringBuilder builder = new StringBuilder();
+            builder.Append(MelBoxWeb.HtmlHead("Änderung Firmendaten"));
+
+            if (name.Length < 3)
+            {
+                builder.Append(MelBoxWeb.HtmlAlert(2, "Kein neuer Firmeneintrag", "Der Firmenname muss mindestens 3 Zeichen lang sein."));
+            }
+            else if (!Program.Sql.InsertCompany(name, address, city))
+            {
+                builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler neuer Firmeneintrag", "'" + name + "', '" + address + "', '" + city + "'<br>" +
+                    "Es konnte kein neuer Eintrag in die Datenbank geschrieben werden."));
+            }
+            else
+            {
+                builder.Append(MelBoxWeb.HtmlAlert(3, "Neuer Firmeneintrag", "Die Firma <p>'" + name + "'<br>'" + address + "'<br>'" + city + "'</p>" +
+                        "wurde erfolgreich in die Datenbank aufgenommen."));
+            }
+
+            Dictionary<string, string> action = new Dictionary<string, string>
+                {
+                    { "/company/create", "Firma neu anlegen?" },
+                    { "/company/update", "Wirklich speichern?" }
+                };
+
+            #region Firma anzeigen
+           
+            int lastId = Program.Sql.GetLastCompany();
+         
+            builder.Append(MelBoxWeb.HtmlUnitCompany(lastId));
+
+            builder.Append(MelBoxWeb.HtmlFoot());
+            #endregion
 
             context.Response.SendResponse(MelBoxWeb.EncodeUmlaute(builder.ToString()));
             return context;
@@ -685,7 +928,7 @@ namespace MelBox2
             }
             else
             {
-                builder.Append(MelBoxWeb.HtmlAlert(2, "Änderungen für Firma '" + name + "' gespeichert", "Die Änderungen an Firma '" + name + "' wurden in der Datenbank gespeichert."));
+                builder.Append(MelBoxWeb.HtmlAlert(3, "Änderungen für Firma '" + name + "' gespeichert", "Die Änderungen an Firma '" + name + "' wurden in der Datenbank gespeichert."));
             }
 
             if (companyId == 0)
@@ -715,74 +958,43 @@ namespace MelBox2
             return context;
         }
 
-        [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/company/create")]
-        public IHttpContext AddMelBoxCompany(IHttpContext context)
+        [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/company/delete")]
+        public IHttpContext DeleteMelBoxCompany(IHttpContext context)
         {
             string payload = context.Request.Payload;
             payload = MelBoxWeb.DecodeUmlaute(payload);
-            Console.WriteLine("\r\n company/create payload:\r\n" + payload);
+            // Console.WriteLine("\r\n company/update payload:\r\n" + payload);
 
             string[] args = payload.Split('&');
-            string name = string.Empty;
-            string address = string.Empty;
-            string city = string.Empty;
+            int companyId = 0;
+            string name = "-KEIN NAME-";
 
             foreach (string arg in args)
             {
+                if (arg.StartsWith("Id="))
+                {
+                    companyId = int.Parse(arg.Split('=')[1]);
+                }
+
                 if (arg.StartsWith("Name="))
                 {
                     name = arg.Split('=')[1].Replace('+', ' ');
-                }
-
-                if (arg.StartsWith("Adresse="))
-                {
-                    address = arg.Split('=')[1].Replace('+', ' ');
-                }
-
-                if (arg.StartsWith("Ort="))
-                {
-                    city = arg.Split('=')[1].Replace('+', ' ');
                 }
             }
 
             StringBuilder builder = new StringBuilder();
             builder.Append(MelBoxWeb.HtmlHead("Änderung Firmendaten"));
 
-            if ( name.Length < 3)
+            if (0 == Program.Sql.DeleteCompany(companyId))
             {
-                builder.Append(MelBoxWeb.HtmlAlert(2, "Kein neuer Firmeneintrag", "Der Firmenname muss mindestens 3 Zeichen lang sein.") );
+                builder.Append(MelBoxWeb.HtmlAlert(1, "Keine &Auml;nderungen für Firma '" + name + "'", "Es wurden keine Änderungen übergeben oder der Aufruf war fehlerhaft."));
             }
-            else if (!Program.Sql.InsertCompany(name, address, city) )
-            {
-                builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler neuer Firmeneintrag", "'" + name + "', '" + address + "', '" + city + "'<br>" +
-                    "Es konnte kein neuer Eintrag in die Datenbank geschrieben werden."));
-            } 
             else
             {
-                builder.Append(MelBoxWeb.HtmlAlert(3, "Neuer Firmeneintrag", "Die Firma <p>'" + name + "'<br>'" + address + "'<br>'" + city + "'</p>" +
-                        "wurde erfolgreich in die Datenbank aufgenommen."));
+                builder.Append(MelBoxWeb.HtmlAlert(3, "Firma '" + name + "' gelöscht", "Die Firma '" + name + "' wurde aus der Datenbank gelöscht."));
             }
-
-            Dictionary<string, string> action = new Dictionary<string, string>
-                {
-                    { "/company/create", "Firma neu anlegen?" },
-                    { "/company/update", "Wirklich speichern?" }
-                };
-
-            #region Firma anzeigen
-            DataTable dtCompany = Program.Sql.GetAllCompanys();
-
-            int lastId = int.MinValue;
-            foreach (DataRow dr in dtCompany.Rows)
-            {
-                int id = dr.Field<int>("Id");
-                lastId = Math.Max(lastId, id);
-            }
-
-            builder.Append(MelBoxWeb.HtmlUnitCompany(lastId));
 
             builder.Append(MelBoxWeb.HtmlFoot());
-            #endregion
 
             context.Response.SendResponse(MelBoxWeb.EncodeUmlaute(builder.ToString()));
             return context;

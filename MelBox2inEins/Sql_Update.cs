@@ -203,7 +203,6 @@ namespace MelBox2
             }
         }
 
-
         public bool UpdateMessageBlocked(int msgId, int startHour = 7, int endHour = 7, BlockedDays blockedDays = BlockedDays.AllDays)
         {
             try
@@ -232,5 +231,30 @@ namespace MelBox2
             }
         }
 
+
+        public bool UpdateShift(int shiftId, int contactId, DateTime startDate, DateTime endDate)
+        {
+            try
+            {
+                using (var connection = new SqliteConnection(DataSource))
+                {
+                    connection.Open();
+
+                    var command = connection.CreateCommand();
+                    command.CommandText = "UPDATE \"Shifts\" SET \"EntryTime\" = CURRENT_TIMESTAMP, \"ContactId\" = @contactId, \"StartTime\" = @startTime, \"EndTime\" = @endTime " +
+                                          "WHERE \"Id\" = @shiftId; ";
+
+                    command.Parameters.AddWithValue("@shiftId", shiftId);
+                    command.Parameters.AddWithValue("@contactId", contactId);
+                    command.Parameters.AddWithValue("@startTime", SqlTime(startDate.ToUniversalTime()));
+                    command.Parameters.AddWithValue("@endTime", SqlTime(endDate.ToUniversalTime()));
+                    return 0 != command.ExecuteNonQuery();
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Sql-Fehler UpdateShift()" + ex.GetType() + "\r\n" + ex.Message);
+            }
+        }
     }
 }

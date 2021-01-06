@@ -99,10 +99,6 @@ namespace MelBox2
                     query.Append("CREATE VIEW \"ViewMessagesRecieved\" AS SELECT r.Id As Nr, RecieveTime AS Empfangen, c.Name AS von, (SELECT Content FROM MessageContent WHERE Id = r.ContentId) AS Inhalt ");
                     query.Append("FROM LogRecieved AS r JOIN Contact AS c ON FromContactId = c.Id; ");
 
-                    //query.Append("CREATE VIEW \"ViewMessagesRecieved\" AS SELECT r.Id As Nr, RecieveTime AS Empfangen, c.Name AS von, ");
-                    //query.Append("(SELECT Content FROM (SELECT Id, Content FROM MessageContent) WHERE Id = r.ContentId) AS Inhalt ");
-                    //query.Append("FROM LogRecieved AS r JOIN Contact AS c ON FromContactId = c.Id; ");
-
                     query.Append("CREATE VIEW \"ViewMessagesSent\" AS SELECT SentTime AS Gesendet, c.name AS An, Content AS Inhalt, SentVia AS Via, ConfirmStatus AS Sendestatus ");
                     query.Append("FROM LogSent AS ls JOIN Contact AS c ON SentToId = c.Id JOIN MessageContent AS mc ON mc.id = ls.ContentId; ");
 
@@ -111,7 +107,10 @@ namespace MelBox2
 
                     query.Append("CREATE VIEW \"ViewMessagesBlocked\" AS SELECT BlockedMessages.Id AS Id, Content As Nachricht, StartHour || ' Uhr' As Beginn, EndHour || ' Uhr' As Ende, (SELECT Days & 2 > 0) AS Mo, (SELECT Days & 4 > 0) AS Di, (SELECT Days & 8 > 0) AS Mi, (SELECT Days & 16 > 0) AS Do, (SELECT Days & 32 > 0) AS Fr, (SELECT Days & 64 > 0) AS Sa, (SELECT Days & 1 > 0) AS So FROM BlockedMessages JOIN MessageContent ON MessageContent.Id = BlockedMessages.Id; ");
 
-                    query.Append("CREATE VIEW \"ViewShift\" AS SELECT s.Id AS Id, c.Name AS Name, SendSms, SendEmail, date(StartTime) AS Datum, CAST(strftime('%H',StartTime, 'localtime') AS INTEGER) AS Beginn, CAST(strftime('%H',EndTime, 'localtime') AS INTEGER) AS Ende FROM Shifts AS s JOIN Contact AS c ON ContactId = c.Id WHERE EndTime > CURRENT_TIMESTAMP; ");
+                    query.Append("CREATE VIEW \"ViewShift\" AS " +
+                        "SELECT s.Id AS Nr, c.Id AS ContactId, c.Name AS Name, SendSms, SendEmail, date(StartTime) AS Datum, " +
+                        "CAST(strftime('%H',StartTime, 'localtime') AS INTEGER) AS Beginn, CAST(strftime('%H',EndTime, 'localtime') AS INTEGER) AS Ende FROM Shifts AS s " +
+                        "JOIN Contact AS c ON ContactId = c.Id WHERE EndTime > CURRENT_TIMESTAMP; ");
 
                     var command = connection.CreateCommand();
 #pragma warning disable CA2100 // Review SQL queries for security vulnerabilities
