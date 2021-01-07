@@ -379,6 +379,8 @@ namespace MelBox2
                             Program.Sql.InsertShift(logedInContactId, StartTime, EndTime);
                         }
 
+                        Program.Sql.InsertCalendarMonth();
+
                         builder.Append(MelBoxWeb.HtmlAlert(3, "Neue Bereitschaft erstellt", string.Format("Neue Bereitschaft vom {0} bis {1} erstellt.", firstStartTime, lastEndTime) ) );
                     }
 

@@ -482,5 +482,29 @@ namespace MelBox2
 
             InsertShift(contactId, ShiftStandardStartTime(Today), ShiftStandardEndTime(Today));
         }
+
+        /// <summary>
+        /// Füllt den Kalender mit dem kommenden Monat ab heute
+        /// </summary>
+        public void InsertCalendarMonth()
+        {
+            try
+            {
+                using (var connection = new SqliteConnection(DataSource))
+                {
+                    connection.Open();
+
+                    var command = connection.CreateCommand();
+                    command.CommandText = "INSERT OR IGNORE INTO Calendar(d) SELECT * FROM( WITH RECURSIVE dates(d) AS( VALUES(date('now')) UNION ALL SELECT date(d, '+1 day') " +
+                                          "FROM dates WHERE d < date('now', '+1 month') ) SELECT d FROM dates ); ";
+
+                    command.ExecuteNonQuery();
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Sql-Fehler InsertCalendarMonth()" + ex.GetType() + "\r\n" + ex.Message);
+            }
+        }
     }
 }
