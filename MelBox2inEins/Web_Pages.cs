@@ -353,7 +353,7 @@ namespace MelBox2
 
                         if (createWeekShift)
                         {
-                             date.AddDays(DayOfWeek.Monday - date.DayOfWeek);
+                            date =  date.AddDays(DayOfWeek.Monday - date.DayOfWeek);
 
                             for (int i = 0; i < 7; i++)
                             {
@@ -719,7 +719,7 @@ namespace MelBox2
             }
             else
             {
-                if (0 == Program.Sql.UpdateContact(contactId, name, password, companyId, phone, sendSms, email, sendEmail, string.Empty, maxInactivity))
+                if (!Program.Sql.UpdateContact(contactId, name, password, companyId, phone, sendSms, email, sendEmail, string.Empty, maxInactivity))
                 {
                     builder.Append(MelBoxWeb.HtmlAlert(2, "Keine Änderungen für Benutzer '" + name + "'", "Die Änderungen konnten nicht in die Datenbank übertragen werden."));
                 }
@@ -769,7 +769,7 @@ namespace MelBox2
             }
             else
             {
-                if (0 == Program.Sql.DeleteContact(contactId) )
+                if (!Program.Sql.DeleteContact(contactId) )
                 {
                     builder.Append(MelBoxWeb.HtmlAlert(2, "Fehler beim löschen von '" + name + "'", "Der Benutzer " + contactId + " '" + name + "' konnte nicht aus der Datenbank gelöscht werden."));
                 }
@@ -866,18 +866,18 @@ namespace MelBox2
                         "wurde erfolgreich in die Datenbank aufgenommen."));
             }
 
-            Dictionary<string, string> action = new Dictionary<string, string>
-                {
-                    { "/company/create", "Firma neu anlegen?" },
-                    { "/company/update", "Wirklich speichern?" }
-                };
+            //Dictionary<string, string> action = new Dictionary<string, string>
+            //    {
+            //        { "/company/create", "Firma neu anlegen?" },
+            //        { "/company/update", "Wirklich speichern?" }
+            //    };
 
             #region Firma anzeigen
            
             int lastId = Program.Sql.GetLastCompany();
          
             builder.Append(MelBoxWeb.HtmlUnitCompany(lastId));
-
+           // builder.Append(MelBoxWeb.HtmlEditor(action));
             builder.Append(MelBoxWeb.HtmlFoot());
             #endregion
 
@@ -987,7 +987,7 @@ namespace MelBox2
             StringBuilder builder = new StringBuilder();
             builder.Append(MelBoxWeb.HtmlHead("Änderung Firmendaten"));
 
-            if (0 == Program.Sql.DeleteCompany(companyId))
+            if (!Program.Sql.DeleteCompany(companyId))
             {
                 builder.Append(MelBoxWeb.HtmlAlert(1, "Keine &Auml;nderungen für Firma '" + name + "'", "Es wurden keine Änderungen übergeben oder der Aufruf war fehlerhaft."));
             }

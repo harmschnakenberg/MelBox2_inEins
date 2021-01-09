@@ -9,23 +9,18 @@ namespace MelBox2
 {
     public partial class MelBoxSql
     {
-
-        public void DeleteMessageBlocked(int msgId)
-        {           
+        public bool DeleteMessageBlocked(int msgId)
+        {
             try
             {
-                using (var connection = new SqliteConnection(DataSource))
+                const string query = "DELETE FROM BlockedMessages WHERE Id = @msgId; ";
+
+                Dictionary<string, object> args = new Dictionary<string, object>
                 {
-                    connection.Open();
+                    { "@msgId", msgId}
+                };
 
-                    var command = connection.CreateCommand();
-
-                    command.CommandText = "DELETE FROM BlockedMessages WHERE Id = @msgId; ";
-                                         
-                    command.Parameters.AddWithValue("@msgId", msgId);
-
-                    command.ExecuteNonQuery();
-                }
+                return SqlNonQuery(query, args);
             }
             catch (Exception ex)
             {
@@ -38,21 +33,18 @@ namespace MelBox2
         /// </summary>
         /// <param name="contactId"></param>
         /// <returns></returns>
-        public int DeleteContact(int contactId)
+        public bool DeleteContact(int contactId)
         {
             try
             {
-                using (var connection = new SqliteConnection(DataSource))
+                const string query = "DELETE FROM \"Contact\" WHERE Id = @contactId; ";
+
+                Dictionary<string, object> args = new Dictionary<string, object>
                 {
-                    connection.Open();
+                    { "@contactId", contactId }
+                };
 
-                    var command = connection.CreateCommand();
-
-                    command.CommandText = "DELETE FROM \"Contact\" WHERE Id = @contactId; ";
-                    command.Parameters.AddWithValue("@contactId", contactId);
-
-                    return command.ExecuteNonQuery();
-                }
+                return SqlNonQuery(query, args);
             }
             catch (Exception ex)
             {
@@ -60,21 +52,18 @@ namespace MelBox2
             }
         }
 
-        public int DeleteCompany(int companyId)
+        public bool DeleteCompany(int companyId)
         {
             try
             {
-                using (var connection = new SqliteConnection(DataSource))
+                const string query = "DELETE FROM \"Company\" WHERE Id = @companyId; ";
+
+                Dictionary<string, object> args = new Dictionary<string, object>
                 {
-                    StringBuilder builder = new StringBuilder();
+                    { "@companyId", companyId }
+                };
 
-                    connection.Open();
-                    var command = connection.CreateCommand();
-                    command.CommandText = "DELETE FROM \"Company\" WHERE Id = @companyId; ";                   
-                    command.Parameters.AddWithValue("@companyId", companyId);
-
-                    return command.ExecuteNonQuery();
-                }
+                return SqlNonQuery(query, args);
             }
             catch (Exception ex)
             {

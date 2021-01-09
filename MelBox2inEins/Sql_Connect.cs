@@ -12,9 +12,7 @@ namespace MelBox2
     public partial class MelBoxSql
     {
 
-        private readonly string DataSource = "Data Source=" + DbPath;
-        internal static string DbPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "DB", "MelBox2.db");
-
+       
         #region Methods
 
         public MelBoxSql(string dbPath = "")
@@ -74,8 +72,12 @@ namespace MelBox2
                     //Kontakte
                     query.Append("CREATE TABLE \"Company\" (\"Id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \"Name\" TEXT NOT NULL, \"Address\" TEXT, \"City\" TEXT); ");
 
-                    query.Append("CREATE TABLE \"Contact\"(\"Id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \"EntryTime\" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, \"Name\" TEXT NOT NULL, \"Password\" TEXT, ");
-                    query.Append("\"CompanyId\" INTEGER, \"Email\" TEXT, \"Phone\" INTEGER, \"KeyWord\" TEXT, \"MaxInactiveHours\" INTEGER DEFAULT 0, \"SendSms\" INTEGER NOT NULL CHECK( \"SendSms\" < 2 ), \"SendEmail\" INTEGER NOT NULL CHECK( \"SendEmail\" < 2 ) ); ");
+                    // query.Append("CREATE TABLE \"Contact\"(\"Id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \"EntryTime\" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, \"Name\" TEXT NOT NULL, \"Password\" TEXT, ");
+                    // query.Append("\"CompanyId\" INTEGER, \"Email\" TEXT, \"Phone\" INTEGER, \"KeyWord\" TEXT, \"MaxInactiveHours\" INTEGER DEFAULT 0, \"SendSms\" INTEGER NOT NULL CHECK( \"SendSms\" < 2 ), \"SendEmail\" INTEGER NOT NULL CHECK( \"SendEmail\" < 2 ) ); ");
+
+                    query.Append("CREATE TABLE \"Contact\"(\"Id\" INTEGER  PRIMARY KEY AUTOINCREMENT, \"EntryTime\" TEXT  DEFAULT CURRENT_TIMESTAMP, \"Name\" TEXT , \"Password\" TEXT, ");
+                    query.Append("\"CompanyId\" INTEGER, \"Email\" TEXT, \"Phone\" INTEGER, \"KeyWord\" TEXT, \"MaxInactiveHours\" INTEGER DEFAULT 0, \"SendSms\" INTEGER  CHECK( \"SendSms\" < 2 ), \"SendEmail\" INTEGER  CHECK( \"SendEmail\" < 2 ) ); ");
+
 
                     //Nachrichten
                     query.Append("CREATE TABLE \"MessageContent\" (\"Id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \"Content\" TEXT NOT NULL);"); // UNIQUE böse, weil Constrain auch in Abfragen gilt!  
@@ -87,14 +89,18 @@ namespace MelBox2
                     query.Append("CREATE TABLE \"LogStatus\" (\"Id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \"SentTime\" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, \"SentVia\" INTEGER NOT NULL, \"SmsRef\" INTEGER, \"ConfirmStatus\" INTEGER); ");
 
                     //Bereitschaft
-                    query.Append("CREATE TABLE \"Shifts\"( \"Id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \"EntryTime\" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, ");
-                    query.Append("\"ContactId\" INTEGER NOT NULL, \"StartTime\" TEXT NOT NULL, \"EndTime\" TEXT NOT NULL ); ");
+                    //  query.Append("CREATE TABLE \"Shifts\"( \"Id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \"EntryTime\" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, ");
+                    // query.Append("\"ContactId\" INTEGER NOT NULL, \"StartTime\" TEXT NOT NULL, \"EndTime\" TEXT NOT NULL ); ");
+
+                    query.Append("CREATE TABLE \"Shifts\"( \"Id\" INTEGER  PRIMARY KEY AUTOINCREMENT, \"EntryTime\" TEXT  DEFAULT CURRENT_TIMESTAMP, ");
+                    query.Append("\"ContactId\" INTEGER , \"StartTime\" TEXT , \"EndTime\" TEXT); ");
+
 
                     query.Append("CREATE TABLE \"BlockedMessages\"( \"Id\" INTEGER NOT NULL UNIQUE, \"EntryTime\" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, \"StartHour\" INTEGER NOT NULL, ");
                     query.Append("\"EndHour\" INTEGER NOT NULL, \"Days\" INTEGER NOT NULL); ");
 
                     //Hilfstabelle
-                    query.Append("CREATE TABLE IF NOT EXISTS calendar ( d date UNIQUE NOT NULL ); ");
+                    query.Append("CREATE TABLE IF NOT EXISTS Calendar ( d date UNIQUE NOT NULL ON CONFLICT IGNORE); ");
 
                     //Views
                     query.Append("CREATE VIEW \"ViewMessagesRecieved\" AS SELECT r.Id As Nr, RecieveTime AS Empfangen, c.Name AS von, (SELECT Content FROM MessageContent WHERE Id = r.ContentId) AS Inhalt ");
@@ -108,16 +114,13 @@ namespace MelBox2
 
                     query.Append("CREATE VIEW \"ViewMessagesBlocked\" AS SELECT BlockedMessages.Id AS Id, Content As Nachricht, StartHour || ' Uhr' As Beginn, EndHour || ' Uhr' As Ende, (SELECT Days & 2 > 0) AS Mo, (SELECT Days & 4 > 0) AS Di, (SELECT Days & 8 > 0) AS Mi, (SELECT Days & 16 > 0) AS Do, (SELECT Days & 32 > 0) AS Fr, (SELECT Days & 64 > 0) AS Sa, (SELECT Days & 1 > 0) AS So FROM BlockedMessages JOIN MessageContent ON MessageContent.Id = BlockedMessages.Id; ");
 
-                    query.Append("CREATE VIEW \"ViewShift\" AS " +
-                        "SELECT s.Id AS Nr, c.Id AS ContactId, c.Name AS Name, SendSms, SendEmail, date(StartTime) AS Datum, " +
-                        "CAST(strftime('%H',StartTime, 'localtime') AS INTEGER) AS Beginn, CAST(strftime('%H',EndTime, 'localtime') AS INTEGER) AS Ende FROM Shifts AS s " +
-                        "JOIN Contact AS c ON ContactId = c.Id WHERE EndTime > CURRENT_TIMESTAMP; ");
+                    query.Append("CREATE VIEW \"ViewShift\" AS ");                   
+                    query.Append("SELECT s.Id AS Nr, c.Id AS ContactId, c.Name AS Name, SendSms, SendEmail, date(StartTime) AS Datum, CAST(strftime('%H', StartTime, 'localtime') AS INTEGER) AS Beginn, CAST(strftime('%H', EndTime, 'localtime') AS INTEGER) AS Ende FROM Shifts AS s JOIN Contact AS c ON ContactId = c.Id ");
+                    query.Append("UNION ");
+                    query.Append("SELECT NULL AS Nr, NULL AS ContactId, NULL AS Name, NULL AS SendSms, NULL AS SendEmail, d AS Datum, NULL AS Beginn, NULL AS Ende FROM Calendar ");
+                    query.Append("WHERE Datum >= date('now') ORDER BY Datum ");
 
-                    var command = connection.CreateCommand();
-#pragma warning disable CA2100 // Review SQL queries for security vulnerabilities
-                    command.CommandText = query.ToString();
-#pragma warning restore CA2100 // Review SQL queries for security vulnerabilities
-                    command.ExecuteNonQuery();
+                    SqlNonQuery(query.ToString());
 
                     Log(LogTopic.Start, LogPrio.Info, "Datenbank neu erstellt.");
 
@@ -135,8 +138,9 @@ namespace MelBox2
 
                     InsertMessageRec("Datenbank neu erstellt.", 0, "smszentrale@kreutztraeger.de");
 
-                    InsertMessageSent(1, 1, SendWay.Unknown, 0, SendStatus.OnlyDb);
-
+                 //   InsertMessageSent(1, 1, SendWay.Unknown, 0, SendStatus.OnlyDb);
+                    InsertMessageSent("Datenbank neu erstellt.", 0, 0);
+                   
                     //Dummy
                     InsertShift(7, DateTime.Now.AddHours(-1), DateTime.Now.AddHours(14));
                     InsertShift(7);

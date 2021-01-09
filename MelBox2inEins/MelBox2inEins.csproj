@@ -35,8 +35,8 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Grapevine, Version=4.1.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Grapevine.4.1.2\lib\net40\Grapevine.dll</HintPath>
+    <Reference Include="Grapevine, Version=4.2.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Grapevine.4.2.0\lib\net40\Grapevine.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Data.Sqlite, Version=5.0.1.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Data.Sqlite.Core.5.0.1\lib\netstandard2.0\Microsoft.Data.Sqlite.dll</HintPath>
@@ -94,6 +94,7 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
+    <Compile Include="Sql_Basics.cs" />
     <Compile Include="Sql_Connect.cs" />
     <Compile Include="Sql_Delete.cs" />
     <Compile Include="Sql_Helper.cs" />

@@ -10,6 +10,8 @@ namespace MelBox2
 {
     public partial class MelBoxSql
     {
+        #region Nachrichten
+
         /// <summary>
         /// Ermittelt die ID für den Text der Nachricht. Erstellt für neuen Text eine ID.
         /// </summary>
@@ -19,41 +21,17 @@ namespace MelBox2
         {
             try
             {
-                int id = 0;
+                const string query = @"INSERT INTO MessageContent(Content) SELECT $Content WHERE NOT EXISTS(SELECT 1 FROM MessageContent WHERE Content = $Content); " +
+                                "SELECT ID FROM MessageContent WHERE Content = $Content; ";
+
                 if (content == null) content = "-KEIN TEXT-";
 
-                using (var connection = new SqliteConnection(DataSource))
+                Dictionary<string, object> args = new Dictionary<string, object>
                 {
-                    connection.Open();
-
-                    //Neuen Eintrag erstellen, wenn er nicht existiert
-                    var command1 = connection.CreateCommand();                 
-                    //Vermeide ein UNIQUE Constrain in Tabelle MessageContent, um später Abfragen Konfilikte zu vermeiden
-                    command1.CommandText = @"INSERT INTO MessageContent(Content) SELECT $Content WHERE NOT EXISTS(SELECT 1 FROM MessageContent WHERE Content = $Content); " +
-                                            "SELECT ID FROM MessageContent WHERE Content = $Content; ";
-
-                    command1.Parameters.AddWithValue("$Content", content);
-
-                    using (var reader = command1.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            //Lese Eintrag
-                            if (int.TryParse(reader.GetString(0), out id))
-                            {
-                                return id;
-                            }
-                        }
-                    }
-                }
-
-                if (id == 0)
-                {
-                    //Provisorisch:
-                    throw new Exception("GetMessageId(content) Nachricht konnte nicht zugeordnet werden.");
-                }
-
-                return id;
+                    { "$Content", content }
+                };
+                
+                return SqlSelectInteger(query, args);
             }
             catch (Exception ex)
             {
@@ -61,42 +39,24 @@ namespace MelBox2
             }
         }
 
+
+        /// <summary>
+        /// Ermittelt die eindeutige Nummer des Nachrichteninhalts der empfangenen Nachricht.
+        /// </summary>
+        /// <param name="recMsgId">Eindeutige Nummer der empfangenen Nachricht</param>
+        /// <returns>eindeutige Nummer des Nachrichteninhalts der empfangenen Nachricht</returns>
         public int GetContentId(int recMsgId)
         {
             try
             {
-                int contentId = 0;
+                const string query = @"SELECT ContentId FROM LogRecieved WHERE Id = $recMsgid; ";
 
-                using (var connection = new SqliteConnection(DataSource))
+                Dictionary<string, object> args = new Dictionary<string, object>
                 {
-                    connection.Open();
+                    { "$recMsgid", recMsgId }
+                };
 
-                    //Neuen Eintrag erstellen, wenn er nicht existiert
-                    var command1 = connection.CreateCommand();
-                    command1.CommandText = @"SELECT ContentId FROM LogRecieved WHERE Id = $recMsgid; ";
-
-                    command1.Parameters.AddWithValue("$recMsgid", recMsgId);
-
-                    using (var reader = command1.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            //Lese Eintrag
-                            if (int.TryParse(reader.GetString(0), out contentId))
-                            {
-                                return contentId;
-                            }
-                        }
-                    }
-                }
-
-                if (contentId == 0)
-                {
-                    //Provisorisch:
-                    throw new Exception("GetContentId() Empfangene Nachricht konnte nicht zugeordnet werden.");
-                }
-
-                return contentId;
+                return SqlSelectInteger(query, args);
             }
             catch (Exception ex)
             {
@@ -104,6 +64,9 @@ namespace MelBox2
             }
         }
 
+        #endregion
+
+        #region Kontakte
 
         /// <summary>
         /// Versucht den Kontakt anhand der Telefonnummer, email-Adresse oder dem Beginn eriner Nachricht zu identifizieren.
@@ -116,60 +79,37 @@ namespace MelBox2
         /// <returns>Id des Kontakts in der Datenbank</returns>
         public int GetContactId(string name = "", ulong phone = 0, string email = "", string message = "")
         {
-            int id = 0;
-
             try
             {
-                using (var connection = new SqliteConnection(DataSource))
+                const string query = @"SELECT Id " +
+                                      "FROM Contact " +
+                                      "WHERE  " +
+                                      "( length(Name) > 0 AND Name = @name ) " +
+                                      "OR ( Phone > 0 AND Phone = @phone ) " +
+                                      "OR ( length(Email) > 0 AND Email = @email ) " +
+                                      "OR ( length(KeyWord) > 0 AND KeyWord = @keyWord ) ";
+
+                string keyWords = ExtractKeyWords(message);
+
+                Dictionary<string, object> args = new Dictionary<string, object>
                 {
-                    connection.Open();
+                    { "@name", name },
+                    { "@phone", phone },
+                    { "@email", email },
+                    { "@message", message },
+                    { "@keyWord", keyWords }
 
-                    string keyWords = ExtractKeyWords(message);
+                };
 
-                    var command = connection.CreateCommand();
-                    command.CommandText = @"SELECT Id " +
-                                            "FROM Contact " +
-                                            "WHERE  " +
-                                            "( length(Name) > 0 AND Name = @name ) " +
-                                            "OR ( Phone > 0 AND Phone = @phone ) " +
-                                            "OR ( length(Email) > 0 AND Email = @email ) " +
-                                            "OR ( length(KeyWord) > 0 AND KeyWord = @keyWord ) ";
+                int contactId = SqlSelectInteger(query, args);
 
-                    command.Parameters.AddWithValue("@name", name);
-                    command.Parameters.AddWithValue("@phone", phone);
-                    command.Parameters.AddWithValue("@email", email);
-                    command.Parameters.AddWithValue("@message", message);
-                    command.Parameters.AddWithValue("@keyWord", keyWords);
-
-                    using (var reader = command.ExecuteReader())
-                    {
-                        if (!reader.HasRows)
-                        {
-                            //Neuen Eintrag erstellen
-                            id = InsertContact(name, null, 1, email, phone, 0, false, false);
-                        }
-                        else
-                        {
-                            int n = 0;
-                            //Lese Eintrag
-                            while (reader.Read())
-                            {
-                                n++;
-                                int.TryParse(reader.GetString(0), out id);
-                            }
-
-                            if (n > 1)
-                            {
-                                Log(LogTopic.Sql, LogPrio.Warning,
-                                    string.Format("Der Kontakt mit der Id {0} ist nicht eindeutig. {1} mögliche Treffer für Name '{2}', Tel.'+{3}', Email:'{4}', KeyWord:'{5}'",
-                                    id, n, name, phone, email, keyWords) );
-                            }
-                        }
-                        
-                    }
+                if (contactId == 0)
+                {
+                    //Neuen Eintrag erstellen
+                    contactId = InsertContact(name, null, 1, email, phone, 0, false, false);
                 }
 
-                return id;
+                return contactId;
             }
             catch (Exception ex)
             {
@@ -179,65 +119,41 @@ namespace MelBox2
 
         public int GetContactIdFromLogin(string name, string password)
         {
-
-            using (var connection = new SqliteConnection(DataSource))
+            try
             {
-                connection.Open();
+                const string query = "SELECT \"Id\" FROM \"Contact\" WHERE Name = @name AND ( Password = @password OR Password IS NULL )";
 
-                var command = connection.CreateCommand();
-                command.CommandText = "SELECT \"Id\" FROM \"Contact\" WHERE Name = @name AND ( Password = @password OR Password IS NULL )";
-
-                command.Parameters.AddWithValue("@name", name);
-                command.Parameters.AddWithValue("@password",Encrypt(password));
-
-                using (var reader = command.ExecuteReader())
+                Dictionary<string, object> args = new Dictionary<string, object>
                 {
-                    if (!reader.HasRows) return 0; // Niemanden mit diesem Namen und diesem Passwort gefunden
+                    { "@name", name },
+                    { "@password",Encrypt(password)}
+                };
 
-                    while (reader.Read())
-                    {
-                        //Ist die Nachricht zum jetzigen Zeitpunt geblockt?
-                        if (!int.TryParse(reader.GetString(0), out int LogedInId)) return 0;
-
-                        return LogedInId;
-                    }
-                }
+                return SqlSelectInteger(query, args);
             }
-            return 0;
+            catch (Exception ex)
+            {
+                throw new Exception("GetContactIdFromLogin()" + ex.GetType() + "\r\n" + ex.Message);
+            }
         }
 
         public int GetLastCompany()
         {
-            int id = 0;
-
             try
             {
-                using (var connection = new SqliteConnection(DataSource))
-                {
-                    connection.Open();
-                    var command1 = connection.CreateCommand();
+                const string query = "SELECT Id FROM \"Company\" ORDER BY Id DESC LIMIT 1; ";
 
-                    command1.CommandText = "SELECT Id " +
-                                           "FROM \"Company\" ORDER BY Id DESC LIMIT 1; ";
-
-                    using (var reader = command1.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            int.TryParse(reader.GetString(0), out id);
-                        }
-
-                    }
-                }
+                return SqlSelectInteger(query);
             }
             catch (Exception ex)
             {
                 throw new Exception("Sql-Fehler GetLastCompany() " + ex.GetType() + "\r\n" + ex.Message);
             }
-
-            return id;
         }
 
+        #endregion
+
+        #region Bereitschaft
 
         public bool IsMessageBlockedNow(string Message)
         {
@@ -245,107 +161,75 @@ namespace MelBox2
 
             if (contentId == 0) return false;
 
-            using (var connection = new SqliteConnection(DataSource))
-            {
-                connection.Open();
+            const string query = @"SELECT Days FROM BlockedMessages " +
+                                  "WHERE Id = $contentId AND " +
+                                  "(StartHour = EndHour OR " +
+                                  "CAST(strftime('%H','now', 'localtime') AS INTEGER) > StartHour OR " +
+                                  "CAST(strftime('%H','now', 'localtime') AS INTEGER) < EndHour); ";
 
-                //Finde Blockierte Nachricht anhand der ContentId und der Tageszeit
-                var command1 = connection.CreateCommand();
-                command1.CommandText = @"SELECT Days FROM BlockedMessages " +
-                                        "WHERE Id = $contentId AND " +
-                                        "(StartHour = EndHour OR " + 
-                                        "CAST(strftime('%H','now', 'localtime') AS INTEGER) > StartHour OR "+
-                                        "CAST(strftime('%H','now', 'localtime') AS INTEGER) < EndHour); ";
-
-                command1.Parameters.AddWithValue("$contentId", contentId);
-
-                using (var reader = command1.ExecuteReader())
+            Dictionary<string, object> args = new Dictionary<string, object>
                 {
-                    if (!reader.HasRows) return false;
+                    { "$contentId", contentId }
+                };
 
-                    while (reader.Read())
-                    {
-                        //Lese Eintrag
-                        if (byte.TryParse(reader.GetString(0), out byte blockedDays))
-                        {
-                            DateTime now = DateTime.Now;
-                            DayOfWeek dayOfWeek = now.DayOfWeek;
-                            if (IsHolyday(now)) dayOfWeek = DayOfWeek.Sunday; //Feiertage sind wie Sonntage
+            byte blockedDays = (byte)SqlSelectInteger(query, args);
 
-                           return ((byte)dayOfWeek & blockedDays) > 0; // Ist das Bit dayOfWeek im byte blockedDays vorhanden?
-                        }
-                    }
-                }
-            }
-            return false;
+            DateTime now = DateTime.Now;
+            DayOfWeek dayOfWeek = now.DayOfWeek;
+            if (IsHolyday(now)) dayOfWeek = DayOfWeek.Sunday; //Feiertage sind wie Sonntage
+
+            return ((byte)dayOfWeek & blockedDays) > 0; // Ist das Bit dayOfWeek im byte blockedDays vorhanden?
         }
 
         /// <summary>
         /// Listet die Telefonnummern der aktuellen SMS-Empfänger (Bereitschaft) auf.
         /// Wenn für den aktuellen Tag keine Bereitschaft eingerichtet ist, wird das Bereitschaftshandy eingesetzt.
         /// </summary>
+        /// <param name="StandardWatchName">Empfänger, wenn aktuell keine Bereitschaft eingerichtet ist.</param>
         /// <returns>Liste der Telefonnummern derer, die zum aktuellen Zeitpunkt per SMS benachrichtigt werden sollen.</returns>
-        public List<ulong> GetCurrentShiftPhoneNumbers()
+        public List<ulong> GetCurrentShiftPhoneNumbers(string StandardWatchName = "Bereitschaftshandy")
         {
-            const string StandardWatchName = "Bereitschaftshandy";
-
             try
             {
+                #region Stelle sicher, dass es jetzt eine eine aktive Schicht gibt.
+                const string query1 = @"SELECT Id " +
+                                       "FROM Shifts " +
+                                       "WHERE  " +
+                                       "CURRENT_TIMESTAMP BETWEEN StartTime AND EndTime ";
+
+                int currentShiftId = SqlSelectInteger(query1);
+
+                if (currentShiftId == 0)
+                {
+                    //Neue Bereitschaft für Standardempfänger erstellen
+                    int contactIdBereitschafshandy = GetContactId(StandardWatchName);
+                    if (contactIdBereitschafshandy == 0)
+                    {
+                        throw new Exception(" GetCurrentShiftPhoneNumbers(): Kein Kontakt '" + StandardWatchName + "' gefunden.");
+                    }
+
+                    //Erzeuge eine neue Schicht für heute mit Standardwerten (Bereitschaftshandy)
+                    InsertShift(contactIdBereitschafshandy);
+                }
+          
+                #endregion
+
+                #region Lese Telefonnummern der laufenden Schicht aus der Datenbank
+                
                 List<ulong> watch = new List<ulong>();
 
-                using (var connection = new SqliteConnection(DataSource))
-                {
-                    connection.Open();
-
-                    var command = connection.CreateCommand();
-
-                    #region Stelle sicher, dass es jetzt eine eine aktive Schicht gibt.
-                    command.CommandText = @"SELECT Id " +
-                                            "FROM Shifts " +
-                                            "WHERE  " +
-                                            "CURRENT_TIMESTAMP BETWEEN StartTime AND EndTime ";
-
-                    using (var reader = command.ExecuteReader())
-                    {
-                        if (!reader.HasRows)
-                        {
-                            int contactIdBereitschafshandy = GetContactId(StandardWatchName);
-                            if (contactIdBereitschafshandy == 0)
-                            {
-                                throw new Exception(" GetCurrentShiftPhoneNumbers(): Kein Kontakt '" + StandardWatchName + "' gefunden.");
-                            }
-
-                            //Erzeuge eine neue Schicht für heute mit Standardwerten (Bereitschaftshandy)
-                            InsertShift(contactIdBereitschafshandy);
-                        }
-
-                    }
-                    #endregion
-
-                    #region Lese Telefonnummern der laufenden Schicht aus der Datenbank
-                    command.CommandText = "SELECT \"Phone\" FROM Contact " +
-                                            "WHERE \"SendSms\" > 0 AND " +
-                                            "\"Id\" IN " +
-                                            "( SELECT ContactId FROM Shifts WHERE CURRENT_TIMESTAMP BETWEEN DateTime(StartTime) AND DateTime(EndTime) )";
-
-                    using (var reader = command.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            //Lese Eintrag
-                            if (ulong.TryParse(reader.GetString(0), out ulong phone))
-                            {
-                                watch.Add(phone);
-                            }
-                        }
-                    }
-                    #endregion
-                }
+                const string query2 = "SELECT \"Phone\" FROM Contact " +
+                                      "WHERE \"SendSms\" > 0 AND " +
+                                      "\"Id\" IN " +
+                                      "( SELECT ContactId FROM Shifts WHERE CURRENT_TIMESTAMP BETWEEN DateTime(StartTime) AND DateTime(EndTime) )";
+                               
+                watch = SqlSelectPhoneNumbers(query2);
 
                 if (watch.Count == 0)
                     throw new Exception(" GetCurrentShiftPhoneNumbers(): Es ist aktuell keine SMS-Bereitschaft definiert."); //Exception? Muss anderweitig abgefangen werden.
 
                 return watch;
+                #endregion
             }
             catch (Exception ex)
             {
@@ -360,48 +244,17 @@ namespace MelBox2
         /// <returns></returns>
         public System.Net.Mail.MailAddressCollection GetCurrentShiftEmail()
         {
-            
+
             try
             {
                 System.Net.Mail.MailAddressCollection watch = new System.Net.Mail.MailAddressCollection();
 
-                foreach (string mail in Email.PermanentEmailRecievers)
-                {
-                    watch.Add(new System.Net.Mail.MailAddress(mail));
-                }
+                const string query = "SELECT \"Name\", \"Email\" FROM Contact " +
+                                     "WHERE \"SendEmail\" > 0 AND " +
+                                     "\"Id\" IN " +
+                                     "( SELECT ContactId FROM Shifts WHERE CURRENT_TIMESTAMP BETWEEN DateTime(StartTime) AND DateTime(EndTime) )";
 
-
-                using (var connection = new SqliteConnection(DataSource))
-                {
-                    connection.Open();
-
-                    var command = connection.CreateCommand();
-
-                    #region Lese Emailadressen der laufenden Schicht aus der Datenbank
-                    command.CommandText = "SELECT \"Name\", \"Email\" FROM Contact " +
-                                            "WHERE \"SendEmail\" > 0 AND " +
-                                            "\"Id\" IN " +
-                                            "( SELECT ContactId FROM Shifts WHERE CURRENT_TIMESTAMP BETWEEN DateTime(StartTime) AND DateTime(EndTime) )";
-
-                    using (var reader = command.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            //Lese Eintrag
-                            string name = reader.GetString(0);
-                            string mail = reader.GetString(1);
-
-                            if ( IsEmail(mail) )
-                            {
-                                watch.Add(new System.Net.Mail.MailAddress(mail, name));
-                            }
-                        }
-                    }
-                    #endregion
-                }
-
-
-                return watch;
+                return SqlSelectEmailAddresses(query);
             }
             catch (Exception ex)
             {
@@ -409,8 +262,117 @@ namespace MelBox2
             }
         }
 
+        #endregion
 
         #region Views
+
+        public DataTable GetViewLog(DateTime StartTime, DateTime EndTime)
+        {
+
+            if (StartTime.CompareTo(EndTime) >= 0) // > 0; t1 ist später als oder gleich t2.
+            {
+                StartTime = EndTime.AddDays(-3);
+            }
+            //CREATE TABLE "Log"("Id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,"LogTime" TEXT NOT NULL, "Topic" TEXT , "Prio" INTEGER NOT NULL, "Content" TEXT)
+            string query = "SELECT Id, datetime(LogTime, 'localtime') AS Zeit, Topic AS Bereich, Prio, Content AS Inhalt FROM \"Log\" " +
+                           "WHERE LogTime BETWEEN @startTime AND @endTime ORDER BY Id DESC LIMIT 1000";
+
+            Dictionary<string, object> args = new Dictionary<string, object>
+            {
+                { "@startTime", SqlTime(StartTime) },
+                { "@endTime", SqlTime(EndTime) }
+            };
+
+            return SqlSelectDataTable("Logbuch", query, args);
+        }
+        public DataTable GetViewMsgRec()
+        {
+            string query = "SELECT * FROM \"ViewMessagesRecieved\" ORDER BY Nr DESC LIMIT 1000";
+
+            return SqlSelectDataTable("Empfangen", query);
+        }
+
+        public DataTable GetViewMsgSent()
+        {
+            string query = "SELECT * FROM \"ViewMessagesSent\" ORDER BY Gesendet DESC LIMIT 1000 ";
+
+            return SqlSelectDataTable("Gesendet", query);
+        }
+        public DataTable GetViewMsgOverdue()
+        {
+            string query = "SELECT * FROM \"ViewMessagesOverdue\" ORDER BY Fällig_seit DESC LIMIT 1000";
+
+            return SqlSelectDataTable("Überfällige Meldungen", query);
+        }
+
+        public DataTable GetViewShift(int shiftId)
+        {
+            string query = "SELECT * FROM \"ViewShift\" WHERE Nr = @id";
+
+            Dictionary<string, object> args = new Dictionary<string, object>
+            {
+                { "@id", shiftId }
+            };
+
+            return SqlSelectDataTable("Bereitschaft " + shiftId, query, args);
+        }
+
+        public DataTable GetViewShift()
+        {
+            string query = "SELECT * FROM \"ViewShift\" ORDER BY Datum LIMIT 1000";
+
+            return SqlSelectDataTable("Bereitschaft", query);
+        }
+
+        public DataTable GetViewMsgBlocked()
+        {
+            string query = "SELECT * FROM \"ViewMessagesBlocked\"";
+
+            return SqlSelectDataTable("Gesperrte Meldungen", query);
+        }
+
+        public DataTable GetViewContactInfo(int contactId)
+        {
+            string query = "SELECT Contact.Id AS ContactId, Contact.Name AS Name, '********' AS Passwort, CompanyId, Company.Name AS Firma, Email, Phone AS Telefon, Contact.SendSms AS SendSms , Contact.SendEmail AS SendEmail, MaxInactiveHours AS Max_Inaktivität " +
+                           "FROM \"Contact\" JOIN \"Company\" ON CompanyId = Company.Id WHERE Contact.Id = @id; ";
+
+            Dictionary<string, object> args = new Dictionary<string, object>
+            {
+                { "@id", contactId }
+            };
+
+            return SqlSelectDataTable("Benutzerkonto", query, args);
+        }
+
+        /// <summary>
+        /// Liest den Datensatz der Firma mitd er übergebenen Id. Id = 0 liest alle Firmen.
+        /// </summary>
+        /// <param name="companyId"></param>
+        /// <returns></returns>
+        public DataTable GetCompany(int companyId = 0)
+        {
+            string query = "SELECT Id, Name, Address AS Adresse, City AS Ort FROM \"Company\" ";
+
+            Dictionary<string, object> args = new Dictionary<string, object>();
+
+            if (companyId != 0)
+            {
+                query += "WHERE Id = @id ";
+               
+                args.Add("@id", companyId);
+            }    
+
+            return SqlSelectDataTable("Firmen", query, args);
+        }
+
+
+        #endregion
+    }
+}
+
+/*
+ * MAGAZIN
+ *         
         public DataTable GetViewLog(DateTime StartTime, DateTime EndTime)
         {
 
@@ -452,6 +414,7 @@ namespace MelBox2
             return recTable;
         }
 
+
         public DataTable GetViewMsgRec()
         {
             DataTable recTable = new DataTable
@@ -484,6 +447,7 @@ namespace MelBox2
             return recTable;
         }
 
+      
         public DataTable GetViewMsgSent()
         {
             DataTable sentTable = new DataTable
@@ -516,6 +480,7 @@ namespace MelBox2
             return sentTable;
         }
 
+
         public DataTable GetViewMsgOverdue()
         {
             DataTable overdueTable = new DataTable
@@ -547,6 +512,7 @@ namespace MelBox2
 
             return overdueTable;
         }
+
 
         public DataTable GetViewShift(int shiftId)
         {
@@ -712,7 +678,347 @@ namespace MelBox2
 
             return companyTable;
         }
+   
+        public int GetContentId(string content)
+        {
+            try
+            {
+                int id = 0;
+                if (content == null) content = "-KEIN TEXT-";
 
-        #endregion
-    }
-}
+                using (var connection = new SqliteConnection(DataSource))
+                {
+                    connection.Open();
+
+                    //Neuen Eintrag erstellen, wenn er nicht existiert
+                    var command1 = connection.CreateCommand();                 
+                    //Vermeide ein UNIQUE Constrain in Tabelle MessageContent, um später Abfragen Konfilikte zu vermeiden
+                    command1.CommandText = @"INSERT INTO MessageContent(Content) SELECT $Content WHERE NOT EXISTS(SELECT 1 FROM MessageContent WHERE Content = $Content); " +
+                                            "SELECT ID FROM MessageContent WHERE Content = $Content; ";
+
+                    command1.Parameters.AddWithValue("$Content", content);
+
+                    using (var reader = command1.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            //Lese Eintrag
+                            if (int.TryParse(reader.GetString(0), out id))
+                            {
+                                return id;
+                            }
+                        }
+                    }
+                }
+
+                if (id == 0)
+                {
+                    //Provisorisch:
+                    throw new Exception("GetMessageId(content) Nachricht konnte nicht zugeordnet werden.");
+                }
+
+                return id;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Sql-Fehler GetMessageId(content)" + ex.GetType() + "\r\n" + ex.Message);
+            }
+        }
+
+        public int GetContentId(int recMsgId)
+        {
+            try
+            {
+                int contentId = 0;
+
+                using (var connection = new SqliteConnection(DataSource))
+                {
+                    connection.Open();
+
+                    //Neuen Eintrag erstellen, wenn er nicht existiert
+                    var command1 = connection.CreateCommand();
+                    command1.CommandText = @"SELECT ContentId FROM LogRecieved WHERE Id = $recMsgid; ";
+
+                    command1.Parameters.AddWithValue("$recMsgid", recMsgId);
+
+                    using (var reader = command1.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            //Lese Eintrag
+                            if (int.TryParse(reader.GetString(0), out contentId))
+                            {
+                                return contentId;
+                            }
+                        }
+                    }
+                }
+
+                if (contentId == 0)
+                {
+                    //Provisorisch:
+                    throw new Exception("GetContentId() Empfangene Nachricht konnte nicht zugeordnet werden.");
+                }
+
+                return contentId;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Sql-Fehler GetContentId(recMsgId)" + ex.GetType() + "\r\n" + ex.Message);
+            }
+        }
+
+       public int GetContactId(string name = "", ulong phone = 0, string email = "", string message = "")
+        {
+            int id = 0;
+
+            try
+            {
+                using (var connection = new SqliteConnection(DataSource))
+                {
+                    connection.Open();
+
+                    string keyWords = ExtractKeyWords(message);
+
+                    var command = connection.CreateCommand();
+                    command.CommandText = @"SELECT Id " +
+                                            "FROM Contact " +
+                                            "WHERE  " +
+                                            "( length(Name) > 0 AND Name = @name ) " +
+                                            "OR ( Phone > 0 AND Phone = @phone ) " +
+                                            "OR ( length(Email) > 0 AND Email = @email ) " +
+                                            "OR ( length(KeyWord) > 0 AND KeyWord = @keyWord ) ";
+
+                    command.Parameters.AddWithValue("@name", name);
+                    command.Parameters.AddWithValue("@phone", phone);
+                    command.Parameters.AddWithValue("@email", email);
+                    command.Parameters.AddWithValue("@message", message);
+                    command.Parameters.AddWithValue("@keyWord", keyWords);
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        if (!reader.HasRows)
+                        {
+                            //Neuen Eintrag erstellen
+                            id = InsertContact(name, null, 1, email, phone, 0, false, false);
+                        }
+                        else
+                        {
+                            int n = 0;
+                            //Lese Eintrag
+                            while (reader.Read())
+                            {
+                                n++;
+                                int.TryParse(reader.GetString(0), out id);
+                            }
+
+                            if (n > 1)
+                            {
+                                Log(LogTopic.Sql, LogPrio.Warning,
+                                    string.Format("Der Kontakt mit der Id {0} ist nicht eindeutig. {1} mögliche Treffer für Name '{2}', Tel.'+{3}', Email:'{4}', KeyWord:'{5}'",
+                                    id, n, name, phone, email, keyWords) );
+                            }
+                        }
+                        
+                    }
+                }
+
+                return id;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Sql-Fehler GetContactId()" + ex.GetType() + "\r\n" + ex.Message);
+            }
+        }
+
+    public int GetContactIdFromLogin(string name, string password)
+        {
+
+            using (var connection = new SqliteConnection(DataSource))
+            {
+                connection.Open();
+
+                var command = connection.CreateCommand();
+                command.CommandText = "SELECT \"Id\" FROM \"Contact\" WHERE Name = @name AND ( Password = @password OR Password IS NULL )";
+
+                command.Parameters.AddWithValue("@name", name);
+                command.Parameters.AddWithValue("@password",Encrypt(password));
+
+                using (var reader = command.ExecuteReader())
+                {
+                    if (!reader.HasRows) return 0; // Niemanden mit diesem Namen und diesem Passwort gefunden
+
+                    while (reader.Read())
+                    {
+                        //Ist die Nachricht zum jetzigen Zeitpunt geblockt?
+                        if (!int.TryParse(reader.GetString(0), out int LogedInId)) return 0;
+
+                        return LogedInId;
+                    }
+                }
+            }
+            return 0;
+        }
+
+      public bool IsMessageBlockedNow(string Message)
+        {
+            int contentId = GetContentId(Message);
+
+            if (contentId == 0) return false;
+
+            using (var connection = new SqliteConnection(DataSource))
+            {
+                connection.Open();
+
+                //Finde Blockierte Nachricht anhand der ContentId und der Tageszeit
+                var command1 = connection.CreateCommand();
+                command1.CommandText = @"SELECT Days FROM BlockedMessages " +
+                                        "WHERE Id = $contentId AND " +
+                                        "(StartHour = EndHour OR " + 
+                                        "CAST(strftime('%H','now', 'localtime') AS INTEGER) > StartHour OR "+
+                                        "CAST(strftime('%H','now', 'localtime') AS INTEGER) < EndHour); ";
+
+                command1.Parameters.AddWithValue("$contentId", contentId);
+
+                using (var reader = command1.ExecuteReader())
+                {
+                    if (!reader.HasRows) return false;
+
+                    while (reader.Read())
+                    {
+                        //Lese Eintrag
+                        if (byte.TryParse(reader.GetString(0), out byte blockedDays))
+                        {
+                            DateTime now = DateTime.Now;
+                            DayOfWeek dayOfWeek = now.DayOfWeek;
+                            if (IsHolyday(now)) dayOfWeek = DayOfWeek.Sunday; //Feiertage sind wie Sonntage
+
+                           return ((byte)dayOfWeek & blockedDays) > 0; // Ist das Bit dayOfWeek im byte blockedDays vorhanden?
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+  public List<ulong> GetCurrentShiftPhoneNumbers()
+        {
+            const string StandardWatchName = "Bereitschaftshandy";
+
+            try
+            {
+                List<ulong> watch = new List<ulong>();
+
+                using (var connection = new SqliteConnection(DataSource))
+                {
+                    connection.Open();
+
+                    var command = connection.CreateCommand();
+
+                    #region Stelle sicher, dass es jetzt eine eine aktive Schicht gibt.
+                    command.CommandText = @"SELECT Id " +
+                                            "FROM Shifts " +
+                                            "WHERE  " +
+                                            "CURRENT_TIMESTAMP BETWEEN StartTime AND EndTime ";
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        if (!reader.HasRows)
+                        {
+                            int contactIdBereitschafshandy = GetContactId(StandardWatchName);
+                            if (contactIdBereitschafshandy == 0)
+                            {
+                                throw new Exception(" GetCurrentShiftPhoneNumbers(): Kein Kontakt '" + StandardWatchName + "' gefunden.");
+                            }
+
+                            //Erzeuge eine neue Schicht für heute mit Standardwerten (Bereitschaftshandy)
+                            InsertShift(contactIdBereitschafshandy);
+                        }
+
+                    }
+                    #endregion
+
+                    #region Lese Telefonnummern der laufenden Schicht aus der Datenbank
+                    command.CommandText = "SELECT \"Phone\" FROM Contact " +
+                                            "WHERE \"SendSms\" > 0 AND " +
+                                            "\"Id\" IN " +
+                                            "( SELECT ContactId FROM Shifts WHERE CURRENT_TIMESTAMP BETWEEN DateTime(StartTime) AND DateTime(EndTime) )";
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            //Lese Eintrag
+                            if (ulong.TryParse(reader.GetString(0), out ulong phone))
+                            {
+                                watch.Add(phone);
+                            }
+                        }
+                    }
+                    #endregion
+                }
+
+                if (watch.Count == 0)
+                    throw new Exception(" GetCurrentShiftPhoneNumbers(): Es ist aktuell keine SMS-Bereitschaft definiert."); //Exception? Muss anderweitig abgefangen werden.
+
+                return watch;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(" GetCurrentShiftPhoneNumbers()" + ex.GetType() + "\r\n" + ex.Message);
+            }
+        }
+
+     public System.Net.Mail.MailAddressCollection GetCurrentShiftEmail()
+        {
+            
+            try
+            {
+                System.Net.Mail.MailAddressCollection watch = new System.Net.Mail.MailAddressCollection();
+
+                foreach (string mail in Email.PermanentEmailRecievers)
+                {
+                    watch.Add(new System.Net.Mail.MailAddress(mail));
+                }
+
+
+                using (var connection = new SqliteConnection(DataSource))
+                {
+                    connection.Open();
+
+                    var command = connection.CreateCommand();
+
+                    #region Lese Emailadressen der laufenden Schicht aus der Datenbank
+                    command.CommandText = "SELECT \"Name\", \"Email\" FROM Contact " +
+                                            "WHERE \"SendEmail\" > 0 AND " +
+                                            "\"Id\" IN " +
+                                            "( SELECT ContactId FROM Shifts WHERE CURRENT_TIMESTAMP BETWEEN DateTime(StartTime) AND DateTime(EndTime) )";
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            //Lese Eintrag
+                            string name = reader.GetString(0);
+                            string mail = reader.GetString(1);
+
+                            if ( IsEmail(mail) )
+                            {
+                                watch.Add(new System.Net.Mail.MailAddress(mail, name));
+                            }
+                        }
+                    }
+                    #endregion
+                }
+
+
+                return watch;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("GetCurrentShiftEmail() " + ex.GetType() + "\r\n" + ex.Message);
+            }
+        }
+
+
+//*/

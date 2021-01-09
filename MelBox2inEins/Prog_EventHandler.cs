@@ -85,8 +85,16 @@ namespace MelBox2
 						Gsm.SmsSend(phone, e.Message);
 					}
 				}
+				
 				//Nachricht per email weiterleiten
-				Email.Send(Sql.GetCurrentShiftEmail(), e.Message);
+				System.Net.Mail.MailAddressCollection mailTo = Sql.GetCurrentShiftEmail();
+				
+				foreach (string mail in Email.PermanentEmailRecievers)
+				{
+					mailTo.Add(new System.Net.Mail.MailAddress(mail));
+				}
+
+				Email.Send(mailTo, e.Message);
 			}
 
 			Gsm.ReadGsmMemory();

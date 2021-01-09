@@ -892,7 +892,7 @@ namespace MelBox2
                 };
 
             DataTable dt = Program.Sql.GetViewContactInfo(contactId);
-            DataTable dtCompany = Program.Sql.GetAllCompanys();
+            DataTable dtCompany = Program.Sql.GetCompany();
 
             StringBuilder builder = new StringBuilder();
             builder.Append(MelBoxWeb.HtmlFormAccount(dt, dtCompany));
@@ -911,7 +911,7 @@ namespace MelBox2
                     { "/company/delete", "Firma löschen" }
                 };
 
-            DataTable dtCompany = Program.Sql.GetAllCompanys();
+            DataTable dtCompany = Program.Sql.GetCompany();
 
             StringBuilder builder = new StringBuilder();
             builder.Append(MelBoxWeb.HtmlFormCompany(dtCompany, companyId));
