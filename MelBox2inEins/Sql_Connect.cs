@@ -100,7 +100,7 @@ namespace MelBox2
                     query.Append("\"EndHour\" INTEGER NOT NULL, \"Days\" INTEGER NOT NULL); ");
 
                     //Hilfstabelle
-                    query.Append("CREATE TABLE IF NOT EXISTS Calendar ( d date UNIQUE NOT NULL ON CONFLICT IGNORE); ");
+                    query.Append("CREATE TABLE IF NOT EXISTS Calendar ( d TEXT UNIQUE NOT NULL ON CONFLICT IGNORE); ");
 
                     //Views
                     query.Append("CREATE VIEW \"ViewMessagesRecieved\" AS SELECT r.Id As Nr, RecieveTime AS Empfangen, c.Name AS von, (SELECT Content FROM MessageContent WHERE Id = r.ContentId) AS Inhalt ");

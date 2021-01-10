@@ -27,7 +27,7 @@ namespace MelBox2
                     var command = connection.CreateCommand();
                     command.CommandText = query;
 
-                    if (args.Count > 0)
+                    if (args != null && args.Count > 0)
                     {
                         foreach (string key in args.Keys)
                         {
@@ -44,12 +44,16 @@ namespace MelBox2
             }
         }
 
+        /// <summary>
+        /// BAUSTELLE
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <param name="query"></param>
+        /// <param name="args"></param>
+        /// <returns></returns>
         public DataTable SqlSelectDataTable(string tableName, string query, Dictionary<string, object> args = null)
         {
-            DataTable shiftTable = new DataTable
-            {
-                TableName = tableName
-            };
+
 
             try
             {
@@ -69,10 +73,68 @@ namespace MelBox2
                         }
                     }
 
-                    using (var reader = command.ExecuteReader())
+                    try
                     {
-                        shiftTable.Load(reader);
+                        using (var reader = command.ExecuteReader())
+                        {
+
+                            DataTable shiftTable = new DataTable
+                            {
+                                TableName = tableName
+                            };
+
+                            //Mit Schema einlesen
+                            shiftTable.Load(reader);
+                            return shiftTable;
+                        }
                     }
+                    catch
+                    {
+                        using (var reader = command.ExecuteReader())
+                        {
+                            DataTable shiftTable = new DataTable
+                            {
+                                TableName = tableName
+                            };
+
+                            //zu Fuß einlesen
+                            for (int i = 0; i < reader.FieldCount; i++)
+                            {
+                                //Spalten einrichten
+                                //shiftTable.Columns.Add(reader.GetName(i), reader.GetFieldType(i));
+                                shiftTable.Columns.Add(reader.GetName(i), typeof(string));
+                            }
+                            int n = 0;
+
+                            while (reader.Read())
+                            {
+                                List<object> row = new List<object>();
+
+                                Console.Write("\r\nZeile {0}:", n++);
+
+                                for (int i = 0; i < reader.FieldCount; i++)
+                                {
+                                    string colType = shiftTable.Columns[i].DataType.Name;
+
+                                    if (reader.IsDBNull(i))
+                                    {
+                                        row.Add(string.Empty);
+                                        Console.Write("'NULL'\t");
+                                    }
+                                    else
+                                    {
+                                        string r = reader.GetFieldValue<string>(i);
+                                        row.Add(r);
+                                        Console.Write(r + "\t");
+                                    }
+                                }
+
+                                shiftTable.Rows.Add(row.ToArray());
+                            }
+                            return shiftTable;
+                        }
+                    }
+                
                 }
             }
             catch (Exception ex)
@@ -80,7 +142,7 @@ namespace MelBox2
                 throw new Exception("SqlSelectDataTable(): " + query + "\r\n" + ex.GetType() + "\r\n" + ex.Message);
             }
 
-            return shiftTable;
+          //  return shiftTable;
         }
 
         /// <summary>
@@ -102,7 +164,7 @@ namespace MelBox2
 
                     command.CommandText = query;
 
-                    if (args.Count > 0)
+                    if (args != null && args.Count > 0)
                     {
                         foreach (string key in args.Keys)
                         {
@@ -146,7 +208,7 @@ namespace MelBox2
 
                     command.CommandText = query;
 
-                    if (args.Count > 0)
+                    if (args != null &&  args.Count > 0)
                     {
                         foreach (string key in args.Keys)
                         {
@@ -189,7 +251,7 @@ namespace MelBox2
 
                     command.CommandText = query;
 
-                    if (args.Count > 0)
+                    if (args != null && args.Count > 0)
                     {
                         foreach (string key in args.Keys)
                         {

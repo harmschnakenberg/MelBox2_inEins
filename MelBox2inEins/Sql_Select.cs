@@ -319,9 +319,42 @@ namespace MelBox2
 
         public DataTable GetViewShift()
         {
-            string query = "SELECT * FROM \"ViewShift\" ORDER BY Datum LIMIT 1000";
+            // string query = "SELECT * FROM \"ViewShift\" ORDER BY Datum LIMIT 1000";
 
-            return SqlSelectDataTable("Bereitschaft", query);
+            string query = "SELECT s.Id AS Nr, " + 
+                            "c.Id AS ContactId, " + 
+                            "c.Name AS Name, " + 
+                            "SendSms, " +
+                            "SendEmail, " +
+                            "date(StartTime) AS Datum, " +
+                            "CAST(strftime('%H', StartTime, 'localtime') AS INTEGER) AS Beginn, CAST(strftime('%H', EndTime, 'localtime') AS INTEGER) AS Ende " +
+                            "FROM Shifts AS s JOIN Contact AS c ON ContactId = c.Id " +
+                            "UNION " +
+                            "SELECT NULL AS Nr, " + 
+                            "NULL AS ContactId, " + 
+                            "NULL AS Name, " + 
+                            "0 AS SendSms, " +
+                            "0 AS SendEmail, " +
+                            "d AS Datum,  " +
+                            "NULL AS Beginn, NULL AS Ende " +
+                            "FROM Calendar " +
+                            "WHERE Datum >= date('now') ORDER BY Datum " +
+                            "";            
+            try
+            {
+                return SqlSelectDataTable("Bereitschaft", query);
+            }
+            catch (Exception ex)
+            {
+
+                DataTable table = new DataTable("LEER - GetViewShift() SQL Abfragefehler");
+                table.Columns.Add("Fehler", typeof(string));
+                table.Columns.Add("Hinweis", typeof(string));
+
+                table.Rows.Add(ex.GetType().Name, ex.Message);
+                return table;
+            }
+
         }
 
         public DataTable GetViewMsgBlocked()

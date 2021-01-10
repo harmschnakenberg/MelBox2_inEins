@@ -289,106 +289,120 @@ namespace MelBox2
 
         private static string HtmlTableShift(DataTable dt, int shiftId = 0, bool canUserEdit = false)
         {
-            StringBuilder builder = new StringBuilder();
-
-            builder.Append("<div class='w3-container'>\n");
-            builder.Append(" <div class='w3-third'>&nbsp;</div>\n");
-            builder.Append(" <input oninput=\"w3.filterHTML('#myTable', '.myRow', this.value)\" class='w3-input w3-third w3-margin w3-border w3-round-large' placeholder='Suche nach..'>\n");
-            builder.Append("</div>");
-
-            builder.Append("<table class='w3-table-all w3-hoverable w3-cell' id='myTable'>\n");
-            builder.Append("<tr class='w3-teak'>\n\t");
-
-            if (canUserEdit)
+            try
             {
-                builder.Append("<th>Edit</th>");
-            }
+                StringBuilder builder = new StringBuilder();
 
-            foreach (DataColumn c in dt.Columns)
-            {
-                builder.Append("<th>");
-                switch (c.ColumnName)
-                {
-                    case "SendSms":
-                        builder.Append("<i class='w3-xxlarge material-icons-outlined'>smartphone</i>");
-                        break;
-                    case "SendEmail":
-                        builder.Append("<i class='w3-xxlarge material-icons-outlined'>email</i>");
-                        break;
-                    case "ContactId":
-                        //nichts anzeigen
-                        break;
-                    default:
-                        builder.Append(c.ColumnName);
-                        break;
-                }
+                builder.Append("<div class='w3-container'>\n");
+                builder.Append(" <div class='w3-third'>&nbsp;</div>\n");
+                builder.Append(" <input oninput=\"w3.filterHTML('#myTable', '.myRow', this.value)\" class='w3-input w3-third w3-margin w3-border w3-round-large' placeholder='Suche nach..'>\n");
+                builder.Append("</div>");
 
-                builder.Append("</th>");
-            }
-            builder.Append("\n</tr>\n");
+                builder.Append("<table class='w3-table-all w3-hoverable w3-cell' id='myTable'>\n");
+                builder.Append("<tr class='w3-teak'>\n\t");
 
-            int procent;
-
-            foreach (DataRow r in dt.Rows)
-            {
-                if (shiftId != 0 && shiftId != int.Parse(r[dt.Columns["Id"]].ToString())) continue; // Wenn nur eine Id angezeigt werden soll
-
-                builder.Append("<tr class='myRow'>\n\t");
-                                
                 if (canUserEdit)
                 {
-                    builder.Append("<td>");
-                    builder.Append("<input class='w3-radio w3-hidden' type='radio' name='selectedRow' value='" + r[dt.Columns[0]] + "' form='form1' onclick=\"w3.show('#Editor')\">");
-                    builder.Append("</td>\n");
+                    builder.Append("<th>Edit</th>");
                 }
-              
+
                 foreach (DataColumn c in dt.Columns)
                 {
-                    builder.Append("<td>");
+                    builder.Append("<th>");
                     switch (c.ColumnName)
                     {
-                        case "ContactId":
-                            builder.Append("<input type='hidden' value='" + r[c.ColumnName] + "'>");
-                            break;
                         case "SendSms":
-                            builder.Append("<input class='w3-check w3-center' type='checkbox' name='SendSms' ");
-                            builder.Append((int.Parse(r[c.ColumnName].ToString()) > 0) ? "checked" : string.Empty);
-                            builder.Append(" disabled>");
+                            builder.Append("<i class='w3-xxlarge material-icons-outlined'>smartphone</i>");
                             break;
                         case "SendEmail":
-                            builder.Append("<input class='w3-check w3-center' type='checkbox' name='SendEmail' ");
-                            builder.Append((int.Parse(r[c.ColumnName].ToString()) > 0) ? "checked" : string.Empty);
-                            builder.Append(" disabled>");
+                            builder.Append("<i class='w3-xxlarge material-icons-outlined'>email</i>");
                             break;
-                        case "Beginn":
-                            procent = int.Parse(r[c.ColumnName].ToString()) * 100 / 24;
-                            builder.Append("<div class='w3-cyan' style='width:240px;'>\n  <div class='w3-pale-blue' style='width:" + procent + "%'><span>" + r[c.ColumnName] + "&nbsp;Uhr</span></div>\n</div>\n");
-                            break;
-                        case "Ende":
-                            procent = int.Parse(r[c.ColumnName].ToString()) * 100 / 24;
-                            builder.Append("<div class='w3-pale-blue' style='width:240px;'>\n <div class='w3-cyan' style='width:" + procent + "%'>" + r[c.ColumnName] + "&nbsp;Uhr</div>\n</div>\n");
+                        case "ContactId":
+                            //nichts anzeigen
                             break;
                         default:
-                            builder.Append(r[c.ColumnName]);
+                            builder.Append(c.ColumnName);
                             break;
                     }
-                    builder.Append("</td>\n");
+
+                    builder.Append("</th>");
                 }
                 builder.Append("\n</tr>\n");
+
+                int procent;
+
+                foreach (DataRow r in dt.Rows)
+                {
+                    if (shiftId != 0 && shiftId != int.Parse(r[dt.Columns["Id"]].ToString())) continue; // Wenn nur eine Id angezeigt werden soll
+
+                    builder.Append("<tr class='myRow'>\n\t");
+
+                    if (canUserEdit)
+                    {
+                        int.TryParse(r[dt.Columns[0]].ToString(), out int value);
+
+                        string disabled = "";
+                        if (value == 0) disabled = "disabled";
+
+                        builder.Append("<td>");
+                        builder.Append("<input class='w3-radio w3-hidden' type='radio' name='selectedRow' value='" + value + "' form='form1' onclick=\"w3.show('#Editor')\" " + disabled + ">");
+                        builder.Append("</td>\n");
+                    }
+
+                    foreach (DataColumn c in dt.Columns)
+                    {
+                        builder.Append("<td>");
+                        switch (c.ColumnName)
+                        {
+                            case "ContactId":
+                                builder.Append("<input type='hidden' value='" + r[c.ColumnName] + "'>");
+                                break;
+                            case "SendSms":
+                                builder.Append("<input class='w3-check w3-center' type='checkbox' name='SendSms' ");
+                                builder.Append((int.Parse(r[c.ColumnName].ToString()) > 0) ? "checked" : string.Empty);
+                                builder.Append(" disabled>");
+                                break;
+                            case "SendEmail":
+                                builder.Append("<input class='w3-check w3-center' type='checkbox' name='SendEmail' ");
+                                builder.Append((int.Parse(r[c.ColumnName].ToString()) > 0) ? "checked" : string.Empty);
+                                builder.Append(" disabled>");
+                                break;
+                            case "Beginn":
+                                if (!int.TryParse(r[c.ColumnName].ToString(), out procent)) procent = 24; //* 100 / 24;
+                                procent = procent * 100 / 24;
+                                builder.Append("<div class='w3-cyan' style='width:240px;'>\n  <div class='w3-pale-blue' style='width:" + procent + "%'><span>" + r[c.ColumnName] + "&nbsp;Uhr</span></div>\n</div>\n");
+                                break;
+                            case "Ende":
+                                int.TryParse(r[c.ColumnName].ToString(), out procent);
+                                procent = procent * 100 / 24;
+                                builder.Append("<div class='w3-pale-blue' style='width:240px;'>\n <div class='w3-cyan' style='width:" + procent + "%'>" + r[c.ColumnName] + "&nbsp;Uhr</div>\n</div>\n");
+                                break;
+                            default:
+                                builder.Append(r[c.ColumnName]);
+                                break;
+                        }
+                        builder.Append("</td>\n");
+                    }
+                    builder.Append("\n</tr>\n");
+                }
+                builder.Append("</table>\n");
+
+                //if (logedInUserId != 0)
+                //{
+                //    builder.Append("   <form id='form1' method='post' class='w3-margin' action='/shift/create'>\n");
+
+                //  //  builder.Append("<input type='hidden' name='' value='" + logedInUserId + "'>\n");
+                //    builder.Append("<a href='/shift/create' class='w3-button w3-display-left'><i class='w3-xxlarge material-icons-outlined'>add_box</i></a>");
+
+                //    builder.Append("   </form>\n");
+                //}
+
+                return builder.ToString();
             }
-            builder.Append("</table>\n");
-
-            //if (logedInUserId != 0)
-            //{
-            //    builder.Append("   <form id='form1' method='post' class='w3-margin' action='/shift/create'>\n");
-
-            //  //  builder.Append("<input type='hidden' name='' value='" + logedInUserId + "'>\n");
-            //    builder.Append("<a href='/shift/create' class='w3-button w3-display-left'><i class='w3-xxlarge material-icons-outlined'>add_box</i></a>");
-
-            //    builder.Append("   </form>\n");
-            //}
-
-            return builder.ToString();
+            catch (Exception ex)
+            {
+                throw ex;
+            }
         }
 
         private static string HtmlTableBlocked(DataTable dt, int contentId = 0, bool canUserEdit = false)
