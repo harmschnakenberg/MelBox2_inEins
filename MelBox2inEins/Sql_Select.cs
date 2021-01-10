@@ -337,7 +337,7 @@ namespace MelBox2
                             "0 AS SendEmail, " +
                             "d AS Datum,  " +
                             "NULL AS Beginn, NULL AS Ende " +
-                            "FROM Calendar " +
+                            "FROM ViewYearFromToday " +
                             "WHERE Datum >= date('now') ORDER BY Datum " +
                             "";            
             try

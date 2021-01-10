@@ -53,8 +53,6 @@ namespace MelBox2
         /// <returns></returns>
         public DataTable SqlSelectDataTable(string tableName, string query, Dictionary<string, object> args = null)
         {
-
-
             try
             {
                 using (var connection = new SqliteConnection(DataSource))
@@ -104,13 +102,14 @@ namespace MelBox2
                                 //shiftTable.Columns.Add(reader.GetName(i), reader.GetFieldType(i));
                                 shiftTable.Columns.Add(reader.GetName(i), typeof(string));
                             }
-                            int n = 0;
+                            
+                            //int n = 0;
 
                             while (reader.Read())
                             {
                                 List<object> row = new List<object>();
 
-                                Console.Write("\r\nZeile {0}:", n++);
+                                //Console.Write("\r\nZeile {0}:", n++);
 
                                 for (int i = 0; i < reader.FieldCount; i++)
                                 {
@@ -119,13 +118,13 @@ namespace MelBox2
                                     if (reader.IsDBNull(i))
                                     {
                                         row.Add(string.Empty);
-                                        Console.Write("'NULL'\t");
+                                        //Console.Write("'NULL'\t");
                                     }
                                     else
                                     {
                                         string r = reader.GetFieldValue<string>(i);
                                         row.Add(r);
-                                        Console.Write(r + "\t");
+                                        //Console.Write(r + "\t");
                                     }
                                 }
 
@@ -133,16 +132,13 @@ namespace MelBox2
                             }
                             return shiftTable;
                         }
-                    }
-                
+                    }                
                 }
             }
             catch (Exception ex)
             {
                 throw new Exception("SqlSelectDataTable(): " + query + "\r\n" + ex.GetType() + "\r\n" + ex.Message);
             }
-
-          //  return shiftTable;
         }
 
         /// <summary>

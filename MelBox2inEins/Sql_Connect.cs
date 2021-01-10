@@ -100,9 +100,11 @@ namespace MelBox2
                     query.Append("\"EndHour\" INTEGER NOT NULL, \"Days\" INTEGER NOT NULL); ");
 
                     //Hilfstabelle
-                    query.Append("CREATE TABLE IF NOT EXISTS Calendar ( d TEXT UNIQUE NOT NULL ON CONFLICT IGNORE); ");
+                    //query.Append("CREATE TABLE IF NOT EXISTS Calendar ( d TEXT UNIQUE NOT NULL ON CONFLICT IGNORE); ");
 
                     //Views
+                    query.Append("CREATE VIEW \"ViewYearFromToday\" AS SELECT d FROM ( WITH RECURSIVE dates(d) AS( VALUES(date('now')) UNION ALL SELECT date(d, '+1 day') FROM dates WHERE d < date('now', '+1 year')) SELECT d FROM dates ) WHERE d NOT IN(SELECT date(StartTime) FROM shifts WHERE date(StartTime) >= date('now') ); ");
+
                     query.Append("CREATE VIEW \"ViewMessagesRecieved\" AS SELECT r.Id As Nr, RecieveTime AS Empfangen, c.Name AS von, (SELECT Content FROM MessageContent WHERE Id = r.ContentId) AS Inhalt ");
                     query.Append("FROM LogRecieved AS r JOIN Contact AS c ON FromContactId = c.Id; ");
 
