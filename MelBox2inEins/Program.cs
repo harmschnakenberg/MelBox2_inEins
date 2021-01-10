@@ -23,9 +23,7 @@ namespace MelBox2
         //internal static Gsm gsm = new Gsm();
         private static void Main()
         {
-            const string help = "\r\n- ENTF zum Aufräumen der Anzeige\r\n" +
-                                "- EINF für AT-Befehl\r\n" +
-                                "- ESC Taste zum beenden...\r\n";
+
             try
             {
                 Console.WriteLine("Programm gestartet.");
@@ -54,29 +52,42 @@ namespace MelBox2
                 //Auskommentiert für Test WebServer
            //     Gsm.Connect();
 
-                #if DEBUG
+#if DEBUG
                     Console.WriteLine("\r\nDEBUG Mode: es wird keine StartUp-Info an MelBox2-Admin gesendet.");
-                #else
+#else
                     Gsm.SmsSend(Properties.Settings.Default.MelBoxAdminPhone, "MelBox2 - Anwendung neu gestartet um " + DateTime.Now); //Email?
-                #endif
+#endif
+
+                const string help = "\r\n- ENTF zum Aufräumen der Anzeige\r\n" +
+                    "- EINF für AT-Befehl\r\n" +
+                    "- ESC Taste zum beenden...\r\n";
 
                 Console.WriteLine(help);
-                do
+
+                while (true)
                 {
-                    if (Console.ReadKey(true).Key == ConsoleKey.Delete)
-                    {                        
-                        Console.Clear();
-                        Console.WriteLine(help);
-                        GlobalProperty.ShowOnConsole();
+                    ConsoleKeyInfo pressed = Console.ReadKey();
+
+                    if (pressed.Key == ConsoleKey.Escape)
+                    {
+                        break;
                     }
 
-                    if (Console.ReadKey(true).Key == ConsoleKey.Insert)
+                    if (pressed.Key == ConsoleKey.Delete)
+                    {                        
+                        Console.Clear();
+                        GlobalProperty.ShowOnConsole();
+                        Console.WriteLine(help);
+                    }
+
+                    if (pressed.Key == ConsoleKey.Insert)
                     {
                         Console.WriteLine("AT-Befehl eingeben:");
                         string at = Console.ReadLine();
                         Gsm_Basics.AddAtCommand(at);
                     }
-                } while (Console.ReadKey(true).Key != ConsoleKey.Escape);
+                }
+
             }
             finally
             {
