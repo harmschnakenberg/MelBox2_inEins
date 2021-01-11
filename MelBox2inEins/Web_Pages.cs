@@ -253,13 +253,25 @@ namespace MelBox2
 
         #region Bereitschaft
         [RestRoute(HttpMethod = HttpMethod.GET, PathInfo = "/shift")]
+        [RestRoute(HttpMethod = HttpMethod.GET, PathInfo = @"^/shift/\w+$")] //@"^/user/\d+$"
         public IHttpContext ShowMelBoxShift(IHttpContext context)
         {
+            int logedInUserId = 0;
+            if (context.Request.RawUrl.Length > 7)
+            {
+                string guid = context.Request.RawUrl.Remove(0, 7);
+
+                if (MelBoxWeb.LogedInGuids.ContainsKey(guid))
+                {
+                    logedInUserId = MelBoxWeb.LogedInGuids[guid];
+                }
+            }
+
             DataTable dt = Program.Sql.GetViewShift();
 
             StringBuilder builder = new StringBuilder();
             builder.Append(MelBoxWeb.HtmlHead(dt.TableName));
-            builder.Append(MelBoxWeb.HtmlUnitShift(dt));
+            builder.Append(MelBoxWeb.HtmlUnitShift(dt, logedInUserId));
             builder.Append(MelBoxWeb.HtmlAccordeonInfo("Bereitschaft", "Eine Bereitschafts-Einheit geht immer über einen Tageswechsel. Ab Uhrzeit 'Beginn' bis zum Folgetag Uhrzeit 'Ende' werden eingehende Nachrichten an den eingeteilten Kontakt gesendet."));
             builder.Append(MelBoxWeb.HtmlFoot());
 
@@ -379,7 +391,7 @@ namespace MelBox2
                             Program.Sql.InsertShift(logedInContactId, StartTime, EndTime);
                         }
 
-                        Program.Sql.InsertCalendarMonth();
+                        //Program.Sql.InsertCalendarMonth();
 
                         builder.Append(MelBoxWeb.HtmlAlert(3, "Neue Bereitschaft erstellt", string.Format("Neue Bereitschaft vom {0} bis {1} erstellt.", firstStartTime, lastEndTime) ) );
                     }
@@ -423,7 +435,7 @@ namespace MelBox2
             {
                 builder.Append(MelBoxWeb.HtmlAlert(4, "Bitte einloggen", "Änderungen sind nur eingelogged möglich."));
             }
-            else if (!args.ContainsKey("selectedRow") || !int.TryParse(args["selectedRow"], out int contentId))
+            else if (!args.ContainsKey("selectedRow") || !int.TryParse(args["selectedRow"], out int shiftId))
             {
                 builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler", "Es wurde keine gültige Bereitschaft zum ändern übergeben."));
             }
@@ -437,18 +449,21 @@ namespace MelBox2
                 }
                 else
                 {
-                    int shiftId = 0;
-                    int.TryParse(args["selectedRow"].ToString(), out shiftId);
+                    //int shiftId = 0;
+                    //int.TryParse(args["selectedRow"].ToString(), out shiftId);
 
                     #region Antwort verarbeiten
                     if (args.ContainsKey("selectedRow") && args.ContainsKey("ContactId") && args.ContainsKey("Datum") && args.ContainsKey("Beginn") && args.ContainsKey("Ende"))
-                    {
-                        int contactId = 0;
-                        int.TryParse(args["ContactId"].ToString(), out contactId); ;
+                    {  
+                        int.TryParse(args["ContactId"].ToString(), out int contactId); ;
 
                         if (contactId != logedInContactId)
                         {
                             builder.Append(MelBoxWeb.HtmlAlert(2, "Nicht änderbar", string.Format("Sie können nur ihre eigenen Bereitschaftszeiten bearbeiten.")));
+                        }
+                        if (shiftId == 0)
+                        {
+                            builder.Append(MelBoxWeb.HtmlAlert(2, "Keine gültige Nummer", "Der gewählte Zeitraum hat keine zugewiesene Nummer oder der Aufruf war fehlerhaft. Bereitschaftszeit neu erstellen?"));
                         }
                         else
                         {

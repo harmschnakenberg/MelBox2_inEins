@@ -57,7 +57,7 @@ namespace MelBox2
 		#endregion
 
 		/// <summary>
-		/// BAUSTELLE
+		/// BAUSTELLE: nicht getestet
 		/// </summary>
 		static void InactiveNotification()
 		{
@@ -69,10 +69,22 @@ namespace MelBox2
 				// "CAST( (strftime('%s','now') - strftime('%s',RecieveTime, '+' || MaxInactiveHours ||' hours'))/3600 AS INTEGER) || ' Std.' AS Fällig_seit FROM LogRecieved " +
 				// "JOIN Contact ON Contact.Id = LogRecieved.FromContactId WHERE MaxInactiveHours > 0 AND DATETIME(RecieveTime, '+' || MaxInactiveHours ||' hours') < Datetime('now'); " +
 
-				string col1 = row["Name"].ToString();
-				string col2 = row["MaxInactiveHours"].ToString(); ;
-	
+				string col2 = row["Name"].ToString();
+				//string col3 = row["Max_Inactive"].ToString();
+				string col4 = row["Letzte_Nachricht"].ToString();
+				string col5 = row["Fällig_seit"].ToString(); ;
 
+				string smsText = string.Format("Zeitüberschreitung {0} für {1} - letzte Nachricht {2}", col5, col2, col4);
+
+                //ulong phone = Properties.Settings.Default.MelBoxAdminPhone;
+                //Gsm.SmsSend(phone, smsText);
+
+                System.Net.Mail.MailAddressCollection to = new System.Net.Mail.MailAddressCollection
+                {
+                    Email.SMSCenter
+                };
+
+                Email.Send(to, smsText);				
 			}
 		}
 

@@ -23,7 +23,6 @@ namespace MelBox2
         //internal static Gsm gsm = new Gsm();
         private static void Main()
         {
-
             try
             {
                 Console.WriteLine("Programm gestartet.");

@@ -19,8 +19,8 @@ namespace MelBox2
         {
 
             //BAUSTELLE
-            Console.WriteLine("Email nicht implementiert. Keine gesendet Email an: " + to.ToList().ToArray().ToString());
-            return;
+           // Console.WriteLine("Email nicht implementiert. Keine gesendet Email an: " + to.ToList().ToArray().ToString());
+           // return;
 
             //per SmtpClient Funktioniert.
             using (SmtpClient smtpClient = new SmtpClient())
@@ -62,8 +62,12 @@ namespace MelBox2
                     }
                     catch (SmtpException ex)
                     {
+#if DEBUG
+                        Console.WriteLine("Fehler: Email nicht gesendet an " + to.ToList().ToArray().ToString() + Environment.NewLine + ex.GetType() + Environment.NewLine + ex.Message);
+#else
                         //provisorisch
                         throw ex;
+#endif
                     }
                 }
             }

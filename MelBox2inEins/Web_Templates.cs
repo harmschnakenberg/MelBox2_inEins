@@ -97,7 +97,7 @@ namespace MelBox2
             builder.Append(" if ( sessionStorage.getItem('guid') !== null) {\n");
             builder.Append("  document.getElementById('guid').value = sessionStorage.getItem('guid');");
             builder.Append("  document.getElementById('buttonaccount').href = '/account/' + sessionStorage.getItem('guid');");
-          //  builder.Append("  document.getElementById('buttonshift').href = '/shift/' + sessionStorage.getItem('guid');");
+            builder.Append("  document.getElementById('buttonshift').href = '/shift/' + sessionStorage.getItem('guid');");
             builder.Append("  w3.removeClass('.w3-disabled','w3-disabled'); \n");
             builder.Append("  w3.removeClass('.w3-hidden','w3-hidden'); \n");
             builder.Append(" }\n");
@@ -253,7 +253,7 @@ namespace MelBox2
 
             if (canUserEdit)
             {
-                builder.Append("<th>Edit</th>");
+                builder.Append("<th><i class='w3-xxlarge material-icons-outlined'>create</i></th>");
             }
 
             foreach (DataColumn c in dt.Columns)
@@ -287,7 +287,7 @@ namespace MelBox2
             return builder.ToString();
         }
 
-        private static string HtmlTableShift(DataTable dt, int shiftId = 0, bool canUserEdit = false)
+        private static string HtmlTableShift(DataTable dt, int shiftId = 0, int logedInUserId = 0)
         {
             try
             {
@@ -301,9 +301,9 @@ namespace MelBox2
                 builder.Append("<table class='w3-table-all w3-hoverable w3-cell' id='myTable'>\n");
                 builder.Append("<tr class='w3-teak'>\n\t");
 
-                if (canUserEdit)
+                if (logedInUserId != 0)
                 {
-                    builder.Append("<th>Edit</th>");
+                    builder.Append("<th><i class='w3-xxlarge material-icons-outlined'>create</i></th>");
                 }
 
                 foreach (DataColumn c in dt.Columns)
@@ -337,15 +337,16 @@ namespace MelBox2
 
                     builder.Append("<tr class='myRow'>\n\t");
 
-                    if (canUserEdit)
+                    if (logedInUserId != 0)
                     {
-                        int.TryParse(r[dt.Columns[0]].ToString(), out int value);
+                        int.TryParse(r[dt.Columns[0]].ToString(), out int tableIdColValue);
+                        int.TryParse(r[dt.Columns[1]].ToString(), out int shiftContactId);
 
-                        string disabled = "";
-                        if (value == 0) disabled = "disabled";
+                        string disabled = "disabled";
+                        if (logedInUserId == shiftContactId || (tableIdColValue == 0 && logedInUserId != 0)) disabled = "";
 
                         builder.Append("<td>");
-                        builder.Append("<input class='w3-radio w3-hidden' type='radio' name='selectedRow' value='" + value + "' form='form1' onclick=\"w3.show('#Editor')\" " + disabled + ">");
+                        builder.Append("<input class='w3-radio w3-hidden' type='radio' name='selectedRow' value='" + tableIdColValue + "' form='form1' onclick=\"w3.show('#Editor')\" " + disabled + ">");
                         builder.Append("</td>\n");
                     }
 
@@ -387,16 +388,6 @@ namespace MelBox2
                 }
                 builder.Append("</table>\n");
 
-                //if (logedInUserId != 0)
-                //{
-                //    builder.Append("   <form id='form1' method='post' class='w3-margin' action='/shift/create'>\n");
-
-                //  //  builder.Append("<input type='hidden' name='' value='" + logedInUserId + "'>\n");
-                //    builder.Append("<a href='/shift/create' class='w3-button w3-display-left'><i class='w3-xxlarge material-icons-outlined'>add_box</i></a>");
-
-                //    builder.Append("   </form>\n");
-                //}
-
                 return builder.ToString();
             }
             catch (Exception ex)
@@ -421,7 +412,7 @@ namespace MelBox2
 
             if (canUserEdit)
             {
-                builder.Append("<th>Edit</th>");
+                builder.Append("<th><i class='w3-xxlarge material-icons-outlined'>create</i></th>");
             }
 
             foreach (DataColumn c in dt.Columns)
@@ -828,22 +819,39 @@ namespace MelBox2
             builder.Append(" <div class='w3-col l3 m4 s6'>\n");
             builder.Append("  <input form='form1' class='w3-check w3-center w3-margin w3-border w3-disabled' type='checkbox' name='SendEmail' id='SendEmail' " + (sendEmail ? "checked" : string.Empty) + " disabled>\n");
             builder.Append(" </div>\n</div>\n");
+            ////Datum
+            //builder.Append("<div class='w3-row w3-section'>\n");
+            //builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'><i class='w3-xxlarge material-icons-outlined'>today</i></div>\n");
+            //builder.Append(" <div class='w3-col l3 m4 s6'>\n"); ;
+            //builder.Append("  <input form='form1' class='w3-input w3-border w3-disabled' type='date'  placeholder='Beginndatum' name='Datum' id='Datum' " +
+            //               "min='" + DateTime.Now.ToString("yyyy-MM-dd") + "' value='" + date.ToString("yyyy-MM-dd") + "' autocomplete required>\n");
+            ////  builder.Append(" </div>\n</div>\n");
+            //builder.Append(" </div>\n");
+            ////Woche erstellen
+            ////  builder.Append("<div class='w3-row w3-section'>\n");
+            //builder.Append(" <div class='w3-right-align w3-col l1 m1 s1'><i class='w3-xxlarge material-icons-outlined'>date_range</i></div>\n");
+            //builder.Append(" <div class='w3-col l1 m1 s1'>\n");
+            //builder.Append("  <input form='form1' class='w3-check w3-center w3-margin w3-border w3-disabled' type='checkbox' name='CreateWeekShift' id='CreateWeekShift' >\n");
+            //builder.Append(" </div>\n");
+            //builder.Append("</div>\n");
+            //builder.Append(" <span>Ganze Kalenderwoche erstellen</span>\n");
+
             //Datum
             builder.Append("<div class='w3-row w3-section'>\n");
             builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'><i class='w3-xxlarge material-icons-outlined'>today</i></div>\n");
             builder.Append(" <div class='w3-col l3 m4 s6'>\n"); ;
             builder.Append("  <input form='form1' class='w3-input w3-border w3-disabled' type='date'  placeholder='Beginndatum' name='Datum' id='Datum' " +
                            "min='" + DateTime.Now.ToString("yyyy-MM-dd") + "' value='" + date.ToString("yyyy-MM-dd") + "' autocomplete required>\n");
-            //  builder.Append(" </div>\n</div>\n");
             builder.Append(" </div>\n");
+
             //Woche erstellen
-            //  builder.Append("<div class='w3-row w3-section'>\n");
             builder.Append(" <div class='w3-right-align w3-col l1 m1 s1'><i class='w3-xxlarge material-icons-outlined'>date_range</i></div>\n");
-            builder.Append(" <div class='w3-col l1 m1 s1'>\n");
-            builder.Append("  <input form='form1' class='w3-check w3-center w3-margin w3-border w3-disabled' type='checkbox' name='CreateWeekShift' id='CreateWeekShift' >\n");
+            builder.Append(" <div class='w3-rest w3-tooltip'>\n");
+            builder.Append("  <input form='form1' class='w3-check w3-center w3-margin w3-border w3-disabled w3-col l1 m1 s1' type='checkbox' name='CreateWeekShift' id='CreateWeekShift' >\n");
+            builder.Append("  <span class='w3-text w3-tag w3-teal'><b>Ganze Kalenderwoche erstellen</b></span>\n ");
             builder.Append(" </div>\n");
             builder.Append("</div>\n");
-            builder.Append(" <span>Ganze Kalenderwoche erstellen</span>\n");
+
             //Beginn
             builder.Append("<div class='w3-row w3-section'>\n");
             builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'><span>Beginn</span><i class='w3-xxlarge material-icons-outlined'>hourglass_top</i></div>\n");
@@ -934,7 +942,7 @@ namespace MelBox2
             return builder.ToString();
         }
 
-        public static string HtmlUnitShift(DataTable dt )
+        public static string HtmlUnitShift(DataTable dt, int logedInUserId = 0 )
         {
             Dictionary<string, string> action = new Dictionary<string, string>
                 {
@@ -944,11 +952,135 @@ namespace MelBox2
                 };
 
             StringBuilder builder = new StringBuilder();
-            builder.Append(HtmlTableShift(dt, 0, true));
-            builder.Append(HtmlEditor(action));
+            builder.Append(HtmlTableShift(dt, 0, logedInUserId));
+
+                builder.Append(HtmlEditor(action));
+            
 
             return builder.ToString();
         }
         #endregion
     }
 }
+
+/*
+ * BACKUP
+ * 
+       private static string HtmlTableShift(DataTable dt, int shiftId = 0, bool canUserEdit = false)
+        {
+            try
+            {
+                StringBuilder builder = new StringBuilder();
+
+                builder.Append("<div class='w3-container'>\n");
+                builder.Append(" <div class='w3-third'>&nbsp;</div>\n");
+                builder.Append(" <input oninput=\"w3.filterHTML('#myTable', '.myRow', this.value)\" class='w3-input w3-third w3-margin w3-border w3-round-large' placeholder='Suche nach..'>\n");
+                builder.Append("</div>");
+
+                builder.Append("<table class='w3-table-all w3-hoverable w3-cell' id='myTable'>\n");
+                builder.Append("<tr class='w3-teak'>\n\t");
+
+                if (canUserEdit)
+                {
+                    builder.Append("<th>Edit</th>");
+                }
+
+                foreach (DataColumn c in dt.Columns)
+                {
+                    builder.Append("<th>");
+                    switch (c.ColumnName)
+                    {
+                        case "SendSms":
+                            builder.Append("<i class='w3-xxlarge material-icons-outlined'>smartphone</i>");
+                            break;
+                        case "SendEmail":
+                            builder.Append("<i class='w3-xxlarge material-icons-outlined'>email</i>");
+                            break;
+                        case "ContactId":
+                            //nichts anzeigen
+                            break;
+                        default:
+                            builder.Append(c.ColumnName);
+                            break;
+                    }
+
+                    builder.Append("</th>");
+                }
+                builder.Append("\n</tr>\n");
+
+                int procent;
+
+                foreach (DataRow r in dt.Rows)
+                {
+                    if (shiftId != 0 && shiftId != int.Parse(r[dt.Columns["Id"]].ToString())) continue; // Wenn nur eine Id angezeigt werden soll
+
+                    builder.Append("<tr class='myRow'>\n\t");
+
+                    if (canUserEdit)
+                    {
+                        int.TryParse(r[dt.Columns[0]].ToString(), out int value);
+
+                        string disabled = "";
+                        if (value == 0) disabled = "disabled";
+
+                        builder.Append("<td>");
+                        builder.Append("<input class='w3-radio w3-hidden' type='radio' name='selectedRow' value='" + value + "' form='form1' onclick=\"w3.show('#Editor')\" " + disabled + ">");
+                        builder.Append("</td>\n");
+                    }
+
+                    foreach (DataColumn c in dt.Columns)
+                    {
+                        builder.Append("<td>");
+                        switch (c.ColumnName)
+                        {
+                            case "ContactId":
+                                builder.Append("<input type='hidden' value='" + r[c.ColumnName] + "'>");
+                                break;
+                            case "SendSms":
+                                builder.Append("<input class='w3-check w3-center' type='checkbox' name='SendSms' ");
+                                builder.Append((int.Parse(r[c.ColumnName].ToString()) > 0) ? "checked" : string.Empty);
+                                builder.Append(" disabled>");
+                                break;
+                            case "SendEmail":
+                                builder.Append("<input class='w3-check w3-center' type='checkbox' name='SendEmail' ");
+                                builder.Append((int.Parse(r[c.ColumnName].ToString()) > 0) ? "checked" : string.Empty);
+                                builder.Append(" disabled>");
+                                break;
+                            case "Beginn":
+                                if (!int.TryParse(r[c.ColumnName].ToString(), out procent)) procent = 24; //* 100 / 24;
+                                procent = procent * 100 / 24;
+                                builder.Append("<div class='w3-cyan' style='width:240px;'>\n  <div class='w3-pale-blue' style='width:" + procent + "%'><span>" + r[c.ColumnName] + "&nbsp;Uhr</span></div>\n</div>\n");
+                                break;
+                            case "Ende":
+                                int.TryParse(r[c.ColumnName].ToString(), out procent);
+                                procent = procent * 100 / 24;
+                                builder.Append("<div class='w3-pale-blue' style='width:240px;'>\n <div class='w3-cyan' style='width:" + procent + "%'>" + r[c.ColumnName] + "&nbsp;Uhr</div>\n</div>\n");
+                                break;
+                            default:
+                                builder.Append(r[c.ColumnName]);
+                                break;
+                        }
+                        builder.Append("</td>\n");
+                    }
+                    builder.Append("\n</tr>\n");
+                }
+                builder.Append("</table>\n");
+
+                //if (logedInUserId != 0)
+                //{
+                //    builder.Append("   <form id='form1' method='post' class='w3-margin' action='/shift/create'>\n");
+
+                //  //  builder.Append("<input type='hidden' name='' value='" + logedInUserId + "'>\n");
+                //    builder.Append("<a href='/shift/create' class='w3-button w3-display-left'><i class='w3-xxlarge material-icons-outlined'>add_box</i></a>");
+
+                //    builder.Append("   </form>\n");
+                //}
+
+                return builder.ToString();
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+//*/

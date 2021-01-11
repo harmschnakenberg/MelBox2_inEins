@@ -10,9 +10,7 @@ using Microsoft.Data.Sqlite;
 namespace MelBox2
 {
     public partial class MelBoxSql
-    {
-
-       
+    {   
         #region Methods
 
         public MelBoxSql(string dbPath = "")
@@ -68,6 +66,9 @@ namespace MelBox2
                     connection.Open();
 
                     StringBuilder query = new StringBuilder();
+
+                    #region SQL Schema erstellen
+
                     query.Append("CREATE TABLE \"Log\"(\"Id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,\"LogTime\" TEXT NOT NULL, \"Topic\" TEXT , \"Prio\" INTEGER NOT NULL, \"Content\" TEXT); ");
                     //Kontakte
                     query.Append("CREATE TABLE \"Company\" (\"Id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \"Name\" TEXT NOT NULL, \"Address\" TEXT, \"City\" TEXT); ");
@@ -103,7 +104,9 @@ namespace MelBox2
                     //query.Append("CREATE TABLE IF NOT EXISTS Calendar ( d TEXT UNIQUE NOT NULL ON CONFLICT IGNORE); ");
 
                     //Views
-                    query.Append("CREATE VIEW \"ViewYearFromToday\" AS SELECT d FROM ( WITH RECURSIVE dates(d) AS( VALUES(date('now')) UNION ALL SELECT date(d, '+1 day') FROM dates WHERE d < date('now', '+1 year')) SELECT d FROM dates ) WHERE d NOT IN(SELECT date(StartTime) FROM shifts WHERE date(StartTime) >= date('now') ); ");
+                    query.Append("CREATE VIEW \"ViewYearFromToday\" AS SELECT ");
+                    query.Append("CASE (CAST(strftime('%w', d) AS INT) + 6) % 7 WHEN 0 THEN 'Mo' WHEN 1 THEN 'Di' WHEN 2 THEN 'Mi' WHEN 3 THEN 'Do' WHEN 4 THEN 'Fr' WHEN 5 THEN 'Sa' ELSE 'So' END AS Tag, ");
+                    query.Append("d FROM ( WITH RECURSIVE dates(d) AS( VALUES(date('now')) UNION ALL SELECT date(d, '+1 day') FROM dates WHERE d < date('now', '+1 year')) SELECT d FROM dates ) WHERE d NOT IN(SELECT date(StartTime) FROM shifts WHERE date(StartTime) >= date('now') ); ");
 
                     query.Append("CREATE VIEW \"ViewMessagesRecieved\" AS SELECT r.Id As Nr, RecieveTime AS Empfangen, c.Name AS von, (SELECT Content FROM MessageContent WHERE Id = r.ContentId) AS Inhalt ");
                     query.Append("FROM LogRecieved AS r JOIN Contact AS c ON FromContactId = c.Id; ");
@@ -111,18 +114,26 @@ namespace MelBox2
                     query.Append("CREATE VIEW \"ViewMessagesSent\" AS SELECT SentTime AS Gesendet, c.name AS An, Content AS Inhalt, SentVia AS Via, ConfirmStatus AS Sendestatus ");
                     query.Append("FROM LogSent AS ls JOIN Contact AS c ON SentToId = c.Id JOIN MessageContent AS mc ON mc.id = ls.ContentId; ");
 
-                    query.Append("CREATE VIEW \"ViewMessagesOverdue\" AS SELECT FromContactId AS Id, cont.Name, comp.Name AS Firma, MaxInactiveHours || ' Std.' AS Max_Inaktiv, RecieveTime AS Letzte_Nachricht, CAST( (strftime('%s', 'now') - strftime('%s', RecieveTime, '+' || MaxInactiveHours || ' hours')) / 3600 AS INTEGER) || ' Std.' AS Fällig_seit ");
-                    query.Append("FROM LogRecieved JOIN Contact AS cont ON cont.Id = LogRecieved.FromContactId JOIN Company AS comp ON comp.Id = cont.CompanyId WHERE MaxInactiveHours > 0 AND DATETIME(RecieveTime, '+' || MaxInactiveHours || ' hours') < Datetime('now'); ");
+                    query.Append("CREATE VIEW \"ViewMessagesOverdue\" AS SELECT FromContactId AS Id, cont.Name, comp.Name AS Firma, MaxInactiveHours || ' Std.' AS Max_Inaktiv, RecieveTime AS Letzte_Nachricht, Content AS Inhalt, CAST( (strftime('%s', 'now') - strftime('%s', RecieveTime, '+' || MaxInactiveHours || ' hours')) / 3600 AS INTEGER) || ' Std.' AS Fällig_seit ");
+                    query.Append("FROM LogRecieved JOIN Contact AS cont ON cont.Id = LogRecieved.FromContactId JOIN Company AS comp ON comp.Id = cont.CompanyId JOIN MessageContent AS msg ON msg.Id = ContentId WHERE MaxInactiveHours > 0 AND DATETIME(RecieveTime, '+' || MaxInactiveHours || ' hours') < Datetime('now'); ");
 
                     query.Append("CREATE VIEW \"ViewMessagesBlocked\" AS SELECT BlockedMessages.Id AS Id, Content As Nachricht, StartHour || ' Uhr' As Beginn, EndHour || ' Uhr' As Ende, (SELECT Days & 2 > 0) AS Mo, (SELECT Days & 4 > 0) AS Di, (SELECT Days & 8 > 0) AS Mi, (SELECT Days & 16 > 0) AS Do, (SELECT Days & 32 > 0) AS Fr, (SELECT Days & 64 > 0) AS Sa, (SELECT Days & 1 > 0) AS So FROM BlockedMessages JOIN MessageContent ON MessageContent.Id = BlockedMessages.Id; ");
 
-                    query.Append("CREATE VIEW \"ViewShift\" AS ");                   
-                    query.Append("SELECT s.Id AS Nr, c.Id AS ContactId, c.Name AS Name, SendSms, SendEmail, date(StartTime) AS Datum, CAST(strftime('%H', StartTime, 'localtime') AS INTEGER) AS Beginn, CAST(strftime('%H', EndTime, 'localtime') AS INTEGER) AS Ende FROM Shifts AS s JOIN Contact AS c ON ContactId = c.Id ");
+                    query.Append("CREATE VIEW \"ViewShift\" AS ");
+                    query.Append("SELECT s.Id AS Nr, c.Id AS ContactId, c.Name AS Name, SendSms, SendEmail, ");
+                    query.Append("CASE(CAST(strftime('%w', StartTime) AS INT) + 6) % 7 WHEN 0 THEN 'Mo' WHEN 1 THEN 'Di' WHEN 2 THEN 'Mi' WHEN 3 THEN 'Do' WHEN 4 THEN 'Fr' WHEN 5 THEN 'Sa' ELSE 'So' END AS Tag, ");
+                    query.Append("date(StartTime) AS Datum, CAST(strftime('%H', StartTime, 'localtime') AS INTEGER) AS Beginn, CAST(strftime('%H', EndTime, 'localtime') AS INTEGER) AS Ende FROM Shifts AS s JOIN Contact AS c ON ContactId = c.Id WHERE Datum >= date('now') ");
                     query.Append("UNION ");
-                    query.Append("SELECT NULL AS Nr, NULL AS ContactId, NULL AS Name, NULL AS SendSms, NULL AS SendEmail, d AS Datum, NULL AS Beginn, NULL AS Ende FROM Calendar ");
-                    query.Append("WHERE Datum >= date('now') ORDER BY Datum ");
+                    query.Append("SELECT NULL AS Nr, NULL AS ContactId, NULL AS Name, 0 AS SendSms, 0 AS SendEmail, ");
+                    query.Append("CASE(CAST(strftime('%w', d) AS INT) + 6) % 7 WHEN 0 THEN 'Mo' WHEN 1 THEN 'Di' WHEN 2 THEN 'Mi' WHEN 3 THEN 'Do' WHEN 4 THEN 'Fr' WHEN 5 THEN 'Sa' ELSE 'So' END AS Tag, ");
+                    query.Append("d AS Datum, NULL AS Beginn, NULL AS Ende FROM ViewYearFromToday WHERE Datum >= date('now') ");
+                    query.Append("ORDER BY Datum ; ");
 
                     SqlNonQuery(query.ToString());
+
+                    #endregion
+
+                    #region Mit Startwerten füllen
 
                     Log(LogTopic.Start, LogPrio.Info, "Datenbank neu erstellt.");
 
@@ -152,6 +163,8 @@ namespace MelBox2
                     InsertShift(7, DateTime.Now.AddDays(4).AddHours(-1), DateTime.Now.AddDays(4).AddHours(14));
 
                     InsertMessageBlocked(1, 7);
+                    
+                    #endregion
                 }
             }
             catch(Exception ex)
