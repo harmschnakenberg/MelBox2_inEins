@@ -56,6 +56,10 @@ namespace MelBox2
 
         #region Constructor
 
+        #endregion
+
+        #region Verbindung
+
         /// <summary>
         /// Nach AppStart erstmals Verbindung zum COM-Port herstellen und GSM-Modem initialisieren 
         /// </summary>
@@ -85,11 +89,8 @@ namespace MelBox2
             RaiseGsmConnected(true, Port.PortName);
         }
 
-        #endregion
-
-        #region Verbindung
         /// <summary>
-        /// Verbindet den COM-Port
+        /// interner Aufruf COM-Port verbinden
         /// </summary>
         private static void ConnectPort()
         {

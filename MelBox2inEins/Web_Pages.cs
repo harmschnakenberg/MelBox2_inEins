@@ -16,8 +16,7 @@ namespace MelBox2
     {
         #region nicht änderbare Tabellen
         [RestRoute(HttpMethod = HttpMethod.GET, PathInfo = "/log")]
-        public IHttpContext ShowMelBoxLog(IHttpContext context)
-#pragma warning restore CA1822 // Mark members as static
+        public static IHttpContext ShowMelBoxLog(IHttpContext context)
         {
             DataTable dt = Program.Sql.GetViewLog(DateTime.UtcNow, DateTime.UtcNow);
 
@@ -254,14 +253,30 @@ namespace MelBox2
         #region Bereitschaft
         [RestRoute(HttpMethod = HttpMethod.GET, PathInfo = "/shift")]
         [RestRoute(HttpMethod = HttpMethod.GET, PathInfo = @"^/shift/\w+$")] //@"^/user/\d+$"
+       // [RestRoute(HttpMethod = HttpMethod.GET, PathInfo = @"^/shift/\d+/\w+$")] 
         public IHttpContext ShowMelBoxShift(IHttpContext context)
-        {
+        {            
+            #region Info aus Aufrufpfad
+            string[] urlParts = context.Request.RawUrl.Split('/');
+            string guid = string.Empty;// context.Request.RawUrl.Remove(0, 9);
             int logedInUserId = 0;
-            if (context.Request.RawUrl.Length > 7)
-            {
-                string guid = context.Request.RawUrl.Remove(0, 7);
 
-                if (MelBoxWeb.LogedInGuids.ContainsKey(guid))
+            if (urlParts.Length == 3)
+            {
+                guid = urlParts[2];
+            }
+            else if (urlParts.Length == 4)
+            {
+                guid = urlParts[3];
+                int.TryParse(urlParts[2], out logedInUserId);
+            }
+            #endregion
+
+            //string guid = context.Request.RawUrl.Remove(0, 7);
+
+            if (MelBoxWeb.LogedInGuids.ContainsKey(guid))
+            {
+                if (logedInUserId == 0)
                 {
                     logedInUserId = MelBoxWeb.LogedInGuids[guid];
                 }
@@ -365,7 +380,7 @@ namespace MelBox2
 
                         if (createWeekShift)
                         {
-                            date =  date.AddDays(DayOfWeek.Monday - date.DayOfWeek);
+                            date = date.AddDays(DayOfWeek.Monday - date.DayOfWeek);
 
                             for (int i = 0; i < 7; i++)
                             {
@@ -449,15 +464,14 @@ namespace MelBox2
                 }
                 else
                 {
-                    //int shiftId = 0;
-                    //int.TryParse(args["selectedRow"].ToString(), out shiftId);
+                    bool isAdmin = MelBoxSql.AdminIds.Contains(logedInContactId);
 
                     #region Antwort verarbeiten
                     if (args.ContainsKey("selectedRow") && args.ContainsKey("ContactId") && args.ContainsKey("Datum") && args.ContainsKey("Beginn") && args.ContainsKey("Ende"))
                     {  
                         int.TryParse(args["ContactId"].ToString(), out int contactId); ;
 
-                        if (contactId != logedInContactId)
+                        if (contactId != logedInContactId && !isAdmin)
                         {
                             builder.Append(MelBoxWeb.HtmlAlert(2, "Nicht änderbar", string.Format("Sie können nur ihre eigenen Bereitschaftszeiten bearbeiten.")));
                         }
@@ -471,16 +485,19 @@ namespace MelBox2
                             int beginHour = 17;
                             int endHour = 7;
 
-
                             date = DateTime.Parse(args["Datum"].ToString()).Date;
                             beginHour = int.Parse(args["Beginn"].ToString());
                             endHour = int.Parse(args["Ende"].ToString());
                             string name = MelBoxWeb.DecodeUmlaute(args["Name"].ToString());
+                           
+                            //Admin: Darstellung anderer User
+                            if (contactId == 0) contactId = logedInContactId;
+                            else logedInContactId = contactId;
 
                             DateTime StartTime = date.AddHours(beginHour);
                             DateTime EndTime = date.AddDays(1).AddHours(endHour);
 
-                            if (!Program.Sql.UpdateShift(shiftId, logedInContactId, StartTime, EndTime))
+                            if (!Program.Sql.UpdateShift(shiftId, contactId, StartTime, EndTime))
                             {
                                 builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler Bereitschaft  Nr. " + shiftId + " bearbeiten",
                                     string.Format("Die Bereitschaft konnte nicht in der Datenbank geändetr werden.")));
@@ -516,21 +533,40 @@ namespace MelBox2
         #region Kontakte
 
         [RestRoute(HttpMethod = HttpMethod.GET, PathInfo = @"^/account/\w+$")] //@"^/user/\d+$"
+   //     [RestRoute(HttpMethod = HttpMethod.GET, PathInfo = @"^/account/\d+/\w+$")] //@"^/user/\d+$"
         public IHttpContext ShowMelBoxAccount(IHttpContext context)
         {
             StringBuilder builder = new StringBuilder();
 
             builder.Append(MelBoxWeb.HtmlHead("Benutzerkonto"));
 
-            string guid = context.Request.RawUrl.Remove(0, 9);
-          
+            #region Info aus Aufrufpfad
+            string[] urlParts = context.Request.RawUrl.Split('/');
+            string guid = string.Empty;// context.Request.RawUrl.Remove(0, 9);
+            int contactId = 0;
+
+            if (urlParts.Length == 3)
+            {
+                guid = urlParts[2];                
+            }
+            else if (urlParts.Length == 4)
+            {
+                guid = urlParts[3];
+                int.TryParse(urlParts[2], out contactId);
+            }
+            #endregion
+
             if (!MelBoxWeb.LogedInGuids.ContainsKey(guid))
             {
                 builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler beim Lesen des Benutzerkontos", "Bitte erneut einloggen."));
+                builder.Append(MelBoxWeb.HtmlLogIn());
             }
             else
             {
-                int contactId = MelBoxWeb.LogedInGuids[guid];
+                if (contactId == 0)
+                {
+                    contactId = MelBoxWeb.LogedInGuids[guid];
+                }
                 builder.Append(MelBoxWeb.HtmlUnitAccount(contactId));                
             }
 

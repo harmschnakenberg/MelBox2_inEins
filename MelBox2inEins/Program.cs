@@ -5,8 +5,12 @@ using System.Timers;
 namespace MelBox2
 {
     /* MelBox2
-     * Diese Konsolenanwendung bündelt mehrere Klassenbibliotheken, und führt diese aus.
+     * besteht aus drei Teilen:
+     * - GSM-Modem "Treiber"
+     * - Datenbankverwaltung
+     * - Webinterface
      * 
+     * Zeiten: In der Anwendung wird mit lokaler Zeit gerechent, in der Datenbank werden UTC-Zeiten gespeichert.
      */
 
     partial class Program
@@ -20,15 +24,16 @@ namespace MelBox2
   
         #endregion
 
-        //internal static Gsm gsm = new Gsm();
+        //internal static Gsm gsm = new Gsm(); //löschen?
         private static void Main()
         {
             try
-            {
-                Console.WriteLine("Programm gestartet.");
+            {                
                 Console.BufferHeight = 1000; //Max. Zeilen in Konsole, bei Überlauf werden älteste Zeilen entfernt
+                Console.WriteLine("Programm gestartet. Konsole mit max. {0} Zeilen.", Console.BufferHeight);
 
                 Email.PermanentEmailRecievers = Properties.Settings.Default.PermanentEmailRecievers.Cast<string>().ToList();
+                Email.MelBox2Admin = new System.Net.Mail.MailAddress(Properties.Settings.Default.MelBoxAdminEmail, "MelBox2 Admin");
 
                 Gsm_Basics.ComPortName = Properties.Settings.Default.ComPort;
                 Gsm_Basics.BaudRate = Properties.Settings.Default.BaudRate;
@@ -49,12 +54,13 @@ namespace MelBox2
                 Sql.InsertMessageRec("Testnachricht am " + DateTime.Now.Date , 4916095285304);
 
                 //Auskommentiert für Test WebServer
-           //     Gsm.Connect();
+                //Gsm.Connect();
 
 #if DEBUG
-                    Console.WriteLine("\r\nDEBUG Mode: es wird keine StartUp-Info an MelBox2-Admin gesendet.");
+                Console.WriteLine("\r\nDEBUG Mode: es wird keine StartUp-Info an MelBox2-Admin gesendet.");
 #else
-                    Gsm.SmsSend(Properties.Settings.Default.MelBoxAdminPhone, "MelBox2 - Anwendung neu gestartet um " + DateTime.Now); //Email?
+                //Gsm.SmsSend(Properties.Settings.Default.MelBoxAdminPhone, "MelBox2 - Anwendung neu gestartet um " + DateTime.Now); //besser Email
+                Email.Send(Email.MelBox2Admin, "MelBox2 - Anwendung neu gestartet um " + DateTime.Now);                    
 #endif
 
                 const string help = "\r\n- ENTF zum Aufräumen der Anzeige\r\n" +

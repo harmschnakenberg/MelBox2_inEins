@@ -25,7 +25,9 @@ namespace MelBox2
                     connection.Open();
 
                     var command = connection.CreateCommand();
+#pragma warning disable CA2100 // Review SQL queries for security vulnerabilities
                     command.CommandText = query;
+#pragma warning restore CA2100 // Review SQL queries for security vulnerabilities
 
                     if (args != null && args.Count > 0)
                     {
@@ -61,7 +63,9 @@ namespace MelBox2
 
                     var command = connection.CreateCommand();
 
+#pragma warning disable CA2100 // Review SQL queries for security vulnerabilities
                     command.CommandText = query;
+#pragma warning restore CA2100 // Review SQL queries for security vulnerabilities
 
                     if (args != null && args.Count > 0)
                     {
@@ -158,7 +162,9 @@ namespace MelBox2
 
                     var command = connection.CreateCommand();
 
+#pragma warning disable CA2100 // Review SQL queries for security vulnerabilities
                     command.CommandText = query;
+#pragma warning restore CA2100 // Review SQL queries for security vulnerabilities
 
                     if (args != null && args.Count > 0)
                     {
@@ -202,7 +208,9 @@ namespace MelBox2
 
                     var command = connection.CreateCommand();
 
+#pragma warning disable CA2100 // Review SQL queries for security vulnerabilities
                     command.CommandText = query;
+#pragma warning restore CA2100 // Review SQL queries for security vulnerabilities
 
                     if (args != null &&  args.Count > 0)
                     {
@@ -233,6 +241,52 @@ namespace MelBox2
             }                       
         }
 
+        public List<int> SqlSelectNumbers(string query, Dictionary<string, object> args = null)
+        {
+            try
+            {
+                List<int> list = new List<int>();
+
+                using (var connection = new SqliteConnection(DataSource))
+                {
+                    connection.Open();
+
+                    var command = connection.CreateCommand();
+
+#pragma warning disable CA2100 // Review SQL queries for security vulnerabilities
+                    command.CommandText = query;
+#pragma warning restore CA2100 // Review SQL queries for security vulnerabilities
+
+                    if (args != null && args.Count > 0)
+                    {
+                        foreach (string key in args.Keys)
+                        {
+                            command.Parameters.AddWithValue(key, args[key]);
+                        }
+                    }
+
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            //Lese Eintrag
+                            if (int.TryParse(reader.GetString(0), out int result))
+                            {
+                                list.Add(result);
+                            }
+                        }
+                    }
+                }
+
+                return list;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("SqlSelectNumbers(): " + query + "\r\n" + ex.GetType() + "\r\n" + ex.Message);
+            }
+        }
+
+
         public System.Net.Mail.MailAddressCollection SqlSelectEmailAddresses(string query, Dictionary<string, object> args = null)
         {
             try
@@ -245,7 +299,9 @@ namespace MelBox2
 
                     var command = connection.CreateCommand();
 
+#pragma warning disable CA2100 // Review SQL queries for security vulnerabilities
                     command.CommandText = query;
+#pragma warning restore CA2100 // Review SQL queries for security vulnerabilities
 
                     if (args != null && args.Count > 0)
                     {

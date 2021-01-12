@@ -12,8 +12,19 @@ namespace MelBox2
     {
         public static string SmtpServer { get; set; } = "mail.gmx.net"; // "192.168.165.29";
         public static MailAddress SMSCenter { get; set; } = new MailAddress("SMSZentrale@Kreutztraeger.de", "SMS Zentrale Kreutzträger Kältetechnik");
+        public static MailAddress MelBox2Admin { get; set; } = new MailAddress("harm.schnakenberg@Kreutztraeger.de", "MelBox2 Admin");
 
         public static List<string> PermanentEmailRecievers { get; set; }
+
+        public static void Send(MailAddress to, string body, string subject = "")
+        {
+            MailAddressCollection addresses = new MailAddressCollection
+            {
+                to
+            };
+
+            Send(addresses, body, subject);
+        }
 
         public static void Send(MailAddressCollection to, string body, string subject = "")
         {

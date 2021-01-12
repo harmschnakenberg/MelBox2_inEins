@@ -330,6 +330,7 @@ namespace MelBox2
                 builder.Append("\n</tr>\n");
 
                 int procent;
+                bool isAdmin = MelBoxSql.AdminIds.Contains(logedInUserId);
 
                 foreach (DataRow r in dt.Rows)
                 {
@@ -343,7 +344,7 @@ namespace MelBox2
                         int.TryParse(r[dt.Columns[1]].ToString(), out int shiftContactId);
 
                         string disabled = "disabled";
-                        if (logedInUserId == shiftContactId || (tableIdColValue == 0 && logedInUserId != 0)) disabled = "";
+                        if (logedInUserId == shiftContactId || (tableIdColValue == 0 && logedInUserId != 0) || isAdmin) disabled = "";
 
                         builder.Append("<td>");
                         builder.Append("<input class='w3-radio w3-hidden' type='radio' name='selectedRow' value='" + tableIdColValue + "' form='form1' onclick=\"w3.show('#Editor')\" " + disabled + ">");
@@ -781,8 +782,7 @@ namespace MelBox2
                 DataTable dtContact = Program.Sql.GetViewContactInfo(shiftContactId);
 
                 if (dtContact.Rows.Count > 0)
-                {
-                    
+                {                    
                     name = dtContact.Rows[0]["Name"].ToString();
                     sendSms = (int.Parse(dtContact.Rows[0]["SendSms"].ToString()) > 0);
                     sendEmail = (int.Parse(dtContact.Rows[0]["SendEmail"].ToString()) > 0);
@@ -792,14 +792,42 @@ namespace MelBox2
             }
             #endregion
 
+            bool isAdmin = MelBoxSql.AdminIds.Contains(shiftContactId);
+
             #region Formular
+            //Kontakt-Auswahl für Admin
+            if (isAdmin)
+            {
+                builder.Append("<script>\n");
+                builder.Append("function myFunction(x, y) {\n");
+                builder.Append(" document.getElementById('ContactId').value = x;\n");
+                builder.Append(" document.getElementById('Name').value = document.getElementById('selectedContact').options[y].text;\n");
+                builder.Append("}\n</script>\n");
+                builder.Append("<div class='w3-row w3-section'>\n");
+                builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'><i class='w3-xxlarge material-icons-outlined'>people</i></div>\n");
+                builder.Append(" <div class='w3-col l3 m4 s6'>\n");
+
+                builder.Append("  <select form='form1' class='w3-input w3-border w3-margin w3-disabled' name='selectedContact' id='selectedContact' onchange='myFunction(this.value, this.selectedIndex)'>\n");
+                //builder.Append("   <option value='0' selected disabled>-keine Auswahl-</option>\n");
+                DataTable dtContactSelection = Program.Sql.GetContactList();
+                foreach (DataRow row in dtContactSelection.Rows)
+                {
+                    if (int.TryParse(row["ContactId"].ToString(), out int selectionContactId))
+                    {
+                        builder.Append("   <option value='" + selectionContactId + "' " + ((selectionContactId == shiftContactId) ? "selected" : string.Empty) + ">" + row["Name"] + "</option>\n"); //
+                    }
+                }
+                builder.Append("  </ select >\n");
+                builder.Append(" </div>\n</div>\n");
+            }
+
             //Id
             builder.Append("<div class='w3-row w3-section'>\n");
             builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'><i class='w3-xxlarge material-icons-outlined'>flag</i></div>\n");
             builder.Append(" <div class='w3-col l3 m4 s6'>\n");
             builder.Append("  <input form='form1' class='w3-input w3-border w3-grey w3-disabled' type='text' placeholder='Laufende Nummer' name='selectedRow' id='Nr' value='" + shiftId + "' readonly>\n");
             builder.Append(" </div>\n</div>\n");
-            //ContactId
+            //ContactId         
             builder.Append("  <input form='form1' type='hidden' name='ContactId' id='ContactId' value='" + shiftContactId + "'>\n");
             //Name
             builder.Append("<div class='w3-row w3-section'>\n");
@@ -807,6 +835,7 @@ namespace MelBox2
             builder.Append(" <div class='w3-rest'>\n");
             builder.Append("  <input form='form1' class='w3-input w3-border w3-grey w3-disabled' type='text'  placeholder='Anzeigename' name='Name' id='Name' value='" + name + "' readonly>\n");
             builder.Append(" </div>\n</div>\n");
+            
             //SendSms
             builder.Append("<div class='w3-row w3-section'>\n");
             builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'><i class='w3-xxlarge material-icons-outlined'>smartphone</i></div>\n");
@@ -819,22 +848,6 @@ namespace MelBox2
             builder.Append(" <div class='w3-col l3 m4 s6'>\n");
             builder.Append("  <input form='form1' class='w3-check w3-center w3-margin w3-border w3-disabled' type='checkbox' name='SendEmail' id='SendEmail' " + (sendEmail ? "checked" : string.Empty) + " disabled>\n");
             builder.Append(" </div>\n</div>\n");
-            ////Datum
-            //builder.Append("<div class='w3-row w3-section'>\n");
-            //builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'><i class='w3-xxlarge material-icons-outlined'>today</i></div>\n");
-            //builder.Append(" <div class='w3-col l3 m4 s6'>\n"); ;
-            //builder.Append("  <input form='form1' class='w3-input w3-border w3-disabled' type='date'  placeholder='Beginndatum' name='Datum' id='Datum' " +
-            //               "min='" + DateTime.Now.ToString("yyyy-MM-dd") + "' value='" + date.ToString("yyyy-MM-dd") + "' autocomplete required>\n");
-            ////  builder.Append(" </div>\n</div>\n");
-            //builder.Append(" </div>\n");
-            ////Woche erstellen
-            ////  builder.Append("<div class='w3-row w3-section'>\n");
-            //builder.Append(" <div class='w3-right-align w3-col l1 m1 s1'><i class='w3-xxlarge material-icons-outlined'>date_range</i></div>\n");
-            //builder.Append(" <div class='w3-col l1 m1 s1'>\n");
-            //builder.Append("  <input form='form1' class='w3-check w3-center w3-margin w3-border w3-disabled' type='checkbox' name='CreateWeekShift' id='CreateWeekShift' >\n");
-            //builder.Append(" </div>\n");
-            //builder.Append("</div>\n");
-            //builder.Append(" <span>Ganze Kalenderwoche erstellen</span>\n");
 
             //Datum
             builder.Append("<div class='w3-row w3-section'>\n");

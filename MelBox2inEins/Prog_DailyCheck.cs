@@ -79,12 +79,7 @@ namespace MelBox2
                 //ulong phone = Properties.Settings.Default.MelBoxAdminPhone;
                 //Gsm.SmsSend(phone, smsText);
 
-                System.Net.Mail.MailAddressCollection to = new System.Net.Mail.MailAddressCollection
-                {
-                    Email.SMSCenter
-                };
-
-                Email.Send(to, smsText);				
+                Email.Send(Email.SMSCenter, smsText);				
 			}
 		}
 

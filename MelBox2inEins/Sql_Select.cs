@@ -137,6 +137,19 @@ namespace MelBox2
             }
         }
 
+        /// <summary>
+        /// Liste der Ids und Namen von Kontakten, die per Email oder SMS erreichbar sind
+        /// </summary>
+        /// <returns></returns>
+        public DataTable GetContactList()
+        {
+            string query = "SELECT Contact.Id AS ContactId, Contact.Name AS Name " + //'********' AS Passwort, CompanyId, Company.Name AS Firma, Email, Phone AS Telefon, Contact.SendSms AS SendSms , Contact.SendEmail AS SendEmail, MaxInactiveHours AS Max_Inaktivität " +
+                           "FROM \"Contact\" JOIN \"Company\" ON CompanyId = Company.Id " +
+                           "WHERE Contact.SendSms > 0 OR Contact.SendEmail > 0; ";
+
+            return SqlSelectDataTable("Kontakte", query);
+        }
+
         public int GetLastCompany()
         {
             try
@@ -209,7 +222,7 @@ namespace MelBox2
                     }
 
                     //Erzeuge eine neue Schicht für heute mit Standardwerten (Bereitschaftshandy)
-                    InsertShift(contactIdBereitschafshandy);
+                    InsertShift(contactIdBereitschafshandy, DateTime.Now);
                 }
           
                 #endregion

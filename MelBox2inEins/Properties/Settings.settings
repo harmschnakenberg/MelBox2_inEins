@@ -19,5 +19,8 @@
     <Setting Name="MelBoxAdminPhone" Type="System.UInt64" Scope="User">
       <Value Profile="(Default)">4916095285304</Value>
     </Setting>
+    <Setting Name="MelBoxAdminEmail" Type="System.String" Scope="User">
+      <Value Profile="(Default)">harm.schnakenberg@kreutztraeger.de</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

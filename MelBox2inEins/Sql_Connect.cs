@@ -10,7 +10,11 @@ using Microsoft.Data.Sqlite;
 namespace MelBox2
 {
     public partial class MelBoxSql
-    {   
+    {
+        #region Properties
+        public static List<int> AdminIds { get; set; } = new List<int>();
+        #endregion
+
         #region Methods
 
         public MelBoxSql(string dbPath = "")
@@ -42,6 +46,8 @@ namespace MelBox2
                 Environment.Exit(0);
             }
             #endregion
+
+            AdminIds = SqlSelectNumbers("SELECT Id FROM ContactAdmin; ");
         }
         /// <summary>
         /// Erzeugt eine neue Datenbankdatei, erzeugt darin Tabellen, Füllt diverse Tabellen mit Defaultwerten.
@@ -73,13 +79,9 @@ namespace MelBox2
                     //Kontakte
                     query.Append("CREATE TABLE \"Company\" (\"Id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \"Name\" TEXT NOT NULL, \"Address\" TEXT, \"City\" TEXT); ");
 
-                    // query.Append("CREATE TABLE \"Contact\"(\"Id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \"EntryTime\" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, \"Name\" TEXT NOT NULL, \"Password\" TEXT, ");
-                    // query.Append("\"CompanyId\" INTEGER, \"Email\" TEXT, \"Phone\" INTEGER, \"KeyWord\" TEXT, \"MaxInactiveHours\" INTEGER DEFAULT 0, \"SendSms\" INTEGER NOT NULL CHECK( \"SendSms\" < 2 ), \"SendEmail\" INTEGER NOT NULL CHECK( \"SendEmail\" < 2 ) ); ");
-
                     query.Append("CREATE TABLE \"Contact\"(\"Id\" INTEGER  PRIMARY KEY AUTOINCREMENT, \"EntryTime\" TEXT  DEFAULT CURRENT_TIMESTAMP, \"Name\" TEXT , \"Password\" TEXT, ");
                     query.Append("\"CompanyId\" INTEGER, \"Email\" TEXT, \"Phone\" INTEGER, \"KeyWord\" TEXT, \"MaxInactiveHours\" INTEGER DEFAULT 0, \"SendSms\" INTEGER  CHECK( \"SendSms\" < 2 ), \"SendEmail\" INTEGER  CHECK( \"SendEmail\" < 2 ) ); ");
-
-
+                                       
                     //Nachrichten
                     query.Append("CREATE TABLE \"MessageContent\" (\"Id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \"Content\" TEXT NOT NULL);"); // UNIQUE böse, weil Constrain auch in Abfragen gilt!  
 
@@ -89,12 +91,9 @@ namespace MelBox2
 
                     query.Append("CREATE TABLE \"LogStatus\" (\"Id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \"SentTime\" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, \"SentVia\" INTEGER NOT NULL, \"SmsRef\" INTEGER, \"ConfirmStatus\" INTEGER); ");
 
-                    //Bereitschaft
-                    //  query.Append("CREATE TABLE \"Shifts\"( \"Id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \"EntryTime\" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, ");
-                    // query.Append("\"ContactId\" INTEGER NOT NULL, \"StartTime\" TEXT NOT NULL, \"EndTime\" TEXT NOT NULL ); ");
-
-                    query.Append("CREATE TABLE \"Shifts\"( \"Id\" INTEGER  PRIMARY KEY AUTOINCREMENT, \"EntryTime\" TEXT  DEFAULT CURRENT_TIMESTAMP, ");
-                    query.Append("\"ContactId\" INTEGER , \"StartTime\" TEXT , \"EndTime\" TEXT); ");
+                    //Bereitschaft                  
+                    query.Append("CREATE TABLE \"Shifts\"( \"Id\" INTEGER  PRIMARY KEY AUTOINCREMENT, \"EntryTime\" TEXT DEFAULT CURRENT_TIMESTAMP, ");
+                    query.Append("\"ContactId\" INTEGER, \"StartTime\" TEXT, \"EndTime\" TEXT); ");
 
 
                     query.Append("CREATE TABLE \"BlockedMessages\"( \"Id\" INTEGER NOT NULL UNIQUE, \"EntryTime\" TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, \"StartHour\" INTEGER NOT NULL, ");
@@ -131,6 +130,8 @@ namespace MelBox2
 
                     SqlNonQuery(query.ToString());
 
+                    SqlNonQuery("PRAGMA foreign_keys = true; CREATE TABLE \"ContactAdmin\" ( Id INTEGER NOT NULL, FOREIGN KEY(Id) REFERENCES \"Contact\"(Id) )");
+
                     #endregion
 
                     #region Mit Startwerten füllen
@@ -149,18 +150,24 @@ namespace MelBox2
                     InsertContact("Bernd Kreutzträger", null, 2, "bernd.kreutztraeger@kreutztraeger.de", 491727875067, 0, false, false);
                     InsertContact("Harm privat", "7307", 1, "harm.schnakenberg@kreutztraeger.de", 4916095285304, 0, true, false);
 
+                    SqlNonQuery("INSERT INTO \"ContactAdmin\" VALUES (1); INSERT INTO \"ContactAdmin\" VALUES (2);");
+
                     InsertMessageRec("Datenbank neu erstellt.", 0, "smszentrale@kreutztraeger.de");
 
-                 //   InsertMessageSent(1, 1, SendWay.Unknown, 0, SendStatus.OnlyDb);
+                 // InsertMessageSent(1, 1, SendWay.Unknown, 0, SendStatus.OnlyDb);
                     InsertMessageSent("Datenbank neu erstellt.", 0, 0);
                    
                     //Dummy
-                    InsertShift(7, DateTime.Now.AddHours(-1), DateTime.Now.AddHours(14));
-                    InsertShift(7);
-                    InsertShift(7, DateTime.Now.AddDays(1).AddHours(-1), DateTime.Now.AddDays(1).AddHours(14));
-                    InsertShift(7, DateTime.Now.AddDays(2).AddHours(-1), DateTime.Now.AddDays(2).AddHours(14));
-                    InsertShift(7, DateTime.Now.AddDays(3).AddHours(-1), DateTime.Now.AddDays(3).AddHours(14));
-                    InsertShift(7, DateTime.Now.AddDays(4).AddHours(-1), DateTime.Now.AddDays(4).AddHours(14));
+                    InsertShift(7, DateTime.Now.AddDays(-2));
+                    InsertShift(7, DateTime.Now.AddDays(-1));
+                    InsertShift(7, DateTime.Now);
+                    InsertShift(7, DateTime.Now.AddDays(1));
+                    InsertShift(7, DateTime.Now.AddDays(2));
+                    InsertShift(7, DateTime.Now.AddDays(3));
+                    InsertShift(7, DateTime.Now.AddDays(4));
+                    InsertShift(7, DateTime.Now.AddDays(5));
+                    InsertShift(7, DateTime.Now.AddDays(6));
+                    InsertShift(7, DateTime.Now.AddDays(7));
 
                     InsertMessageBlocked(1, 7);
                     

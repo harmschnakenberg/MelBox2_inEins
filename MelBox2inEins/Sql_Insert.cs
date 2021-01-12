@@ -385,13 +385,26 @@ namespace MelBox2
         /// <summary>
         /// Erzeugt eine Bereitschaft für heute bis morgen mit automatisch ermittelter Anfangs- und Endzeit.
         /// </summary>
-        /// <param name="contactId">Id des Bereitschaftsnehmers</param>
-        public void InsertShift(int contactId)
-        {
-            DateTime Today = DateTime.Now.Date;
+        /// <param name = "contactId" > Id des Bereitschaftsnehmers</param>
+        //public void InsertShift(int contactId)
+        //{
+        //    DateTime Today = DateTime.Now.Date;
 
-            InsertShift(contactId, ShiftStandardStartTime(Today), ShiftStandardEndTime(Today));
+        //    InsertShift(contactId, ShiftStandardStartTime(Today), ShiftStandardEndTime(Today));
+        //}
+
+        /// <summary>
+        /// Erzeugt eine Bereitschaft für startDate bis zum Folgetag mit automatisch ermittelter Anfangs- und Endzeit.
+        /// </summary>
+        /// <param name="contactId"></param>
+        /// <param name="startDate"></param>
+        public void InsertShift(int contactId, DateTime startDate)
+        {
+            DateTime day = startDate.Date;
+
+            InsertShift(contactId, ShiftStandardStartTime(day), ShiftStandardEndTime(day));
         }
+
 
         /// <summary>
         /// Füllt den Kalender mit dem kommenden Monat ab heute
