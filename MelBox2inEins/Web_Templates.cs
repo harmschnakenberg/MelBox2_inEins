@@ -242,10 +242,11 @@ namespace MelBox2
         #endregion
 
         #region Tabellen
-        public static string HtmlTablePlain(DataTable dt, bool canUserEdit = false)
+        public static string HtmlTablePlain(DataTable dt, int logedInUserId = 0)
         {
             //Quelle: https://stackoverflow.com/questions/19682996/datatable-to-html-table
 
+            bool isAdmin = MelBoxSql.AdminIds.Contains(logedInUserId);
             StringBuilder builder = new StringBuilder();
 
             builder.Append("<div class='w3-container'>\n");
@@ -256,7 +257,7 @@ namespace MelBox2
             builder.Append("<table class='w3-table-all w3-hoverable w3-cell' id='myTable'>\n");
             builder.Append("<tr class='w3-teak'>\n\t");
 
-            if (canUserEdit)
+            if (isAdmin)
             {
                 builder.Append("<th><i class='w3-xxlarge material-icons-outlined'>create</i></th>");
             }
@@ -274,7 +275,7 @@ namespace MelBox2
             {
                 builder.Append("<tr class='myRow'>\n\t");
 
-                if (canUserEdit)
+                if (isAdmin)
                 {
                     builder.Append("<td><input class='w3-radio w3-hidden' type='radio' name='selectedRow' value='" + r[dt.Columns[0]] + "' form='form1' onclick=\"w3.show('#Editor')\"></td>");
                 }
@@ -402,9 +403,11 @@ namespace MelBox2
             }
         }
 
-        private static string HtmlTableBlocked(DataTable dt, int contentId = 0, bool canUserEdit = false)
+        private static string HtmlTableBlocked(DataTable dt, int contentId = 0, int logedInUserId = 0)
         {
             //Quelle: https://stackoverflow.com/questions/19682996/datatable-to-html-table
+
+            bool isAdmin = MelBoxSql.AdminIds.Contains(logedInUserId);
 
             StringBuilder builder = new StringBuilder();
 
@@ -416,7 +419,7 @@ namespace MelBox2
             builder.Append("<table class='w3-table-all w3-hoverable w3-cell' id='myTable'>\n");
             builder.Append("<tr class='w3-teak'>\n\t");
 
-            if (canUserEdit)
+            if (isAdmin)
             {
                 builder.Append("<th><i class='w3-xxlarge material-icons-outlined'>create</i></th>");
             }
@@ -435,9 +438,10 @@ namespace MelBox2
 
                 builder.Append("<tr class='myRow'>\n\t");
 
-                if (canUserEdit)
+                if (isAdmin)
                 {
                     builder.Append("<td><input class='w3-radio w3-hidden' type='radio' name='selectedRow' value='" + r[dt.Columns[0]] + "' form='form1' onclick=\"w3.show('#Editor')\"></td>");
+                   // builder.Append("<input type='hidden' name='' value>");
                 }
 
                 foreach (DataColumn c in dt.Columns)
@@ -902,7 +906,7 @@ namespace MelBox2
         /// </summary>
         /// <param name="dt"></param>
         /// <returns></returns>
-        public static string HtmlUnitBlocked(DataTable dt, int contendId = 0)
+        public static string HtmlUnitBlocked(DataTable dt, int contendId = 0, int logedInUserid = 0)
         {
 
             Dictionary<string, string> action = new Dictionary<string, string>();
@@ -915,7 +919,7 @@ namespace MelBox2
             action.Add("/blocked/delete", "Aus Sperrliste entfernen");
 
             StringBuilder builder = new StringBuilder();
-            builder.Append(HtmlTableBlocked(dt, contendId, true));
+            builder.Append(HtmlTableBlocked(dt, contendId, logedInUserid));
             builder.Append(HtmlEditor(action));
 
             return builder.ToString();
@@ -960,7 +964,7 @@ namespace MelBox2
             return builder.ToString();
         }
 
-        public static string HtmlUnitShift(DataTable dt, int logedInUserId = 0 )
+        public static string HtmlUnitShift(DataTable dt, int logedInUserId = 0)
         {
             Dictionary<string, string> action = new Dictionary<string, string>
                 {
@@ -970,7 +974,7 @@ namespace MelBox2
 
             bool isAdmin = MelBoxSql.AdminIds.Contains(logedInUserId);
 
-            if(isAdmin)
+            if (isAdmin)
             {
                 action.Add("/shift/delete", "Bereitschaft löschen");
             }
@@ -978,8 +982,7 @@ namespace MelBox2
             StringBuilder builder = new StringBuilder();
             builder.Append(HtmlTableShift(dt, 0, logedInUserId));
 
-                builder.Append(HtmlEditor(action));
-            
+            builder.Append(HtmlEditor(action));
 
             return builder.ToString();
         }

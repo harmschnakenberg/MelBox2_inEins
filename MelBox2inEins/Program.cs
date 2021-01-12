@@ -33,7 +33,7 @@ namespace MelBox2
                 Console.WriteLine("Programm gestartet. Konsole mit max. {0} Zeilen.", Console.BufferHeight);
 
                 Email.PermanentEmailRecievers = Properties.Settings.Default.PermanentEmailRecievers.Cast<string>().ToList();
-                Email.MelBox2Admin = new System.Net.Mail.MailAddress(Properties.Settings.Default.MelBoxAdminEmail, "MelBox2 Admin");
+                Email.MelBox2Admin = new System.Net.Mail.MailAddress( "harm.schnakenberg@kreutztraeger.de", "MelBox2 Admin"); //Properties gehen nicht?
 
                 Gsm_Basics.ComPortName = Properties.Settings.Default.ComPort;
                 Gsm_Basics.BaudRate = Properties.Settings.Default.BaudRate;

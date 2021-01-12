@@ -45,7 +45,7 @@ namespace MelBox2
             {
                 DataTable dt = Program.Sql.GetViewMsgRec();
                 builder.Append(MelBoxWeb.HtmlHead(dt.TableName));
-                builder.Append(MelBoxWeb.HtmlTablePlain(dt, MelBoxSql.AdminIds.Contains(logedInUserId)));
+                builder.Append(MelBoxWeb.HtmlTablePlain(dt, logedInUserId));
                 builder.Append(MelBoxWeb.HtmlEditor(action));
                 builder.Append(MelBoxWeb.HtmlFoot());
             }
@@ -94,13 +94,16 @@ namespace MelBox2
 
         #region Gesperrte Nachrichten
         [RestRoute(HttpMethod = HttpMethod.GET, PathInfo = "/blocked")]
+        [RestRoute(HttpMethod = HttpMethod.GET, PathInfo = @"^/blocked/\w+$")]
         public IHttpContext ShowMelBoxBlocked(IHttpContext context)
         {
+            int logedInUserId = MelBoxWeb.LogedInAccountId(context.Request.RawUrl);
+
             DataTable dt = Program.Sql.GetViewMsgBlocked();
 
             StringBuilder builder = new StringBuilder();
             builder.Append(MelBoxWeb.HtmlHead(dt.TableName));
-            builder.Append(MelBoxWeb.HtmlUnitBlocked(dt) );
+            builder.Append(MelBoxWeb.HtmlUnitBlocked(dt, 0, logedInUserId) );
             builder.Append(MelBoxWeb.HtmlAccordeonInfo("Gesperrte Meldungen", "Gesperrte Meldungen werden zu den eingestellten Zeiten nicht an die Bereitschaft weitergeleitet."));
             builder.Append(MelBoxWeb.HtmlFoot());
 
@@ -163,7 +166,14 @@ namespace MelBox2
             StringBuilder builder = new StringBuilder();
             builder.Append(MelBoxWeb.HtmlHead("Sperrzeiten ändern"));
 
-            if (!MelBoxWeb.LogedInGuids.ContainsKey(args["guid"]))
+            int logedInUserId = 0;
+
+            if (MelBoxWeb.LogedInGuids.ContainsKey(args["guid"].ToString()))
+            {
+                logedInUserId = MelBoxWeb.LogedInGuids[args["guid"].ToString()];
+            }
+
+            if (logedInUserId == 0)
             {
                 builder.Append(MelBoxWeb.HtmlAlert(4, "Bitte einloggen", "Änderungen sind nur eingelogged möglich."));
             }
@@ -205,7 +215,8 @@ namespace MelBox2
                 }
                 //nur ausgwählte Nachricht anzeigen
                 DataTable dt = Program.Sql.GetViewMsgBlocked();
-                builder.Append(MelBoxWeb.HtmlUnitBlocked(dt, contentId));
+                builder.Append(MelBoxWeb.HtmlUnitBlocked(dt, contentId, logedInUserId));
+
             }
 
             builder.Append(MelBoxWeb.HtmlFoot());
