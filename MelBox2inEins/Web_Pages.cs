@@ -30,8 +30,11 @@ namespace MelBox2
         }
 
         [RestRoute(HttpMethod = HttpMethod.GET, PathInfo = "/in")]
+        [RestRoute(HttpMethod = HttpMethod.GET, PathInfo = @"^/in/\w+$")]
         public IHttpContext ShowMelBoxIn(IHttpContext context)
         {
+            int logedInUserId = MelBoxWeb.LogedInAccountId(context.Request.RawUrl);
+
             StringBuilder builder = new StringBuilder();
             Dictionary<string, string> action = new Dictionary<string, string>
             {
@@ -42,7 +45,7 @@ namespace MelBox2
             {
                 DataTable dt = Program.Sql.GetViewMsgRec();
                 builder.Append(MelBoxWeb.HtmlHead(dt.TableName));
-                builder.Append(MelBoxWeb.HtmlTablePlain(dt, true));
+                builder.Append(MelBoxWeb.HtmlTablePlain(dt, MelBoxSql.AdminIds.Contains(logedInUserId)));
                 builder.Append(MelBoxWeb.HtmlEditor(action));
                 builder.Append(MelBoxWeb.HtmlFoot());
             }
@@ -255,33 +258,9 @@ namespace MelBox2
         [RestRoute(HttpMethod = HttpMethod.GET, PathInfo = @"^/shift/\w+$")] //@"^/user/\d+$"
        // [RestRoute(HttpMethod = HttpMethod.GET, PathInfo = @"^/shift/\d+/\w+$")] 
         public IHttpContext ShowMelBoxShift(IHttpContext context)
-        {            
-            #region Info aus Aufrufpfad
-            string[] urlParts = context.Request.RawUrl.Split('/');
-            string guid = string.Empty;// context.Request.RawUrl.Remove(0, 9);
-            int logedInUserId = 0;
-
-            if (urlParts.Length == 3)
-            {
-                guid = urlParts[2];
-            }
-            else if (urlParts.Length == 4)
-            {
-                guid = urlParts[3];
-                int.TryParse(urlParts[2], out logedInUserId);
-            }
-            #endregion
-
-            //string guid = context.Request.RawUrl.Remove(0, 7);
-
-            if (MelBoxWeb.LogedInGuids.ContainsKey(guid))
-            {
-                if (logedInUserId == 0)
-                {
-                    logedInUserId = MelBoxWeb.LogedInGuids[guid];
-                }
-            }
-
+        {
+            int logedInUserId = MelBoxWeb.LogedInAccountId(context.Request.RawUrl);
+           
             DataTable dt = Program.Sql.GetViewShift();
 
             StringBuilder builder = new StringBuilder();
@@ -540,33 +519,15 @@ namespace MelBox2
 
             builder.Append(MelBoxWeb.HtmlHead("Benutzerkonto"));
 
-            #region Info aus Aufrufpfad
-            string[] urlParts = context.Request.RawUrl.Split('/');
-            string guid = string.Empty;// context.Request.RawUrl.Remove(0, 9);
-            int contactId = 0;
+            int contactId = MelBoxWeb.LogedInAccountId(context.Request.RawUrl);
 
-            if (urlParts.Length == 3)
-            {
-                guid = urlParts[2];                
-            }
-            else if (urlParts.Length == 4)
-            {
-                guid = urlParts[3];
-                int.TryParse(urlParts[2], out contactId);
-            }
-            #endregion
-
-            if (!MelBoxWeb.LogedInGuids.ContainsKey(guid))
+            if (contactId == 0)
             {
                 builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler beim Lesen des Benutzerkontos", "Bitte erneut einloggen."));
                 builder.Append(MelBoxWeb.HtmlLogIn());
             }
             else
-            {
-                if (contactId == 0)
-                {
-                    contactId = MelBoxWeb.LogedInGuids[guid];
-                }
+            {               
                 builder.Append(MelBoxWeb.HtmlUnitAccount(contactId));                
             }
 

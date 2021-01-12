@@ -58,8 +58,48 @@ namespace MelBox2
 
         public static Dictionary<string, int> LogedInGuids { get; set; } = new Dictionary<string, int>();
 
+        /// <summary>
+        /// Benutzerverifikation aus Aufrufphad
+        /// </summary>
+        /// <param name="payload">Aufrufpfad  /seite[/contactid]/guid</param>
+        /// <returns>Benutzer-Id</returns>
+        public static int LogedInAccountId(string payload)
+        {
+            string[] urlParts = payload.Split('/');
+            string guid = string.Empty;// context.Request.RawUrl.Remove(0, 9);
+            int requestedUserId = 0;
 
-        //  public static string MasterPassword { get; set; } = "1234";
+            if (urlParts.Length < 3)
+            {
+                //keine Anmeldeinformationen
+                return 0;
+            }
+            if (urlParts.Length == 3)
+            {
+                //Format /seite/guid
+                guid = urlParts[2];
+            }
+            else if (urlParts.Length == 4)
+            {
+                //Format /seite/contactid/guid
+                guid = urlParts[3];
+                int.TryParse(urlParts[2], out requestedUserId);
+            }
+
+            //Nicht angemeldet
+            if (!LogedInGuids.ContainsKey(guid))
+                return 0;
+
+            //Angemeldeter Benutzer
+            int logedInUserId = LogedInGuids[guid];
+
+            //Andere UserId angefragt und angemeldeter Benutzer hat Adminrechte
+            if (requestedUserId != 0 && MelBoxSql.AdminIds.Contains(logedInUserId))
+                return requestedUserId;
+
+            return logedInUserId;
+        }
+
         #endregion
 
     }

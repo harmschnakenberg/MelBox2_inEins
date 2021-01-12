@@ -95,9 +95,15 @@ namespace MelBox2
             }
 
             builder.Append(" if ( sessionStorage.getItem('guid') !== null) {\n");
-            builder.Append("  document.getElementById('guid').value = sessionStorage.getItem('guid');");
-            builder.Append("  document.getElementById('buttonaccount').href = '/account/' + sessionStorage.getItem('guid');");
-            builder.Append("  document.getElementById('buttonshift').href = '/shift/' + sessionStorage.getItem('guid');");
+            builder.Append("  var guid = sessionStorage.getItem('guid');");
+            builder.Append("  document.getElementById('guid').value = guid;");
+            // builder.Append("  document.getElementById('guid').value = sessionStorage.getItem('guid');");
+            builder.Append("  document.getElementById('buttonin').href = '/in/' + guid;");
+            builder.Append("  document.getElementById('buttonblocked').href = '/blocked/' + guid;");
+            builder.Append("  document.getElementById('buttonaccount').href = '/account/' + guid;");
+            builder.Append("  document.getElementById('buttonshift').href = '/shift/' + guid;");
+            //builder.Append("  document.getElementById('buttonaccount').href = '/account/' + sessionStorage.getItem('guid');");
+            //builder.Append("  document.getElementById('buttonshift').href = '/shift/' + sessionStorage.getItem('guid');");
             builder.Append("  w3.removeClass('.w3-disabled','w3-disabled'); \n");
             builder.Append("  w3.removeClass('.w3-hidden','w3-hidden'); \n");
             builder.Append(" }\n");
@@ -125,12 +131,11 @@ namespace MelBox2
             builder.Append("<a href='/' class='w3-button w3-bar-item'><i class='w3-xxlarge material-icons-outlined'>login</i></a>");
             builder.Append("<div class='w3-bar-item'></div>");
 
-            builder.Append("<a href='/in' class='w3-button w3-bar-item'><i class='w3-xxlarge material-icons-outlined'>drafts</i></a>");
+            builder.Append("<a href='/in' id='buttonin' class='w3-button w3-bar-item'><i class='w3-xxlarge material-icons-outlined'>drafts</i></a>");
             builder.Append("<a href='/out' class='w3-button w3-bar-item'><i class='w3-xxlarge material-icons-outlined'>forward_to_inbox</i></a>");
             builder.Append("<a href='/overdue' class='w3-button w3-bar-item'><i class='w3-xxlarge material-icons-outlined'>pending_actions</i></a>");
-          //  builder.Append("<div class='w3-bar-item'></div>");
 
-            builder.Append("<a href='/blocked' class='w3-button w3-bar-item'><i class='w3-xxlarge material-icons-outlined'>notifications_off</i></a>");
+            builder.Append("<a href='/blocked' id='buttonblocked' class='w3-button w3-bar-item'><i class='w3-xxlarge material-icons-outlined'>notifications_off</i></a>");
             builder.Append("<a href='/shift' id='buttonshift' class='w3-button w3-bar-item'><i class='w3-xxlarge material-icons-outlined'>event_note</i></a>");
             builder.Append("<a href='/account' id='buttonaccount' class='w3-button w3-bar-item w3-disabled'><i class='w3-xxlarge material-icons-outlined'>assignment_ind</i></a>");
 
@@ -960,9 +965,15 @@ namespace MelBox2
             Dictionary<string, string> action = new Dictionary<string, string>
                 {
                     { "/shift/create", "Bereitschaft neu anlegen" },
-                    { "/shift/update", "Bereitschaft ändern" },
-                    { "/shift/delete", "Bereitschaft löschen" }
+                    { "/shift/update", "Bereitschaft ändern" }
                 };
+
+            bool isAdmin = MelBoxSql.AdminIds.Contains(logedInUserId);
+
+            if(isAdmin)
+            {
+                action.Add("/shift/delete", "Bereitschaft löschen");
+            }
 
             StringBuilder builder = new StringBuilder();
             builder.Append(HtmlTableShift(dt, 0, logedInUserId));
