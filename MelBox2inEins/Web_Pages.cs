@@ -128,18 +128,32 @@ namespace MelBox2
             {
                 builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler", "Es wurde keine gültige Nachricht an die Sperrliste übergeben."));
             }
-            else
+            else 
             {
-                int contentId = Program.Sql.GetContentId(recMsgId);
+                int logedInContactId = MelBoxWeb.LogedInGuids[args["guid"]];
+                bool isAdmin = MelBoxSql.AdminIds.Contains(logedInContactId);
 
-                if (contentId == 0)
+                if (!isAdmin)
                 {
-                    builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler", "Die übergebene Nachricht konnte nicht zugeordnet werden."));
+                    builder.Append(MelBoxWeb.HtmlAlert(2, "Keine Berechtigung", "Sie besitzen nicht die erforderliche Berechtigung für diese Aktion."));
                 }
                 else
                 {
-                    Program.Sql.InsertMessageBlocked(contentId);
-                    builder.Append(MelBoxWeb.HtmlAlert(3, "Nachricht in die Sperrliste aufgenommen", "Die Nachricht mit der Nr. " + contentId + " wird nicht mehr in die Bereitschaft weitergeleitet."));
+                    int contentId = Program.Sql.GetContentId(recMsgId);
+
+                    if (contentId == 0)
+                    {
+                        builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler", "Die übergebene Nachricht konnte nicht zugeordnet werden."));
+                    }
+                    else
+                    {
+                        Program.Sql.InsertMessageBlocked(contentId);
+                        string msg = "Die Nachricht Nr. " + contentId + " wurde durch den Benutzer " + logedInContactId + " gesperrt. Sie wird zu den eingestellten Zeiten nicht mehr in die Bereitschaft weitergeleitet.";
+
+                        builder.Append(MelBoxWeb.HtmlAlert(3, "Nachricht in die Sperrliste aufgenommen", msg));
+
+                        Program.Sql.Log(MelBoxSql.LogTopic.Shift, MelBoxSql.LogPrio.Warning, msg);
+                    }
                 }
             }
 
@@ -354,9 +368,11 @@ namespace MelBox2
                 else
                 {
                     #region Antwort verarbeiten
+                    DateTime date = DateTime.MinValue;
+
                     if (args.ContainsKey("Datum") && args.ContainsKey("Beginn") && args.ContainsKey("Ende"))
                     {
-                        DateTime date = DateTime.Now.Date;
+                        
                         int beginHour = 17;
                         int endHour = 7;
 
@@ -374,7 +390,6 @@ namespace MelBox2
 
                             for (int i = 0; i < 7; i++)
                             {
-
                                 DateTime StartTime = MelBoxSql.ShiftStandardStartTime(date);
                                 DateTime EndTime = MelBoxSql.ShiftStandardEndTime(date);
 
@@ -395,15 +410,19 @@ namespace MelBox2
 
                             Program.Sql.InsertShift(logedInContactId, StartTime, EndTime);
                         }
-
-                        //Program.Sql.InsertCalendarMonth();
-
+                                               
                         builder.Append(MelBoxWeb.HtmlAlert(3, "Neue Bereitschaft erstellt", string.Format("Neue Bereitschaft vom {0} bis {1} erstellt.", firstStartTime, lastEndTime) ) );
+                    }
+                    else
+                    {
+                        if (args.ContainsKey("selectedRow"))
+                            if (args["selectedRow"].StartsWith("Datum_"))
+                                DateTime.TryParse(args["selectedRow"].ToString().Substring(6), out date);
                     }
 
                     #endregion
 
-                    builder.Append(MelBoxWeb.HtmlFormShift(0, logedInContactId));
+                    builder.Append(MelBoxWeb.HtmlFormShift(date, 0, logedInContactId));
 
                     Dictionary<string, string> action = new Dictionary<string, string>
                     {
@@ -455,6 +474,7 @@ namespace MelBox2
                 else
                 {
                     bool isAdmin = MelBoxSql.AdminIds.Contains(logedInContactId);
+                    DateTime date = DateTime.Now.Date;
 
                     #region Antwort verarbeiten
                     if (args.ContainsKey("selectedRow") && args.ContainsKey("ContactId") && args.ContainsKey("Datum") && args.ContainsKey("Beginn") && args.ContainsKey("Ende"))
@@ -470,8 +490,7 @@ namespace MelBox2
                             builder.Append(MelBoxWeb.HtmlAlert(2, "Keine gültige Nummer", "Der gewählte Zeitraum hat keine zugewiesene Nummer oder der Aufruf war fehlerhaft. Bereitschaftszeit neu erstellen?"));
                         }
                         else
-                        {
-                            DateTime date = DateTime.Now.Date;
+                        {                           
                             int beginHour = 17;
                             int endHour = 7;
 
@@ -490,19 +509,18 @@ namespace MelBox2
                             if (!Program.Sql.UpdateShift(shiftId, contactId, StartTime, EndTime))
                             {
                                 builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler Bereitschaft  Nr. " + shiftId + " bearbeiten",
-                                    string.Format("Die Bereitschaft konnte nicht in der Datenbank geändetr werden.")));
+                                    string.Format("Die Bereitschaft konnte nicht in der Datenbank geändert werden.")));
                             }
                             else
                             {
                                 builder.Append(MelBoxWeb.HtmlAlert(3, "Bereitschaft Nr. " + shiftId + " geändert",
                                    string.Format("Die Bereitschaft Nr. {0} wurde geändert auf {1} im Zeitraum {2} bis {3}.", shiftId, name.Replace('+', ' '), StartTime, EndTime)));
                             }
-
                         }
                     }
                     #endregion
 
-                    builder.Append(MelBoxWeb.HtmlFormShift(shiftId, logedInContactId));
+                    builder.Append(MelBoxWeb.HtmlFormShift(date, shiftId, logedInContactId));
 
                     Dictionary<string, string> action = new Dictionary<string, string>
                     {
@@ -511,6 +529,67 @@ namespace MelBox2
 
                     builder.Append(MelBoxWeb.HtmlEditor(action));
                 }
+            }
+
+            builder.Append(MelBoxWeb.HtmlFoot());
+            context.Response.SendResponse(MelBoxWeb.EncodeUmlaute(builder.ToString()));
+            return context;
+        }
+
+        [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/shift/delete")]
+        public IHttpContext DeleteMelBoxShift(IHttpContext context)
+        {
+            string payload = context.Request.Payload;
+            payload = MelBoxWeb.DecodeUmlaute(payload);
+            Dictionary<string, string> args = MelBoxWeb.ReadPayload(payload);
+
+#if DEBUG
+            Console.WriteLine("/shift/delete Payload:");
+            foreach (var key in args.Keys)
+            {
+                Console.WriteLine(key + ":\t" + args[key]);
+            }
+#endif
+            StringBuilder builder = new StringBuilder();
+            builder.Append(MelBoxWeb.HtmlHead("Bereitschaft löschen"));
+
+            if (!MelBoxWeb.LogedInGuids.ContainsKey(args["guid"]))
+            {
+                builder.Append(MelBoxWeb.HtmlAlert(4, "Bitte einloggen", "Löschen ist nur eingelogged möglich."));
+            }
+            else if (!args.ContainsKey("selectedRow") || !int.TryParse(args["selectedRow"], out int shiftId))
+            {
+                builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler", "Es wurde keine gültige Bereitschaft zum löschen übergeben."));
+            }
+            else
+            {
+                int logedInContactId = MelBoxWeb.LogedInGuids[args["guid"]];
+                bool isAdmin = MelBoxSql.AdminIds.Contains(logedInContactId);
+
+                if (logedInContactId == 0)
+                {
+                    builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler", "Der eingeloggte Benutzer konnte nicht zugeordnet werden."));
+                }
+                else if (!isAdmin)
+                {
+                    builder.Append(MelBoxWeb.HtmlAlert(2, "Keine Berechtigung", "Sie besitzen nicht die notwendigen Rechte für diese Aktion."));
+                }
+                else
+                {
+                    if (!Program.Sql.DeleteShift(shiftId))
+                    {
+                        builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler Bereitschaft  Nr. " + shiftId + " löschen",
+                            string.Format("Die Bereitschaft konnte nicht aus der Datenbank gelöscht werden.")));
+                    }
+                    else
+                    {
+                        string msg = string.Format("Die Bereitschaft Nr. {0} wurde gelöscht durch den Benutzer {1} .", shiftId, logedInContactId);
+
+                        builder.Append(MelBoxWeb.HtmlAlert(3, "Bereitschaft Nr. " + shiftId + " gelöscht", msg));
+
+                        Program.Sql.Log(MelBoxSql.LogTopic.Shift, MelBoxSql.LogPrio.Warning, msg);
+                    }
+                }                    
             }
 
             builder.Append(MelBoxWeb.HtmlFoot());
@@ -814,25 +893,56 @@ namespace MelBox2
 
         #region Firmen
 
-        [RestRoute(HttpMethod = HttpMethod.GET, PathInfo = @"^/company/\w+$")]
+        [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/company")]
+        //[RestRoute(HttpMethod = HttpMethod.GET, PathInfo = @"^/company/\w+$")]
         public IHttpContext ShowMelBoxCompany(IHttpContext context)
         {
-            string queryString = context.Request.RawUrl.Remove(0, 9); //context.Request.QueryString["companyId"] ?? "1";
+            string payload = context.Request.Payload;
+            payload = MelBoxWeb.DecodeUmlaute(payload);
+            Dictionary<string, string> args = MelBoxWeb.ReadPayload(payload);
+
+#if DEBUG
+            Console.WriteLine("/shift/create Payload:");
+            foreach (var key in args.Keys)
+            {
+                Console.WriteLine(key + ":\t" + args[key]);
+            }
+#endif
+            int companyId =  0;
+            int logedInUserId = 0;
+
+            foreach (string arg in args.Keys)
+            {
+                switch (arg)
+                {
+                    case "companyId":
+                        int.TryParse(args[arg], out companyId);
+                        break;
+                    case "guid":
+                        if (MelBoxWeb.LogedInGuids.ContainsKey(args[arg]))
+                        {
+                            logedInUserId = MelBoxWeb.LogedInGuids[args[arg]];
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
 
             StringBuilder builder = new StringBuilder();
-
             builder.Append(MelBoxWeb.HtmlHead("Firmeninformationen"));
 
-            builder.Append("<p>" + context.Request.RawUrl.Remove(0, 9) + "</p>");
-
-            if (!int.TryParse(queryString, out int companyId))
+            if (logedInUserId == 0)
             {
-                builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler", "Die Seite wurde mit ungültigen Parametern aufgerufen.<br>" + context.Request.RawUrl.Remove(0, 9)));
-                
+                builder.Append(MelBoxWeb.HtmlAlert(1, "Keine Berechtigung", "Die Seite wurde mit ungültigen Parametern aufgerufen."));
+            }
+            else if (companyId == 0)
+            {
+                builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler", "Die Seite wurde mit ungültigen Parametern aufgerufen."));                
             }
             else
             {
-                builder.Append(MelBoxWeb.HtmlUnitCompany(companyId));
+                builder.Append(MelBoxWeb.HtmlUnitCompany(companyId, logedInUserId));
             }
 
             builder.Append(MelBoxWeb.HtmlFoot());

@@ -350,10 +350,11 @@ namespace MelBox2
                         int.TryParse(r[dt.Columns[1]].ToString(), out int shiftContactId);
 
                         string disabled = "disabled";
+                        string value = (tableIdColValue != 0) ? tableIdColValue.ToString() : "Datum_" + r[dt.Columns["Datum"]].ToString();
                         if (logedInUserId == shiftContactId || (tableIdColValue == 0 && logedInUserId != 0) || isAdmin) disabled = "";
 
                         builder.Append("<td>");
-                        builder.Append("<input class='w3-radio w3-hidden' type='radio' name='selectedRow' value='" + tableIdColValue + "' form='form1' onclick=\"w3.show('#Editor')\" " + disabled + ">");
+                        builder.Append("<input class='w3-radio w3-hidden' type='radio' name='selectedRow' value='" + value + "' form='form1' onclick=\"w3.show('#Editor')\" " + disabled + ">");
                         builder.Append("</td>\n");
                     }
 
@@ -385,9 +386,13 @@ namespace MelBox2
                                 procent = procent * 100 / 24;
                                 builder.Append("<div class='w3-pale-blue' style='width:240px;'>\n <div class='w3-cyan' style='width:" + procent + "%'>" + r[c.ColumnName] + "&nbsp;Uhr</div>\n</div>\n");
                                 break;
+                            //case "Datum":
+                            //    builder.Append("<input class='w3-border-0' form='form1' type='text' name='selectedDate' value='" + r[c.ColumnName] + "' readonly>\n");
+                            //    break;
                             default:
                                 builder.Append(r[c.ColumnName]);
                                 break;
+
                         }
                         builder.Append("</td>\n");
                     }
@@ -531,8 +536,11 @@ namespace MelBox2
             return builder.ToString();
         }
 
-        private static string HtmlFormAccount(DataTable dtAccount, DataTable dtCompany)
+        private static string HtmlFormAccount(DataTable dtAccount, DataTable dtCompany, bool isAdmin = false)
         {
+            string readOnly = isAdmin ? string.Empty : "readonly";
+            string styleReadOnly = isAdmin ? string.Empty : "w3-grey";
+
             StringBuilder builder = new StringBuilder();
 
             builder.Append("</center>\n<div class='w3-card w3-container w3-light-grey w3-text-teal w3-margin'>\n");
@@ -582,12 +590,20 @@ namespace MelBox2
                             builder.Append("<script>\n");
                             builder.Append("function myFunction() {\n");
                             //builder.Append(" alert('Setze Wert ');\n");
-                            builder.Append(" document.getElementById('buttonCompanySettings').href = '/company/' + document.getElementById('" + c.ColumnName + "' ).value;\n");
+                            builder.Append(" document.getElementById('companyId2').value = document.getElementById('Firma').value;\n");
+                            builder.Append(" document.getElementById('guid2').value = document.getElementById('guid').value;\n");
                             builder.Append("}\n</script>\n");
-                            builder.Append(" <a href='/company/" + companyId + "' id='buttonCompanySettings' style='max-width:60px' class='w3-col w3-button'><i class='w3-xlarge material-icons-outlined'>settings</i></a>");
+                            
+                            builder.Append("<form id='companyForm' action='/company' method='post'>\n");
+                            builder.Append("  <input form='companyForm' type='hidden' id='companyId2' name='companyId'>");
+                            builder.Append("  <input form='companyForm' type='hidden' id='guid2' name='guid'>");
+                            builder.Append("  <input form='companyForm' type='submit' style='max-width:60px' class='w3-col w3-button' value='TEST'>"); //<i class='w3-xlarge material-icons-outlined'>settings</i></button>
 
-                            builder.Append(" <div class='w3-rest'>\n");
-                            builder.Append("  <select form='form1' class='w3-select w3-border w3-disabled' name='CompanyId' id='" + c.ColumnName + "'  onchange='myFunction()'>\n");
+                            builder.Append("</form>\n");
+
+
+                           builder.Append(" <div class='w3-rest'>\n");
+                            builder.Append("  <select form='form1' class='" + styleReadOnly + " w3-select w3-border w3-disabled' name='CompanyId' id='" + c.ColumnName + "'  onchange='myFunction()' " + readOnly + ">\n");
 
                             foreach (DataRow row in dtCompany.Rows)
                             {
@@ -640,7 +656,7 @@ namespace MelBox2
                             builder.Append("<div class='w3-row w3-section'>\n");
                             builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'><i class='w3-xxlarge material-icons-outlined'>more_time</i></div>\n");
                             builder.Append(" <div class='w3-rest'>\n");
-                            builder.Append("  <input form='form1' class='w3-input w3-border w3-disabled' type='number' min='0' step='8' placeholder='Maximale Inaktivität in Stunden' name='" + c.ColumnName + "' id='" + c.ColumnName + "' value='" + r[c.ColumnName] + "' >\n");
+                            builder.Append("  <input form='form1' class='" + styleReadOnly + "w3-input w3-border w3-disabled' type='number' min='0' step='8' placeholder='Maximale Inaktivität in Stunden' name='" + c.ColumnName + "' id='" + c.ColumnName + "' value='" + r[c.ColumnName] + "' " + readOnly + ">\n");
                             builder.Append(" </div>\n</div>\n");
                             break;
 
@@ -751,14 +767,17 @@ namespace MelBox2
             return builder.ToString();
         }
 
-        public static string HtmlFormShift(int shiftId, int shiftContactId = 0)
+        public static string HtmlFormShift(DateTime date, int shiftId, int shiftContactId = 0)
         {
             string name = "-KEIN NAME-";
             bool sendSms = false;
             bool sendEmail = false;
-            DateTime date = DateTime.Now.Date.AddDays(1);
+            //DateTime date = DateTime.Now.Date.AddDays(1);
             int beginHour = 17;
             int endHour = 7;
+
+            if (date == DateTime.MinValue)
+                date = DateTime.Now.Date.AddDays(1);
 
             StringBuilder builder = new StringBuilder();
 
@@ -908,15 +927,19 @@ namespace MelBox2
         /// <returns></returns>
         public static string HtmlUnitBlocked(DataTable dt, int contendId = 0, int logedInUserid = 0)
         {
-
             Dictionary<string, string> action = new Dictionary<string, string>();
 
-            if (contendId == 0)            
-                action.Add("/blocked/update", "Sperrzeit der Nachricht bearbeiten");            
-            else            
-                action.Add("/blocked/update", "Bearbeitete Zeiten speichern");            
+            bool isAdmin = MelBoxSql.AdminIds.Contains(logedInUserid);
 
-            action.Add("/blocked/delete", "Aus Sperrliste entfernen");
+            if (isAdmin)
+            {
+                if (contendId == 0)
+                    action.Add("/blocked/update", "Sperrzeit der Nachricht bearbeiten");
+                else
+                    action.Add("/blocked/update", "Bearbeitete Zeiten speichern");
+
+                action.Add("/blocked/delete", "Aus Sperrliste entfernen");
+            }
 
             StringBuilder builder = new StringBuilder();
             builder.Append(HtmlTableBlocked(dt, contendId, logedInUserid));
@@ -927,33 +950,38 @@ namespace MelBox2
 
         public static string HtmlUnitAccount(int contactId)
         {
+            Dictionary<string, string> action = new Dictionary<string, string>();            
+            action.Add("/account/update", "Änderungen an Kontakt speichern");
             
-            Dictionary<string, string> action = new Dictionary<string, string>
-                {
-                    { "/account/create", "Neuen Kontakt mit diesen Angaben einrichten" },
-                    { "/account/update", "Änderungen an Kontakt speichern" },
-                    { "/account/delete", "Diesen Kontakt löschen" }
-                };
+            bool isAdmin = MelBoxSql.AdminIds.Contains(contactId);
+
+            if (isAdmin)
+            {
+                action.Add("/account/create", "Neuen Kontakt mit diesen Angaben einrichten");
+                action.Add("/account/delete", "Diesen Kontakt löschen");
+            }
 
             DataTable dt = Program.Sql.GetViewContactInfo(contactId);
             DataTable dtCompany = Program.Sql.GetCompany();
 
             StringBuilder builder = new StringBuilder();
-            builder.Append(MelBoxWeb.HtmlFormAccount(dt, dtCompany));
+            builder.Append(MelBoxWeb.HtmlFormAccount(dt, dtCompany, isAdmin));
             builder.Append(MelBoxWeb.HtmlEditor(action));        
 
             return builder.ToString();
         }
 
-        public static string HtmlUnitCompany(int companyId)
+        public static string HtmlUnitCompany(int companyId, int logedInUserId = 0)
         {
+            Dictionary<string, string> action = new Dictionary<string, string>();
+            bool isAdmin = MelBoxSql.AdminIds.Contains(logedInUserId);
 
-            Dictionary<string, string> action = new Dictionary<string, string>
-                {
-                    { "/company/create", "Firma neu anlegen" },
-                    { "/company/update", "Firmeninformationen ändern" },
-                    { "/company/delete", "Firma löschen" }
-                };
+            if (isAdmin)
+            {
+                action.Add("/company/create", "Firma neu anlegen");
+                action.Add("/company/update", "Firmeninformationen ändern");
+                action.Add("/company/delete", "Firma löschen");
+            }
 
             DataTable dtCompany = Program.Sql.GetCompany();
 

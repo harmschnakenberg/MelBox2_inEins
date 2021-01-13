@@ -71,5 +71,24 @@ namespace MelBox2
             }
         }
 
+        public bool DeleteShift(int shiftId)
+        {
+            try
+            {
+                const string query = "DELETE FROM \"Shifts\" WHERE Id = @shiftId; ";
+
+                Dictionary<string, object> args = new Dictionary<string, object>
+                {
+                    { "@shiftId", shiftId }
+                };
+
+                return SqlNonQuery(query, args);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Sql-Fehler DeleteShift() " + ex.GetType() + "\r\n" + ex.Message);
+            }
+        }
+
     }
 }
