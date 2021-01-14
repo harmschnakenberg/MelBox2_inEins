@@ -101,6 +101,7 @@
     <Compile Include="Sql_Insert.cs" />
     <Compile Include="Sql_Select.cs" />
     <Compile Include="Sql_Update.cs" />
+    <Compile Include="Web_Helper.cs" />
     <Compile Include="Web_Pages.cs" />
     <Compile Include="Web_Templates.cs" />
     <Compile Include="Web_Server.cs" />

@@ -137,6 +137,26 @@ namespace MelBox2
             }
         }
 
+        public DataTable GetContactFromLogin(string name, string password)
+        {
+            try
+            {
+                const string query = "SELECT * FROM \"Contact\" WHERE Name = @name AND ( Password = @password OR Password IS NULL )";
+
+                Dictionary<string, object> args = new Dictionary<string, object>
+                {
+                    { "@name", name },
+                    { "@password",Encrypt(password)}
+                };
+
+                return SqlSelectDataTable("Benutzer", query, args);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("GetContactFromLogin()" + ex.GetType() + "\r\n" + ex.Message);
+            }
+        }
+
         /// <summary>
         /// Liste der Ids und Namen von Kontakten, die per Email oder SMS erreichbar sind
         /// </summary>
