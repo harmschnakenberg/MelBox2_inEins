@@ -20,7 +20,7 @@ namespace MelBox2
         #region Felder
         string guid = string.Empty;
         string requestingPage = string.Empty;
-        string logedInUserName = "-kein Benutzer-"; //string.Empty;        
+        string logedInUserName = string.Empty;        
         int logedInUserId = 0;
         bool isAdmin = false;
         #endregion
@@ -44,6 +44,9 @@ namespace MelBox2
             {
                 requestingPage = args["pageTitle"];
             }
+#if DEBUG
+            Console.WriteLine("Aufruf von {0} durch: [{1}] {2} - Admin: {3} | {4}", requestingPage, logedInUserId, logedInUserName, isAdmin, guid);
+#endif
         }
 
         #endregion
@@ -95,7 +98,9 @@ namespace MelBox2
             StringBuilder builder = new StringBuilder();
 
             builder.Append(MelBoxWeb.HtmlTablePlain(dt));
-
+#if DEBUG
+            builder.Append("<p class='w3-pink'>" + payload + "</p>");
+#endif
             context.Response.SendResponse(MelBoxWeb.HtmlCanvas(builder.ToString(), dt.TableName, logedInUserName));
             return context;
         }
@@ -112,7 +117,9 @@ namespace MelBox2
             StringBuilder builder = new StringBuilder();
 
             builder.Append(MelBoxWeb.HtmlTablePlain(dt));
-
+#if DEBUG
+            builder.Append("<p class='w3-pink'>" + payload + "</p>");
+#endif
             context.Response.SendResponse(MelBoxWeb.HtmlCanvas(builder.ToString(), dt.TableName, logedInUserName));
             return context;
         }
@@ -132,7 +139,9 @@ namespace MelBox2
             StringBuilder builder = new StringBuilder();
 
             builder.Append(MelBoxWeb.HtmlTablePlain(dt));
-
+#if DEBUG
+            builder.Append("<p class='w3-pink'>" + payload + "</p>");
+#endif
             context.Response.SendResponse(MelBoxWeb.HtmlCanvas(builder.ToString(), dt.TableName, logedInUserName));
             return context;
         }
@@ -158,7 +167,9 @@ namespace MelBox2
 
             builder.Append(MelBoxWeb.HtmlTableBlocked(dt, 0, isAdmin));
             builder.Append(MelBoxWeb.HtmlEditor(action));
-
+#if DEBUG
+            builder.Append("<p class='w3-pink'>" + payload + "</p>");
+#endif
             context.Response.SendResponse(MelBoxWeb.HtmlCanvas(builder.ToString(), dt.TableName, logedInUserName));
             return context;
         }
@@ -187,7 +198,9 @@ namespace MelBox2
 
             builder.Append(MelBoxWeb.HtmlTableShift(dt, 0, logedInUserId, isAdmin));
             builder.Append(MelBoxWeb.HtmlEditor(action));
-
+#if DEBUG
+            builder.Append("<p class='w3-pink'>" + payload + "</p>");
+#endif
             context.Response.SendResponse(MelBoxWeb.HtmlCanvas(builder.ToString(), dt.TableName, logedInUserName));
             return context;
         }
@@ -215,55 +228,152 @@ namespace MelBox2
             StringBuilder builder = new StringBuilder();
 
             int chosenContactId = logedInUserId;
-            if (requestingPage == caption && args.ContainsKey("ContactId")) //Ist Antwort von dieser Seite
+            if (requestingPage == caption && args.ContainsKey("selectedContactId")) //Ist Antwort von dieser Seite
             {
-                int.TryParse(args["ContactId"].ToString(), out chosenContactId);
+                int.TryParse(args["selectedContactId"].ToString(), out chosenContactId);
             }
             else if (chosenContactId == 0)
             {
                 builder.Append(MelBoxWeb.HtmlAlert(2, "Ungültiger Aufruf", "Für Einsicht Benutzerkonto bitte einloggen."));
             }
 
-            DataTable dt = Program.Sql.GetViewContactInfo(chosenContactId);
-            DataTable dtCompany = Program.Sql.GetCompany();
+            if (logedInUserId != 0)
+            {
+                DataTable dt;
+                if (isAdmin) dt = Program.Sql.GetViewContactInfo();
+                else dt = Program.Sql.GetViewContactInfo(chosenContactId);
 
-            builder.Append(MelBoxWeb.HtmlFormAccount(dt, dtCompany, isAdmin));
+                DataTable dtCompany = Program.Sql.GetCompany();
+
+                builder.Append(MelBoxWeb.HtmlFormAccount(dt, dtCompany, chosenContactId, isAdmin));
+            }
 #if DEBUG
-            builder.Append("<p class='w3-pink'>" + payload + "</p>");
+            builder.Append("<p class='w3-pink w3-mobile'>" + payload + "</p>");
 #endif
             context.Response.SendResponse(MelBoxWeb.HtmlCanvas(builder.ToString(), caption, logedInUserName));
             return context;
         }
+
+        [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/account/update")]
+        public IHttpContext ResponseAccountUpdate(IHttpContext context)
+        {
+            string payload = context.Request.Payload;
+
+            Dictionary<string, string> args = MelBoxWeb.ReadPayload(payload);
+
+            ReadGlobalFields(args);
+
+            StringBuilder builder = new StringBuilder();
+
+            int contactId = 0;
+            string name = "-KEIN NAME-";
+            string password = null;
+            int companyId = -1;
+            string email = null;
+            ulong phone = 0;
+            int sendSms = 0; //Hinweis: <input type='checkbox' > wird nur übertragen, wenn angehakt => immer zurücksetzten, wenn nicht gesetzt
+            int sendEmail = 0;
+            int maxInactivity = -1;
+
+            foreach (string arg in args.Keys)
+            {
+                switch (arg)
+                {
+                    case "pageTitle":
+                        if (args[arg] != "Benutzerkonto")
+                        {
+                            builder.Append(MelBoxWeb.HtmlAlert(1, "Ungültiger Aufruf", "Aufruf von ungültiger Stelle."));
+                        }
+                        break;
+                    case "ContactId":
+                        contactId = int.Parse(args[arg]);
+                        break;
+                    case "Name":
+                        name = args[arg].Replace('+', ' ');
+                        break;
+                    case "Passwort":
+                        if (args[arg].Length > 1)
+                            password = args[arg];
+                        break;
+                    case "CompanyId":
+                        companyId = int.Parse(args[arg]);
+                        break;
+                    case "Email":
+                        email = args[arg];
+                        break;
+                    case "Telefon":
+                        phone = GsmConverter.StrToPhone(args[arg]);
+                        break;
+                    case "Max_Inaktivität":
+                        maxInactivity = int.Parse(args[arg]);
+                        break;
+                    case "SendSms":
+                        if (args[arg].ToLower() == "on")
+                            sendSms = 1;
+                        else
+                            sendSms = 0;
+                        break;
+                    case "SendEmail":
+                        if (args[arg].ToLower() == "on")
+                            sendEmail = 1;
+                        else
+                            sendEmail = 0;
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            if (!isAdmin && contactId != logedInUserId)
+            {
+                builder.Append(MelBoxWeb.HtmlAlert(2, "Keine Berechtigung", "Sie haben keine Berechtigung den Benutzer zu ändern."));
+            }
+            else
+            {
+                if (!Program.Sql.UpdateContact(contactId, name, password, companyId, phone, sendSms, email, sendEmail, string.Empty, maxInactivity))
+                {
+                    builder.Append(MelBoxWeb.HtmlAlert(2, "Keine Änderungen für Benutzer '" + name + "'", "Die Änderungen konnten nicht in die Datenbank übertragen werden."));
+                }
+                else
+                {
+                    builder.Append(MelBoxWeb.HtmlAlert(3, "Änderungen für Benutzer '" + name + "' übernommen", "Die Änderungen an Benutzer '" + name + "' wurden in der Datenbank gespeichert."));
+                }
+            }
+#if DEBUG
+            builder.Append("<p class='w3-pink w3-mobile'>" + payload + "</p>");
+#endif
+            context.Response.SendResponse(MelBoxWeb.HtmlCanvas(builder.ToString(), "Benutzerkonto ändern", logedInUserName));
+            return context;
+        }
+
 
 
         [RestRoute]
         public IHttpContext LogIn(IHttpContext context)
         {
             string caption = "LogIn"; //Überschriftd er Seite
-            string newGguid = string.Empty; //Nur füllen, wenn neue Benutzeranmeldung
+            string newGuid = string.Empty; //Nur füllen, wenn neue Benutzeranmeldung
             string payload = context.Request.Payload;
             Dictionary<string, string> args = MelBoxWeb.ReadPayload(payload);
 
-            ReadGlobalFields(args);
-
-            if (requestingPage == caption) //Kommt der Aufruf von dieser Seite? (sinnvoll?)
+            if (args.ContainsKey("name") && args.ContainsKey("password"))
             {
-                if (args.ContainsKey("name") && args.ContainsKey("password"))
-                {
-                    string name = args["name"].Replace('+', ' ');
-                    string password = args["password"];
+                string name = args["name"].Replace('+', ' ');
+                string password = args["password"];
 
-                    newGguid = MelBoxWeb.CheckLogIn(name, password);
-                    logedInUserName = name;
-                }
+                newGuid = MelBoxWeb.CheckLogIn(name, password);
+                guid = newGuid;
+                logedInUserName = name;
             }
+
+            ReadGlobalFields(args);
 
             StringBuilder builder = new StringBuilder();
             builder.Append(MelBoxWeb.HtmlLogIn());
 #if DEBUG           
             builder.Append("<p class='w3-pink'>" + payload + "</p>");
 #endif
-            context.Response.SendResponse(MelBoxWeb.HtmlCanvas(builder.ToString(), caption, logedInUserName, newGguid));
+            context.Response.SendResponse(MelBoxWeb.HtmlCanvas(builder.ToString(), caption, logedInUserName, newGuid));
             return context;
         }
     }

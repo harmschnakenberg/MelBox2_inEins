@@ -518,7 +518,7 @@ namespace MelBox2
         }
 
 
-        public static string HtmlFormAccount(DataTable dtAccount, DataTable dtCompany, bool isAdmin = false)
+        public static string HtmlFormAccount(DataTable dtAccount, DataTable dtCompany, int showAccountId = 0, bool isAdmin = false)
         {
             string readOnly = isAdmin ? string.Empty : "readonly";
             string disabled = isAdmin ? string.Empty : "disabled";
@@ -531,36 +531,34 @@ namespace MelBox2
 
             if (isAdmin)
             {
+                builder.Append("<script>\n");
+                builder.Append("function chooseAccount(x) {\n");
+                builder.Append(" x.action = '/account';\n");
+                builder.Append(" x.submit();\n");
+                builder.Append("}\n</script>\n");
+
+                builder.Append("<div class='w3-row w3-section'>\n");
+                builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'><i class='w3-xxlarge material-icons-outlined'>people</i></div>\n");
+
+                builder.Append(" <div class='w3-rest'>\n");
+                builder.Append("  <select form='form1' class='w3-select w3-border' name='selectedContactId' onchange='chooseAccount(this.form)'>\n");
+
                 foreach (DataRow r in dtAccount.Rows)
                 {
-                    builder.Append("<script>\n");
-                    builder.Append("function chooseAccount(x) {\n");
-                    builder.Append(" document.getElementById('ContactId').value = x;\n");
-                    builder.Append(" document.getElementById('Name').value = document.getElementById('selectedContact').options[y].text;\n");
-                    builder.Append("}\n</script>\n");
-
-                    builder.Append("<div class='w3-row w3-section'>\n");
-                    builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'><i class='w3-xxlarge material-icons-outlined'>people</i></div>\n");
-
-                    builder.Append("  <button form='form1' type='submit' formaction='/account' style='max-width:60px' class='w3-col w3-button'>");
-                    builder.Append("<i class='w3-xxlarge material-icons-outlined'>settings</i></button>\n");
-
-                    builder.Append(" <div class='w3-rest'>\n");
-                    builder.Append("  <select form='form1' class='w3-select w3-border' name='selectedCompanyId' onchange='chooseAccount(this.value)'>\n");
-
-                    builder.Append("   <option value='" + r["Id"] + "'>" + r["Name"].ToString() + "</option>\n");
-
-                    builder.Append("  </select>\n");
-                    builder.Append(" </div>\n</div>\n");
-
-
+                    string selected = (int.Parse(r["ContactId"].ToString()) == showAccountId) ? "selected" : string.Empty;
+                    builder.Append("   <option value='" + r["ContactId"] + "' " + selected + ">" + r["Name"].ToString() + "</option>\n");
                 }
+
+                builder.Append("  </select>\n");
+                builder.Append(" </div>\n</div>\n");
             }
 
             int companyId = 0;
             foreach (DataRow r in dtAccount.Rows)
             {
-                foreach (DataColumn c in dtAccount.Columns)
+                if (showAccountId != 0 && int.Parse(r[dtAccount.Columns["ContactId"]].ToString()) != showAccountId) continue; // nur einen von mehreren Accounts anzeigen
+
+                    foreach (DataColumn c in dtAccount.Columns)
                 {
                     switch (c.ColumnName)
                     {
@@ -674,10 +672,14 @@ namespace MelBox2
                 }
             }
 
-            builder.Append(" <input type='reset' form='form1' class='w3-button w3-block w3-section " + MyStyle.PanelLight + " w3-ripple w3-padding w3-quarter'>\n");
-            builder.Append(" <button class='w3-button w3-block w3-section " + MyStyle.Button + " w3-ripple w3-padding w3-quarter' onclick ='/account/update'>Ändern</button>\n");
-            builder.Append(" <button class='w3-button w3-block w3-section " + MyStyle.Button + " w3-ripple w3-padding w3-quarter' onclick ='/account/create' " + disabled + ">Neu</button>\n");
-            builder.Append(" <button class='w3-button w3-block w3-section " + MyStyle.Button + " w3-ripple w3-padding w3-quarter' onclick ='/account/delete' " + disabled + ">Löschen</button>\n");
+            builder.Append("<div class='w3-row w3-section'>\n");
+            builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'>&nbsp;</div>\n");
+            builder.Append(" <div class='w3-rest'>\n");            
+            builder.Append(" <button class='w3-button " + MyStyle.PanelLight + " w3-margin' type='reset' form='form1'>Zurücksetzen</button>\n");
+            builder.Append(" <button class='w3-button " + MyStyle.Button + " w3-margin' type='submit' form='form1' formaction='/account/update' >Ändern</button>\n");
+            builder.Append(" <button class='w3-button " + MyStyle.Button + " w3-margin' type='submit' form='form1' formaction='/account/create' " + disabled + ">Neu</button>\n");
+            builder.Append(" <button class='w3-button " + MyStyle.Button + " w3-margin' type='submit' form='form1' formaction='/account/delete' " + disabled + ">Löschen</button>\n");
+            builder.Append(" </div>\n</div>\n");
             builder.Append("</div>\n");
 
             return builder.ToString();

@@ -86,7 +86,7 @@ namespace MelBox2
                         builder.Append("UPDATE \"Contact\" SET Name = @name WHERE Id = @contactId; ");
                     }
 
-                    if (password.Length > 3)
+                    if (password != null && password.Length > 3)
                     {
                         Console.WriteLine("Passwort\t" + password + "=" + Encrypt(password));
                         args.Add("@password", Encrypt(password));

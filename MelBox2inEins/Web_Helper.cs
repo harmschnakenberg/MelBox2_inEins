@@ -19,7 +19,6 @@ namespace MelBox2
             return input.Replace("Ä", "&Auml;").Replace("Ö", "&Ouml;").Replace("Ü", "&Uuml;").Replace("ä", "&auml;").Replace("ö", "&ouml;").Replace("ü", "&uuml;").Replace("ß", "&szlig;");
         }
 
-
         public static string DecodeUmlaute(string input)
         {
             return input.Replace("%C4", "Ä").Replace("%D6", "Ö").Replace("%DC", "Ü").Replace("%E4", "ä").Replace("%F6", "ö").Replace("%FC", "ü")
@@ -85,21 +84,20 @@ namespace MelBox2
             string guid = Guid.NewGuid().ToString("N");
             LogedInUsers.Add(guid, user);
 
-#if DEBUG
-            Console.WriteLine("Angemeldet:");
-            foreach (string item in LogedInUsers.Keys)
-            {
-                User x = LogedInUsers[item];
+//#if DEBUG
+//            Console.WriteLine("Angemeldet:");
+//            foreach (string item in LogedInUsers.Keys)
+//            {
+//                User x = LogedInUsers[item];
 
-                Console.WriteLine("{0}\t{1}\t{2}", x.IsAdmin ? "Admin" : "Benutzer", x.Id, x.Name);
-            }
-#endif
+//                Console.WriteLine("{0}\t{1}\t{2}", x.IsAdmin ? "Admin" : "Benutzer", x.Id, x.Name);
+//            }
+//#endif
             return guid;
         }
 
         public static User GetUserFromGuid(string guid)
         {
-            // User user = new User();
             if (LogedInUsers.ContainsKey(guid))
                 return LogedInUsers[guid];
             else

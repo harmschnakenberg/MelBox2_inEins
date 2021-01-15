@@ -398,15 +398,19 @@ namespace MelBox2
             return SqlSelectDataTable("Gesperrte Meldungen", query);
         }
 
-        public DataTable GetViewContactInfo(int contactId)
+        public DataTable GetViewContactInfo(int contactId = 0)
         {
             string query = "SELECT Contact.Id AS ContactId, Contact.Name AS Name, '********' AS Passwort, CompanyId, Company.Name AS Firma, Email, Phone AS Telefon, Contact.SendSms AS SendSms , Contact.SendEmail AS SendEmail, MaxInactiveHours AS Max_Inaktivität " +
-                           "FROM \"Contact\" JOIN \"Company\" ON CompanyId = Company.Id WHERE Contact.Id = @id; ";
+                           "FROM \"Contact\" JOIN \"Company\" ON CompanyId = Company.Id ";
 
-            Dictionary<string, object> args = new Dictionary<string, object>
+            Dictionary<string, object> args = new Dictionary<string, object>();
+           
+            if (contactId != 0)
             {
-                { "@id", contactId }
-            };
+                query += "WHERE Contact.Id = @id ";
+
+                args.Add("@id", contactId);
+            }
 
             return SqlSelectDataTable("Benutzerkonto", query, args);
         }
