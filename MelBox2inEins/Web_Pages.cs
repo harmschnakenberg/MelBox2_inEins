@@ -146,6 +146,8 @@ namespace MelBox2
             return context;
         }
 
+        #region Gesperrte Nachrichten
+
         [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/blocked")]
         public IHttpContext ResponseBlocked(IHttpContext context)
         {
@@ -174,7 +176,182 @@ namespace MelBox2
             return context;
         }
 
+        [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/blocked/create")]
+        public IHttpContext ResponseBlockedCreate(IHttpContext context)
+        {
+            string payload = context.Request.Payload;
+            Dictionary<string, string> args = MelBoxWeb.ReadPayload(payload);
 
+            ReadGlobalFields(args);
+
+            #region Inhalt ermitteln
+            int recMsgId = 0;
+            if (args.ContainsKey("selectedRow"))
+            {
+                int.TryParse(args["selectedRow"].ToString(), out recMsgId);
+            }
+
+            int contentId = Program.Sql.GetContentId(recMsgId);
+            #endregion
+
+            StringBuilder builder = new StringBuilder();
+
+            if (contentId == 0)
+            {
+                builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler", "Die übergebene Nachricht konnte nicht zugeordnet werden."));
+            }
+            else
+            {
+                Program.Sql.InsertMessageBlocked(contentId);
+                string msg = "Die Weiterleitung der Nachricht Nr. " + contentId + " wurde durch den Benutzer '" + logedInUserName + "' zu bestimmten Zeiten gesperrt.";
+
+                builder.Append(MelBoxWeb.HtmlAlert(3, "Nachricht in die Sperrliste aufgenommen", msg));
+
+                Program.Sql.Log(MelBoxSql.LogTopic.Shift, MelBoxSql.LogPrio.Warning, msg);
+            }
+
+            Dictionary<string, string> action = new Dictionary<string, string>();
+
+            if (isAdmin)
+            {
+                action.Add("/blocked/update", "Gesperrte Nachricht bearbeiten");
+                action.Add("/blocked/delete", "Aus Sperrliste entfernen");
+            }
+
+            DataTable dt = Program.Sql.GetViewMsgBlocked();
+            builder.Append(MelBoxWeb.HtmlTableBlocked(dt, 0, isAdmin));
+            builder.Append(MelBoxWeb.HtmlEditor(action));
+#if DEBUG
+            builder.Append("<p class='w3-pink'>" + payload + "</p>");
+#endif
+            context.Response.SendResponse(MelBoxWeb.HtmlCanvas(builder.ToString(), dt.TableName, logedInUserName));
+            return context;
+        }
+
+        [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/blocked/update")]
+        public IHttpContext ResponseBlockedUpdate(IHttpContext context)
+        {
+            string payload = context.Request.Payload;
+            Dictionary<string, string> args = MelBoxWeb.ReadPayload(payload);
+
+            ReadGlobalFields(args);
+
+            #region Inhalt ermitteln
+            int recMsgId = 0;
+            if (args.ContainsKey("selectedRow"))
+            {
+                int.TryParse(args["selectedRow"].ToString(), out recMsgId);
+            }
+
+            int contentId = recMsgId; // Program.Sql.GetContentId(recMsgId);
+            #endregion
+
+            StringBuilder builder = new StringBuilder();
+
+            //if (contentId == 0)
+            //{
+            //    builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler", "Die übergebene Nachricht konnte nicht zugeordnet werden."));
+            //}
+            //else
+            //{
+                if (args.ContainsKey("Beginn") && args.ContainsKey("Ende"))
+                {
+                    int beginHour = int.Parse(args["Beginn"].ToString());
+                    int endHour = int.Parse(args["Ende"].ToString());
+
+                    MelBoxSql.BlockedDays days = MelBoxSql.BlockedDays.None;
+                    if (args.ContainsKey("Mo")) days |= MelBoxSql.BlockedDays.Monday;
+                    if (args.ContainsKey("Di")) days |= MelBoxSql.BlockedDays.Tuesday;
+                    if (args.ContainsKey("Mi")) days |= MelBoxSql.BlockedDays.Wendsday;
+                    if (args.ContainsKey("Do")) days |= MelBoxSql.BlockedDays.Thursday;
+                    if (args.ContainsKey("Fr")) days |= MelBoxSql.BlockedDays.Friday;
+                    if (args.ContainsKey("Sa")) days |= MelBoxSql.BlockedDays.Saturday;
+                    if (args.ContainsKey("So")) days |= MelBoxSql.BlockedDays.Sunday;
+
+                    if (Program.Sql.UpdateMessageBlocked(contentId, beginHour, endHour, days))
+                    {
+                        builder.Append(MelBoxWeb.HtmlAlert(3, "Sperrzeiten geändert", "Die Sperrzeiten für Nachricht Nr. " + contentId + " wurden geändert."));
+                    }
+                    else
+                    {
+                        builder.Append(MelBoxWeb.HtmlAlert(2, "Sperrzeiten nicht geändert", "Die Sperrzeiten für Nachricht Nr. " + contentId + " konnten nicht geändert werden."));
+                    }
+               // }
+            }
+        
+            Dictionary<string, string> action = new Dictionary<string, string>();
+
+            if (isAdmin)
+            {
+                action.Add("/blocked/update", "Gesperrte Nachricht bearbeiten");
+                action.Add("/blocked/delete", "Aus Sperrliste entfernen");
+            }
+
+            DataTable dt = Program.Sql.GetViewMsgBlocked();
+            builder.Append(MelBoxWeb.HtmlTableBlocked(dt, contentId, isAdmin));
+            builder.Append(MelBoxWeb.HtmlEditor(action));
+#if DEBUG
+            builder.Append("<p class='w3-pink'>" + payload + "</p>");
+#endif
+            context.Response.SendResponse(MelBoxWeb.HtmlCanvas(builder.ToString(), dt.TableName, logedInUserName));
+            return context;
+        }
+
+        [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/blocked/delete")]
+        public IHttpContext ResponseBlockedDelete(IHttpContext context)
+        {
+            string payload = context.Request.Payload;
+            Dictionary<string, string> args = MelBoxWeb.ReadPayload(payload);
+
+            ReadGlobalFields(args);
+
+            #region Inhalt ermitteln
+            int contentId = 0;
+            if (args.ContainsKey("selectedRow"))
+            {
+                int.TryParse(args["selectedRow"].ToString(), out contentId);
+            }
+            #endregion
+
+            StringBuilder builder = new StringBuilder();
+
+            if (contentId == 0)
+            {
+                builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler", "Die übergebene Nachricht konnte nicht zugeordnet werden."));
+            }
+            else
+            {
+                if (!Program.Sql.DeleteMessageBlocked(contentId))
+                {
+                    builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler Nachricht entsperren", "Die Nachricht mit der Nr. " + contentId + " konnte nicht aus der Sperrliste freigegeben werden."));
+                }
+                else
+                {
+                    builder.Append(MelBoxWeb.HtmlAlert(3, "Nachricht aus der Sperrliste genommen", "Die gesperrte Nachricht mit der Nr. " + contentId + " wurde durch '" + logedInUserName + "' wieder freigegeben."));
+                }
+            }
+
+            Dictionary<string, string> action = new Dictionary<string, string>();
+
+            if (isAdmin)
+            {
+                action.Add("/blocked/update", "Gesperrte Nachricht bearbeiten");
+                action.Add("/blocked/delete", "Aus Sperrliste entfernen");
+            }
+
+            DataTable dt = Program.Sql.GetViewMsgBlocked();
+            builder.Append(MelBoxWeb.HtmlTableBlocked(dt, 0, isAdmin));
+            builder.Append(MelBoxWeb.HtmlEditor(action));
+#if DEBUG
+            builder.Append("<p class='w3-pink'>" + payload + "</p>");
+#endif
+            context.Response.SendResponse(MelBoxWeb.HtmlCanvas(builder.ToString(), dt.TableName, logedInUserName));
+            return context;
+        }
+
+        #endregion
+
+        #region Bereitschaft
 
         [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/shift")]
         public IHttpContext ResponseShift(IHttpContext context)
@@ -315,6 +492,8 @@ namespace MelBox2
             context.Response.SendResponse(MelBoxWeb.HtmlCanvas(builder.ToString(), "Bereitschaft löschen", logedInUserName));
             return context;
         }
+
+        #endregion
 
         #region Kontakt
 

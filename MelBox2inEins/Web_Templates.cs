@@ -64,6 +64,7 @@ namespace MelBox2
             builder.Append(" if ( sessionStorage.getItem('guid') !== null) {\n");
             builder.Append("  var guid = sessionStorage.getItem('guid');\n");
             builder.Append("  document.getElementById('guid').value = guid;\n");
+            builder.Append("  document.getElementById('buttonAccount').disabled = false;\n");
             builder.Append(" }\n");
             builder.Append("}\n");
             builder.Append("</script>\n");
@@ -114,7 +115,7 @@ namespace MelBox2
             builder.Append("  <button class='w3-bar-item w3-button' type='submit' formaction='/overdue'><i class='w3-xxlarge material-icons-outlined'>pending_actions</i></button>\n");
             builder.Append("  <button class='w3-bar-item w3-button' type='submit' formaction='/blocked'><i class='w3-xxlarge material-icons-outlined'>notifications_off</i></button>\n");
             builder.Append("  <button class='w3-bar-item w3-button' type='submit' formaction='/shift'><i class='w3-xxlarge material-icons-outlined'>event_note</i></button>\n");
-            builder.Append("  <button class='w3-bar-item w3-button' type='submit' formaction='/account'><i class='w3-xxlarge material-icons-outlined'>assignment_ind</i></button>\n");
+            builder.Append("  <button class='w3-bar-item w3-button' type='submit' formaction='/account' id='buttonAccount' disabled><i class='w3-xxlarge material-icons-outlined'>assignment_ind</i></button>\n");
             builder.Append("  <button class='w3-bar-item w3-button' type='submit' formaction='/log'><i class='w3-xxlarge material-icons-outlined'>assignment</i></button>\n");
             builder.Append("  <button class='w3-bar-item w3-button' type='submit' formaction='/'><i class='w3-xxlarge material-icons-outlined'>login</i></button>\n");
 
@@ -180,23 +181,24 @@ namespace MelBox2
         {
             StringBuilder builder = new StringBuilder();
 
+            builder.Append("<center>\n");
             builder.Append("<div id='Editor' class='w3-modal'>\n");
-            builder.Append("  <div class='w3-modal-content w3-card-4 w3-half'>\n"); //style='max-width:600px'
+            builder.Append("  <div class='w3-quarter'>&nbsp;</div>\n");
+            builder.Append("  <div class='w3-modal-content w3-card-4 w3-half'>\n");
             builder.Append("  <div class='w3-container'>\n");
             builder.Append("  <div class='w3-margin'><p>Optionen</p></div>\n");
             builder.Append("   <span onclick=\"w3.hide('#Editor')\" class='w3-button w3-margin-bottom w3-display-topright'><i class='w3-xxlarge material-icons-outlined'>close</i></span>");
-           // builder.Append("   <form id='form1' method='post' class='w3-margin' action=''>\n");
-
+          
             foreach (var path in action.Keys)
             {
-                builder.Append("    <button class='" + MyStyle.Button + " w3-button w3-block w3-section w3-padding-large w3-margin' "); // w3-disabled
+                builder.Append("    <button class='" + MyStyle.Button + " w3-button w3-padding-large w3-margin' ");
                 builder.Append("form='form1' formaction='" + path + "' type='submit'>" + action[path] + "</button>");
             }
 
-          //  builder.Append("   </form>\n");
             builder.Append("  </div>\n");
             builder.Append("  </div>\n");
             builder.Append("</div>\n");
+            builder.Append("</center>\n");
 
             return builder.ToString();
         }
