@@ -207,6 +207,129 @@ namespace MelBox2
             return builder.ToString();
         }
 
+        public static string ProcessFormShift(Dictionary<string, string> args, int logedInUserId, bool isAdmin)
+        {
+            StringBuilder builder = new StringBuilder();
+
+            int shiftUserId = logedInUserId;
+            int shiftId = 0;
+            string name = "-KEIN NAME-";
+            DateTime date = DateTime.MinValue;
+            int beginHour = 17;
+            int endHour = 7;
+            bool createWeekShift = false;
+          //  bool createNewShift = false;
+
+            foreach (string arg in args.Keys)
+            {
+                switch (arg)
+                {
+                    case "selectedRow":
+                        if (args[arg].StartsWith("Datum_"))
+                        {
+                            DateTime.TryParse(args["selectedRow"].ToString().Substring(6), out date);                            
+                        }
+                        else
+                        {
+                            int.TryParse(args["selectedRow"].ToString(), out shiftId);
+                        }
+                        break;
+                    case "ContactId":
+                        int.TryParse(args[arg].ToString(), out shiftUserId);                        
+                        break;
+                    case "Name":
+                        name = DecodeUmlaute(args[arg].Replace('+', ' '));
+                        break;
+                    case "Datum":
+                        if (date == DateTime.MinValue)
+                            date = DateTime.Parse(args["Datum"].ToString()).Date;
+                        break;
+                    case "Beginn":
+                        beginHour = int.Parse(args[arg]);
+                        break;
+                    case "Ende":
+                        endHour = int.Parse(args[arg]);
+                        break;
+                    case "CreateWeekShift":
+                        // if (args[arg].ToLower() == "on")
+                        createWeekShift = true;
+                        break;
+                }
+            }
+
+            if (shiftUserId == 0)
+            {
+                builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler Zuordnung", string.Format("Der Benutzer konnte der Bereitschaft nicht zugewiesen werden.")));
+                return builder.ToString();
+            }
+
+            if (shiftId == 0)
+            {
+                //Neu erstellen
+                DateTime firstStartTime = DateTime.Now;
+                DateTime lastEndTime = DateTime.Now;
+
+                if (createWeekShift)
+                {
+                    date = date.AddDays(DayOfWeek.Monday - date.DayOfWeek);
+
+                    for (int i = 0; i < 7; i++)
+                    {
+                        DateTime StartTime = MelBoxSql.ShiftStandardStartTime(date);
+                        DateTime EndTime = MelBoxSql.ShiftStandardEndTime(date);
+
+                        if (i == 0) firstStartTime = StartTime;
+                        if (i == 6) lastEndTime = EndTime;
+
+                        Program.Sql.InsertShift(shiftUserId, StartTime, EndTime);
+                        date = date.AddDays(1);
+                    }
+                }
+                else
+                {
+                    DateTime StartTime = date.AddHours(beginHour);
+                    DateTime EndTime = date.AddDays(1).AddHours(endHour);
+
+                    firstStartTime = StartTime;
+                    lastEndTime = EndTime;
+
+                    Program.Sql.InsertShift(shiftUserId, StartTime, EndTime);
+                }
+
+                builder.Append(MelBoxWeb.HtmlAlert(3, "Neue Bereitschaft erstellt", string.Format("Neue Bereitschaft für '{0}' vom {1} bis {2} erstellt.", name, firstStartTime, lastEndTime)));
+            }
+            else
+            {
+                //Update
+                if (shiftUserId != logedInUserId && !isAdmin)
+                {
+                    builder.Append(MelBoxWeb.HtmlAlert(2, "Nicht änderbar", string.Format("Sie können nur ihre eigenen Bereitschaftszeiten bearbeiten.")));
+                }
+
+                ////Admin: Darstellung anderer User
+                //if (shiftUserId == 0) contactId = logedInContactId;
+                //else logedInContactId = contactId;
+
+                DateTime StartTime = date.AddHours(beginHour);
+                DateTime EndTime = date.AddDays(1).AddHours(endHour);
+
+                if (!Program.Sql.UpdateShift(shiftId, shiftUserId, StartTime, EndTime))
+                {
+                    builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler Bereitschaft  Nr. " + shiftId + " bearbeiten",
+                        string.Format("Die Bereitschaft konnte nicht in der Datenbank geändert werden.")));
+                }
+                else
+                {
+                    builder.Append(MelBoxWeb.HtmlAlert(3, "Bereitschaft Nr. " + shiftId + " geändert",
+                       string.Format("Die Bereitschaft Nr. {0} wurde geändert auf {1} im Zeitraum {2} bis {3}.", shiftId, name, StartTime, EndTime)));
+                }
+
+            }
+
+
+            return builder.ToString();
+        }
+
     }
 
     public class User

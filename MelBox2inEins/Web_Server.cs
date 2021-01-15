@@ -16,7 +16,7 @@ namespace MelBox2
     public partial class MelBoxWeb
     {
         #region WebServer Management
-        static AutoResetEvent stopWebServer = new AutoResetEvent(false);
+        static readonly AutoResetEvent stopWebServer = new AutoResetEvent(false);
 
         public static void StartWebServer(int port = 48040)
         {
