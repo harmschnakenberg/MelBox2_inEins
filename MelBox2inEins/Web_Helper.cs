@@ -48,7 +48,7 @@ namespace MelBox2
 
         private static Dictionary<string, User> LogedInUsers { get; set; } = new Dictionary<string, User>();
 
-        public static string CheckLogIn(string name, string password)
+        public static string CheckLogin(string name, string password)
         {
             //Benuterdaten aus DB laden, wenn Name + Password korrekt
             DataTable dtAccount = Program.Sql.GetContactFromLogin(name, password);
@@ -102,6 +102,109 @@ namespace MelBox2
                 return LogedInUsers[guid];
             else
                 return null;
+        }
+
+        /// <summary>
+        /// Verarbeitet die Anfrage aus dem Formular 'Benutzerkonto'
+        /// </summary>
+        /// <param name="args"></param>
+        /// <param name="createNewAccount">Soll ein neuer Benutzer erstellt werden?</param>
+        /// <returns>html - Rückmeldung der ausgeführten Operation</returns>
+        public static string ProcessFormAccount(Dictionary<string, string> args, bool createNewAccount)
+        {
+            StringBuilder builder = new StringBuilder();
+
+            int contactId = 0;
+            string name = "-KEIN NAME-";
+            string password = null;
+            int companyId = -1;
+            string email = null;
+            ulong phone = 0;
+            int sendSms = 0; //Hinweis: <input type='checkbox' > wird nur übertragen, wenn angehakt => immer zurücksetzten, wenn nicht gesetzt
+            int sendEmail = 0;
+            int maxInactivity = -1;
+
+            foreach (string arg in args.Keys)
+            {
+                switch (arg)
+                {
+                    case "pageTitle":
+                        if (args[arg] != "Benutzerkonto")
+                        {
+                            builder.Append(MelBoxWeb.HtmlAlert(1, "Ungültiger Aufruf", "Aufruf von ungültiger Stelle."));
+                        }
+                        break;
+                    case "ContactId":
+                        contactId = int.Parse(args[arg]);
+                        break;
+                    case "Name":
+                        name = DecodeUmlaute( args[arg].Replace('+', ' ') );
+                        break;
+                    case "Passwort":
+                        if (args[arg].Length > 1)
+                            password = DecodeUmlaute(args[arg]);
+                        break;
+                    case "CompanyId":
+                        companyId = int.Parse(args[arg]);
+                        break;
+                    case "Email":
+                        email = DecodeUmlaute(args[arg]);
+                        break;
+                    case "Telefon":
+                        phone = GsmConverter.StrToPhone(args[arg]);
+                        break;
+                    case "Max_Inaktivität":
+                        maxInactivity = int.Parse(args[arg]);
+                        break;
+                    case "SendSms":
+                        if (args[arg].ToLower() == "on")
+                            sendSms = 1;
+                        else
+                            sendSms = 0;
+                        break;
+                    case "SendEmail":
+                        if (args[arg].ToLower() == "on")
+                            sendEmail = 1;
+                        else
+                            sendEmail = 0;
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            if (createNewAccount)
+            {
+                if (password.Length < 4)
+                {
+                    builder.Append(MelBoxWeb.HtmlAlert(2, "Fehler - Passwort ungültig", "Das vergebene Passwort entspricht nicht den Vorgaben. Der Benutzer wird nicht erstellt."));
+                }
+                else
+                {
+                    int newId = Program.Sql.InsertContact(name, password, companyId, email, phone, maxInactivity, sendSms == 1, sendEmail == 1);
+                    if (newId == 0)
+                    {
+                        builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler beim Schreiben in die Datenbank", "Der Benutzer '" + name + "' konnte nicht erstellt werden."));
+                    }
+                    else
+                    {
+                        builder.Append(MelBoxWeb.HtmlAlert(3, "Benutzer '" + name + "' erstellt", "Der Benutzer '" + name + "' wurde in der Datenbank neu erstellt."));
+                    }
+                }
+            }
+            else
+            {
+                if (!Program.Sql.UpdateContact(contactId, name, password, companyId, phone, sendSms, email, sendEmail, string.Empty, maxInactivity))
+                {
+                    builder.Append(MelBoxWeb.HtmlAlert(2, "Keine Änderungen für Benutzer '" + name + "'", "Die Änderungen konnten nicht in die Datenbank übertragen werden."));
+                }
+                else
+                {
+                    builder.Append(MelBoxWeb.HtmlAlert(3, "Änderungen für Benutzer '" + name + "' übernommen", "Die Änderungen an Benutzer '" + name + "' wurden in der Datenbank gespeichert."));
+                }
+            }
+
+            return builder.ToString();
         }
 
     }

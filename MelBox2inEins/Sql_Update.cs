@@ -175,9 +175,7 @@ namespace MelBox2
                         builder.Append("UPDATE \"Company\" SET City = @city WHERE Id = @companyId; ");
                     }
 
-#pragma warning disable CA2100 // Review SQL queries for security vulnerabilities
                     command.CommandText = builder.ToString();
-#pragma warning restore CA2100 // Review SQL queries for security vulnerabilities
                     return command.ExecuteNonQuery();
                 }
             }

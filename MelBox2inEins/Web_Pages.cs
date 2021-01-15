@@ -216,8 +216,10 @@ namespace MelBox2
 
             ReadGlobalFields(args);
 
-            Dictionary<string, string> action = new Dictionary<string, string>();
-            action.Add("/account/update", "Änderungen an Kontakt speichern");
+            Dictionary<string, string> action = new Dictionary<string, string>
+            {
+                { "/account/update", "Änderungen an Kontakt speichern" }
+            };
 
             if (isAdmin)
             {
@@ -254,6 +256,32 @@ namespace MelBox2
             return context;
         }
 
+        [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/account/create")]
+        public IHttpContext ResponseAccountCreate(IHttpContext context)
+        {
+            string payload = context.Request.Payload;
+
+            Dictionary<string, string> args = MelBoxWeb.ReadPayload(payload);
+
+            ReadGlobalFields(args);
+
+            StringBuilder builder = new StringBuilder();
+
+            if (!isAdmin)
+            {
+                builder.Append(MelBoxWeb.HtmlAlert(2, "Keine Berechtigung", "Sie haben keine Berechtigung den Benutzer anzulegen."));
+            }
+            else
+            {
+                builder.Append(MelBoxWeb.ProcessFormAccount(args, true));
+            }
+#if DEBUG
+            builder.Append("<p class='w3-pink w3-mobile'>" + payload + "</p>");
+#endif
+            context.Response.SendResponse(MelBoxWeb.HtmlCanvas(builder.ToString(), "Benutzerkonto ändern", logedInUserName));
+            return context;
+        }
+
         [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/account/update")]
         public IHttpContext ResponseAccountUpdate(IHttpContext context)
         {
@@ -265,111 +293,100 @@ namespace MelBox2
 
             StringBuilder builder = new StringBuilder();
 
-            int contactId = 0;
-            string name = "-KEIN NAME-";
-            string password = null;
-            int companyId = -1;
-            string email = null;
-            ulong phone = 0;
-            int sendSms = 0; //Hinweis: <input type='checkbox' > wird nur übertragen, wenn angehakt => immer zurücksetzten, wenn nicht gesetzt
-            int sendEmail = 0;
-            int maxInactivity = -1;
-
-            foreach (string arg in args.Keys)
-            {
-                switch (arg)
-                {
-                    case "pageTitle":
-                        if (args[arg] != "Benutzerkonto")
-                        {
-                            builder.Append(MelBoxWeb.HtmlAlert(1, "Ungültiger Aufruf", "Aufruf von ungültiger Stelle."));
-                        }
-                        break;
-                    case "ContactId":
-                        contactId = int.Parse(args[arg]);
-                        break;
-                    case "Name":
-                        name = args[arg].Replace('+', ' ');
-                        break;
-                    case "Passwort":
-                        if (args[arg].Length > 1)
-                            password = args[arg];
-                        break;
-                    case "CompanyId":
-                        companyId = int.Parse(args[arg]);
-                        break;
-                    case "Email":
-                        email = args[arg];
-                        break;
-                    case "Telefon":
-                        phone = GsmConverter.StrToPhone(args[arg]);
-                        break;
-                    case "Max_Inaktivität":
-                        maxInactivity = int.Parse(args[arg]);
-                        break;
-                    case "SendSms":
-                        if (args[arg].ToLower() == "on")
-                            sendSms = 1;
-                        else
-                            sendSms = 0;
-                        break;
-                    case "SendEmail":
-                        if (args[arg].ToLower() == "on")
-                            sendEmail = 1;
-                        else
-                            sendEmail = 0;
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            if (!isAdmin && contactId != logedInUserId)
+            if (!isAdmin && int.Parse(args["ContactId"]) != logedInUserId)
             {
                 builder.Append(MelBoxWeb.HtmlAlert(2, "Keine Berechtigung", "Sie haben keine Berechtigung den Benutzer zu ändern."));
             }
             else
             {
-                if (!Program.Sql.UpdateContact(contactId, name, password, companyId, phone, sendSms, email, sendEmail, string.Empty, maxInactivity))
+                builder.Append(MelBoxWeb.ProcessFormAccount(args, false) );
+            }
+#if DEBUG
+            builder.Append("<p class='w3-pink w3-mobile'>" + payload + "</p>");
+#endif
+            context.Response.SendResponse(MelBoxWeb.HtmlCanvas(builder.ToString(), "Benutzerkonto anlegen", logedInUserName));
+            return context;
+        }
+
+        [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/account/delete")]
+        public IHttpContext ResponseAccountDelete(IHttpContext context)
+        {
+            string payload = context.Request.Payload;
+
+            Dictionary<string, string> args = MelBoxWeb.ReadPayload(payload);
+
+            ReadGlobalFields(args);
+
+            StringBuilder builder = new StringBuilder();
+
+            if (!isAdmin)
+            {
+                builder.Append(MelBoxWeb.HtmlAlert(2, "Keine Berechtigung", "Sie haben keine Berechtigung den Benutzer zu löschen."));
+            }
+            else
+            {
+                int.TryParse(args["ContactId"].ToString(), out int contactId);
+                string name = args["Name"];
+
+                if (contactId == 0)
                 {
-                    builder.Append(MelBoxWeb.HtmlAlert(2, "Keine Änderungen für Benutzer '" + name + "'", "Die Änderungen konnten nicht in die Datenbank übertragen werden."));
+                    builder.Append(MelBoxWeb.HtmlAlert(2, "Fehler", "Der Benutzer '" + name + "' konnte nicht gelöscht werden. Der Aufruf war fehlerhaft."));
                 }
                 else
                 {
-                    builder.Append(MelBoxWeb.HtmlAlert(3, "Änderungen für Benutzer '" + name + "' übernommen", "Die Änderungen an Benutzer '" + name + "' wurden in der Datenbank gespeichert."));
+                    if (!Program.Sql.DeleteContact(contactId))
+                    {
+                        builder.Append(MelBoxWeb.HtmlAlert(2, "Fehler beim löschen von '" + name + "'", "Der Benutzer " + contactId + " '" + name + "' konnte nicht aus der Datenbank gelöscht werden."));
+                    }
+                    else
+                    {
+                        builder.Append(MelBoxWeb.HtmlAlert(3, "Benutzer '" + name + "' gelöscht", "Der Benutzer " + contactId + " '" + name + "' wurde aus der Datenbank gelöscht."));
+                    }
                 }
             }
 #if DEBUG
             builder.Append("<p class='w3-pink w3-mobile'>" + payload + "</p>");
 #endif
-            context.Response.SendResponse(MelBoxWeb.HtmlCanvas(builder.ToString(), "Benutzerkonto ändern", logedInUserName));
+            context.Response.SendResponse(MelBoxWeb.HtmlCanvas(builder.ToString(), "Benutzerkonto löschen", logedInUserName));
             return context;
         }
 
 
-
         [RestRoute]
-        public IHttpContext LogIn(IHttpContext context)
+        public IHttpContext Login(IHttpContext context)
         {
-            string caption = "LogIn"; //Überschriftd er Seite
+            string caption = "Login"; //Überschriftd er Seite
             string newGuid = string.Empty; //Nur füllen, wenn neue Benutzeranmeldung
             string payload = context.Request.Payload;
             Dictionary<string, string> args = MelBoxWeb.ReadPayload(payload);
+            StringBuilder builder = new StringBuilder();
 
             if (args.ContainsKey("name") && args.ContainsKey("password"))
             {
-                string name = args["name"].Replace('+', ' ');
-                string password = args["password"];
+                string name = MelBoxWeb.DecodeUmlaute( args["name"].Replace('+', ' ') );
+                string password = MelBoxWeb.DecodeUmlaute(args["password"] );
 
-                newGuid = MelBoxWeb.CheckLogIn(name, password);
+                newGuid = MelBoxWeb.CheckLogin(name, password);
                 guid = newGuid;
                 logedInUserName = name;
+
+                if (newGuid.Length == 0)
+                {
+                    builder.Append(MelBoxWeb.HtmlAlert(2, "Login fehlgeschlagen", "Login für Benutzer '" + name + "' fehlgeschlagen.<br>Benutzer und Passwort korrekt?") );
+                }
+                else
+                {
+                    builder.Append(MelBoxWeb.HtmlAlert(3, "Willkommen " + name, "Login erfolgreich.") );
+                }
             }
 
             ReadGlobalFields(args);
 
-            StringBuilder builder = new StringBuilder();
-            builder.Append(MelBoxWeb.HtmlLogIn());
+            if (isAdmin)
+            {
+                builder.Append(MelBoxWeb.HtmlAlert(4, "Angemeldet als Administrator ", string.Empty));
+            }
+            builder.Append(MelBoxWeb.HtmlLogin());
 #if DEBUG           
             builder.Append("<p class='w3-pink'>" + payload + "</p>");
 #endif
@@ -982,7 +999,7 @@ namespace MelBox2
     //            if (contactId == 0)
     //            {
     //                builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler beim Lesen des Benutzerkontos", "Bitte erneut einloggen."));
-    //                builder.Append(MelBoxWeb.HtmlLogIn());
+    //                builder.Append(MelBoxWeb.HtmlLogin());
     //            }
     //            else
     //            {               
@@ -1529,11 +1546,11 @@ namespace MelBox2
     //                    Program.Sql.Log(MelBoxSql.LogTopic.Sql, MelBoxSql.LogPrio.Info, "Benutzer " + myId + " '" + name + "' ist angemeledt.");
 
     //                    guid = MelBoxWeb.GenerateID(myId);
-    //                    alert = MelBoxWeb.HtmlAlert(3, "LogIn erfolgreich", string.Format("Sie haben sich erfolgreich als Benutzer {0} '" + name + "' mit der ID {1} eingeloggt.", myId, guid));
+    //                    alert = MelBoxWeb.HtmlAlert(3, "Login erfolgreich", string.Format("Sie haben sich erfolgreich als Benutzer {0} '" + name + "' mit der ID {1} eingeloggt.", myId, guid));
     //                }
     //                else
     //                {
-    //                    alert = MelBoxWeb.HtmlAlert(2, "LogIn fehlgeschlagen", string.Format("Der Benutzername oder das Passwort sind unbekannt.", myId, guid));
+    //                    alert = MelBoxWeb.HtmlAlert(2, "Login fehlgeschlagen", string.Format("Der Benutzername oder das Passwort sind unbekannt.", myId, guid));
     //                }
     //            }
 
@@ -1543,7 +1560,7 @@ namespace MelBox2
 
     //            builder.Append(MelBoxWeb.HtmlHead("St&ouml;rmeldesystem f&uuml;r Kreutztr&auml;ger K&auml;ltetechnik", guid));
     //            builder.Append(alert);
-    //            builder.Append(MelBoxWeb.HtmlLogIn());
+    //            builder.Append(MelBoxWeb.HtmlLogin());
 
     //            #region TEST
     //#if DEBUG

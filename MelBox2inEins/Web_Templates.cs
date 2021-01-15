@@ -151,7 +151,7 @@ namespace MelBox2
             return builder.ToString();
         }
 
-        public static string HtmlLogIn()
+        public static string HtmlLogin()
         {
             StringBuilder builder = new StringBuilder();
 
@@ -159,7 +159,7 @@ namespace MelBox2
             builder.Append(" <div class='w3-container w3-quarter'></div>\n");
             builder.Append(" <div class='w3-card w3-half'>\n");
             builder.Append("  <div class='w3-container " + MyStyle.Panel + "'>\n");
-            builder.Append("    <h2>LogIn</h2>\n");
+            builder.Append("    <h2>Login</h2>\n");
             builder.Append("  </div>\n");
             builder.Append("  <div class='w3-margin'>\n");
             builder.Append("    <label><b>Benutzer</b></label>\n");
@@ -168,7 +168,7 @@ namespace MelBox2
             //builder.Append("    <input class='w3-input w3-border w3-sand' name='password' type='password' pattern='(?=.*\\d)(?=.*[a-z])(?=.*[A-Z]).{6,}' placeholder='Mind. 6 Zeichen; Gro&szlig;- und Kleinbuchstaben, Zahl' required></p>\n");
             builder.Append("    <input form='form1' class='w3-input w3-border w3-sand' name='password' type='password' pattern='.{4,}' placeholder='Mind. 6 Zeichen; Gro&szlig;- und Kleinbuchstaben, Zahl' required></p>\n");
             builder.Append("    <p>\n");
-            builder.Append("    <button form='form1' class='w3-button " + MyStyle.Button + "' formaction='/'>LogIn</button>\n</p>\n");
+            builder.Append("    <button form='form1' class='w3-button " + MyStyle.Button + "' formaction='/'>Login</button>\n</p>\n");
             builder.Append("  </div>\n");
 
             builder.Append(" </div>\n</div>\n");
@@ -189,7 +189,7 @@ namespace MelBox2
 
             foreach (var path in action.Keys)
             {
-                builder.Append("    <button class='" + MyStyle.Button + " w3-button w3-block w3-section w3-padding-large w3-margin w3-disabled' ");
+                builder.Append("    <button class='" + MyStyle.Button + " w3-button w3-block w3-section w3-padding-large w3-margin' "); // w3-disabled
                 builder.Append("formaction='" + path + "' type='submit'>" + action[path] + "</button>");
             }
 
@@ -838,7 +838,7 @@ namespace MelBox2
     //        return builder.ToString();
     //    }
 
-    //    public static string HtmlLogIn()
+    //    public static string HtmlLogin()
     //    {
     //        StringBuilder builder = new StringBuilder();
 
@@ -846,7 +846,7 @@ namespace MelBox2
     //        builder.Append(" <div class='w3-container w3-quarter'></div>\n");
     //        builder.Append(" <div class='w3-card w3-half'>\n");
     //        builder.Append("  <div class='w3-container w3-cyan'>\n");
-    //        builder.Append("    <h2>LogIn</h2>\n");
+    //        builder.Append("    <h2>Login</h2>\n");
     //        builder.Append("  </div>\n");
     //        builder.Append("  <form class='w3-container' action='/' method='post'>\n");
     //        builder.Append("    <input style='display:none;' name='p' value='login'>\n");
@@ -855,7 +855,7 @@ namespace MelBox2
     //        builder.Append("    <label class='w3-text-grey'><b>Passwort</b></label>\n");
     //        builder.Append("    <input class='w3-input w3-border w3-sand' name='password' type='password' pattern='(?=.*\\d)(?=.*[a-z])(?=.*[A-Z]).{ 6,}' placeholder='Mind. 6 Zeichen; Gro&szlig;- und Kleinbuchstaben, Zahl' required></p>\n");
     //        builder.Append("    <p>\n");
-    //        builder.Append("    <button class='w3-button w3-teal'>LogIn</button>\n</p>\n");
+    //        builder.Append("    <button class='w3-button w3-teal'>Login</button>\n</p>\n");
     //        builder.Append("  </form>\n");
     //        builder.Append(" </div>\n</div>\n");
 
