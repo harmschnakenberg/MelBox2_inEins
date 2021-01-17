@@ -569,7 +569,7 @@ namespace MelBox2
 #if DEBUG
             builder.Append("<p class='w3-pink w3-mobile'>" + payload + "</p>");
 #endif
-            context.Response.SendResponse(MelBoxWeb.HtmlCanvas(builder.ToString(), "Benutzerkonto ändern", logedInUserName));
+            context.Response.SendResponse(MelBoxWeb.HtmlCanvas(builder.ToString(), "Benutzerkonto anlegen", logedInUserName));
             return context;
         }
 
@@ -595,7 +595,7 @@ namespace MelBox2
 #if DEBUG
             builder.Append("<p class='w3-pink w3-mobile'>" + payload + "</p>");
 #endif
-            context.Response.SendResponse(MelBoxWeb.HtmlCanvas(builder.ToString(), "Benutzerkonto anlegen", logedInUserName));
+            context.Response.SendResponse(MelBoxWeb.HtmlCanvas(builder.ToString(), "Benutzerkonto ändern", logedInUserName));
             return context;
         }
 
@@ -617,7 +617,7 @@ namespace MelBox2
             else
             {
                 int.TryParse(args["ContactId"].ToString(), out int contactId);
-                string name = args["Name"];
+                string name = MelBoxWeb.DecodeUmlaute(args["Name"]);
 
                 if (contactId == 0)
                 {
@@ -651,6 +651,8 @@ namespace MelBox2
             string newGuid = string.Empty; //Nur füllen, wenn neue Benutzeranmeldung
             string payload = context.Request.Payload;
             Dictionary<string, string> args = MelBoxWeb.ReadPayload(payload);
+            ReadGlobalFields(args);
+
             StringBuilder builder = new StringBuilder();
 
             if (args.ContainsKey("name") && args.ContainsKey("password"))
@@ -659,8 +661,6 @@ namespace MelBox2
                 string password = MelBoxWeb.DecodeUmlaute(args["password"]);
 
                 newGuid = MelBoxWeb.CheckLogin(name, password);
-                guid = newGuid;
-                logedInUserName = name;
 
                 if (newGuid.Length == 0)
                 {
@@ -668,17 +668,26 @@ namespace MelBox2
                 }
                 else
                 {
-                    builder.Append(MelBoxWeb.HtmlAlert(3, "Willkommen " + name, "Login erfolgreich."));
+                   // builder.Append(MelBoxWeb.HtmlAlert(3, "Willkommen " + name, "Login erfolgreich."));
+
+                    User newLogedInUser = MelBoxWeb.GetUserFromGuid(newGuid);
+                    guid = newGuid;
+                    logedInUserName = newLogedInUser.Name;
+                    logedInUserId = newLogedInUser.Id;
+                    isAdmin = newLogedInUser.IsAdmin;
                 }
             }
 
-            ReadGlobalFields(args);
-
-            if (isAdmin)
+            if (guid.Length == 0)
             {
-                builder.Append(MelBoxWeb.HtmlAlert(4, "Angemeldet als Administrator ", string.Empty));
+                builder.Append(MelBoxWeb.HtmlLogin());
             }
-            builder.Append(MelBoxWeb.HtmlLogin());
+            else
+            {
+                builder.Append(MelBoxWeb.HtmlAlert(4, isAdmin ? "Angemeldet als Administrator" : "Angemeldet als Benutzer", string.Format("[{0}] {1}", logedInUserId, logedInUserName)));
+
+                builder.Append(MelBoxWeb.HtmlLogout());
+            }
 #if DEBUG           
             builder.Append("<p class='w3-pink'>" + payload + "</p>");
 #endif

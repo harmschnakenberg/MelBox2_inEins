@@ -110,6 +110,8 @@ namespace MelBox2
             builder.Append("<div class='w3-bar " + MyStyle.Background + "'>\n");
             builder.Append(" <form id='form1' method='post' >\n");
 
+            builder.Append("  <button class='w3-bar-item w3-button' type='submit' formaction='/'><i class='w3-xxlarge material-icons-outlined'>login</i></button>\n");
+            builder.Append("  <div class='w3-bar-item'>&nbsp;</div>\n");
             builder.Append("  <button class='w3-bar-item w3-button' type='submit' formaction='/in'><i class='w3-xxlarge material-icons-outlined'>drafts</i></button>\n");
             builder.Append("  <button class='w3-bar-item w3-button' type='submit' formaction='/out'><i class='w3-xxlarge material-icons-outlined'>forward_to_inbox</i></button>\n");
             builder.Append("  <button class='w3-bar-item w3-button' type='submit' formaction='/overdue'><i class='w3-xxlarge material-icons-outlined'>pending_actions</i></button>\n");
@@ -117,7 +119,7 @@ namespace MelBox2
             builder.Append("  <button class='w3-bar-item w3-button' type='submit' formaction='/shift'><i class='w3-xxlarge material-icons-outlined'>event_note</i></button>\n");
             builder.Append("  <button class='w3-bar-item w3-button' type='submit' formaction='/account' id='buttonAccount' disabled><i class='w3-xxlarge material-icons-outlined'>assignment_ind</i></button>\n");
             builder.Append("  <button class='w3-bar-item w3-button' type='submit' formaction='/log'><i class='w3-xxlarge material-icons-outlined'>assignment</i></button>\n");
-            builder.Append("  <button class='w3-bar-item w3-button' type='submit' formaction='/'><i class='w3-xxlarge material-icons-outlined'>login</i></button>\n");
+
 
             builder.Append(" </form>\n");
             builder.Append("</div>\n");
@@ -174,6 +176,19 @@ namespace MelBox2
 
             builder.Append(" </div>\n</div>\n");
 
+            return builder.ToString();
+        }
+
+        public static string HtmlLogout()
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.Append("<script>\n");
+            builder.Append("function deleteguid() {\n");
+            builder.Append(" sessionStorage.removeItem('guid');\n ");
+            builder.Append("}\n");
+            builder.Append("</script>\n");
+
+            builder.Append("    <button class='w3-button " + MyStyle.Button + "' onclick='deleteguid();'>Logout</button>\n</p>\n");
             return builder.ToString();
         }
 
