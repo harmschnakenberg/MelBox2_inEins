@@ -601,7 +601,7 @@ namespace MelBox2
                             builder.Append("<div class='w3-row w3-section'>\n");
                             builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'><i class='w3-xxlarge material-icons-outlined'>vpn_key</i></div>\n");
                             builder.Append(" <div class='w3-rest'>\n");
-                            builder.Append("  <input form='form1' class='w3-input w3-border' type='password'  placeholder='Passwort' name='" + c.ColumnName + "' id='" + c.ColumnName + "' >\n");
+                            builder.Append("  <input form='form1' class='w3-input w3-border' type='password'  pattern='.{4,}' placeholder='Mind. 6 Zeichen; Gro&szlig;- und Kleinbuchstaben, Zahl' placeholder='Passwort' name='" + c.ColumnName + "' id='" + c.ColumnName + "' >\n");
                             builder.Append(" </div>\n</div>\n");
                             break;
 

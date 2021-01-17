@@ -400,7 +400,7 @@ namespace MelBox2
 
         public DataTable GetViewContactInfo(int contactId = 0)
         {
-            string query = "SELECT Contact.Id AS ContactId, Contact.Name AS Name, '********' AS Passwort, CompanyId, Company.Name AS Firma, Email, Phone AS Telefon, Contact.SendSms AS SendSms , Contact.SendEmail AS SendEmail, MaxInactiveHours AS Max_Inaktivität " +
+            string query = "SELECT Contact.Id AS ContactId, Contact.Name AS Name, '********' AS Passwort, CompanyId, Company.Name AS Firma, Phone AS Telefon, Contact.SendSms AS SendSms, Email, Contact.SendEmail AS SendEmail, MaxInactiveHours AS Max_Inaktivität " +
                            "FROM \"Contact\" JOIN \"Company\" ON CompanyId = Company.Id ";
 
             Dictionary<string, object> args = new Dictionary<string, object>();

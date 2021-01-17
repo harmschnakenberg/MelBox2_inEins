@@ -175,7 +175,7 @@ namespace MelBox2
 
             if (createNewAccount)
             {
-                if (password.Length < 4)
+                if (password == null || password.Length < 4)
                 {
                     builder.Append(MelBoxWeb.HtmlAlert(2, "Fehler - Passwort ungültig", "Das vergebene Passwort entspricht nicht den Vorgaben. Der Benutzer wird nicht erstellt."));
                 }
