@@ -79,7 +79,9 @@ namespace MelBox2
         {
             StringBuilder builder = new StringBuilder();
 
-            builder.Append(" <p class='w3-container " + MyStyle.Panel + " w3-margin-top w3-right-align '>&nbsp;</p>\n");
+            builder.Append(" <p class='w3-container " + MyStyle.Panel + " w3-margin-top w3-right-align '>");
+            builder.Append("  <a href='#top' class='w3-button " + MyStyle.Button + "'><i class='w3-xlarge material-icons-outlined'>north</i></a>");
+            builder.Append(" </p>\n");
             builder.Append(" <input type='hidden' id='guid' name='guid' form='form1' class='w3-cyan w3-text-light-blue w3-tiny w3-border-0' readonly>\n");
             builder.Append("</body>\n");
             builder.Append("</html>\n");
@@ -537,6 +539,24 @@ namespace MelBox2
             return builder.ToString();
         }
 
+
+        public static string HtmlFormLog()
+        {
+            StringBuilder builder = new StringBuilder();
+
+            builder.Append("<div class='w3-center w3-row w3-card w3-container w3-light-grey w3-text-teal w3-margin'>\n");
+            builder.Append(" <div class='w3-col s2'>\n");
+            builder.Append("  <label>von:</label>\n");
+            builder.Append("  <input form='form1' class='w3-input w3-border w3-grey' type='date' name='von'>\n");
+            builder.Append(" </div>\n");
+            builder.Append(" <div class='w3-col s2'>\n");
+            builder.Append("  <label>bis:</label>\n");
+            builder.Append("  <input form='form1' class='w3-input w3-border w3-grey' type='date' name='bis'>\n");
+            builder.Append(" </div>\n");
+            builder.Append("</div>\n");
+
+            return builder.ToString();
+        }
 
         public static string HtmlFormAccount(DataTable dtAccount, DataTable dtCompany, int showAccountId = 0, bool isAdmin = false)
         {

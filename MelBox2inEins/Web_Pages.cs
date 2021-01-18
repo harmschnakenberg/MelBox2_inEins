@@ -138,7 +138,9 @@ namespace MelBox2
 
             StringBuilder builder = new StringBuilder();
 
+            builder.Append(MelBoxWeb.HtmlFormLog());
             builder.Append(MelBoxWeb.HtmlTablePlain(dt));
+
 #if DEBUG
             builder.Append("<p class='w3-pink'>" + payload + "</p>");
 #endif
