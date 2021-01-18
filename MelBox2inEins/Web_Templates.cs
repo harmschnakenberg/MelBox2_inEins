@@ -21,8 +21,6 @@ namespace MelBox2
     public partial class MelBoxWeb
     {
 
-
-
         public static string HtmlCanvas(string htmlContent, string pageCaption = "Meldeprogramm", string logedInUserName = "", string newGuid = "")
         {
             StringBuilder builder = new StringBuilder();
@@ -182,13 +180,18 @@ namespace MelBox2
         public static string HtmlLogout()
         {
             StringBuilder builder = new StringBuilder();
+
+            builder.Append("    <button class='w3-button " + MyStyle.Button + "' onclick='deleteguid()'>Logout</button>\n</p>\n");
+
             builder.Append("<script>\n");
             builder.Append("function deleteguid() {\n");
+            //builder.Append(" alert('This message was triggered from the onclick event');\n");
+            builder.Append(" document.getElementById('guid').value = '';\n");
             builder.Append(" sessionStorage.removeItem('guid');\n ");
+            builder.Append(" window.open('/', '_self'); \n");
             builder.Append("}\n");
             builder.Append("</script>\n");
 
-            builder.Append("    <button class='w3-button " + MyStyle.Button + "' onclick='deleteguid();'>Logout</button>\n</p>\n");
             return builder.ToString();
         }
 
@@ -764,12 +767,15 @@ namespace MelBox2
                 builder.Append("function myFunction(x, y) {\n");
                 builder.Append(" document.getElementById('ContactId').value = x;\n");
                 builder.Append(" document.getElementById('Name').value = document.getElementById('selectedContact').options[y].text;\n");
+                builder.Append(" document.getElementById('form1').formaction = '/shift/edit'\n");
+                builder.Append(" document.getElementById('form1').submit()\n");
                 builder.Append("}\n</script>\n");
+
                 builder.Append("<div class='w3-row w3-section'>\n");
                 builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'><i class='w3-xxlarge material-icons-outlined'>people</i></div>\n");
-                builder.Append(" <div class='w3-col l3 m4 s6'>\n");
+                builder.Append(" <div class='w3-col w3-half'>\n");
 
-                builder.Append("  <select form='form1' class='w3-input w3-border w3-margin' name='selectedContact' id='selectedContact' onchange='myFunction(this.value, this.selectedIndex)'>\n");
+                builder.Append("  <select form='form1' class='w3-input w3-border w3-margin-bottom' name='selectedContact' id='selectedContact' onchange='myFunction(this.value, this.selectedIndex)'>\n");
 
                 DataTable dtContactSelection = Program.Sql.GetContactList();
                 foreach (DataRow row in dtContactSelection.Rows)
@@ -779,8 +785,9 @@ namespace MelBox2
                         builder.Append("   <option value='" + selectionContactId + "' " + ((selectionContactId == shiftContactId) ? "selected" : string.Empty) + ">" + row["Name"] + "</option>\n"); //
                     }
                 }
-                builder.Append("  </ select >\n");
-                builder.Append(" </div>\n</div>\n");
+                builder.Append("  </select >\n");
+                builder.Append(" </div>\n");
+                builder.Append("</div>\n");
             }
 
             //Id
@@ -846,7 +853,7 @@ namespace MelBox2
             builder.Append(" <div class='w3-rest'>\n");
             builder.Append(" <button class='w3-button " + MyStyle.PanelLight + " w3-margin' type='reset' form='form1'>Zurücksetzen</button>\n");
             builder.Append(" <button class='w3-button " + MyStyle.Button + " w3-margin' type='submit' form='form1' formaction='/shift/update'>Übernehmen</button>\n");           
-            builder.Append(" <button class='w3-button " + MyStyle.Button + " w3-margin' type='submit' form='form1' formaction='/shift/delete' " + disabled + ">Löschen</button>\n");
+            builder.Append(" <button class='w3-button " + MyStyle.Button + " w3-margin' type='submit' form='form1' formaction='/shift/delete' " + (shiftId==0 ? "disabled" : disabled ) + ">Löschen</button>\n"); //man kann nur löschen, wenn shiftId vorhanden
             builder.Append(" </div>\n</div>\n");
             builder.Append("</div>\n");
             #endregion
@@ -854,8 +861,115 @@ namespace MelBox2
             return builder.ToString();
         }
 
-    }
+        public static string HtmlFormCompany(DataTable dtCompany, int companyId, bool isAdmin)
+        {
+            string disabled = isAdmin ? string.Empty : "disabled";
 
+            StringBuilder builder = new StringBuilder();
+
+            builder.Append("</center>\n<div class='w3-card w3-container w3-light-grey w3-text-teal w3-margin'>\n");
+            builder.Append("<h2 class='w3-center'>Firmenkonto</h2>\n");
+
+            #region Firmenauswahl
+            if (isAdmin)
+            {
+                builder.Append("<div class='w3-row w3-section'>\n");
+                builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'>\n");
+                builder.Append("<i class='w3-xxlarge material-icons-outlined'>list_alt</i>\n</div>\n");
+
+                builder.Append(" <div class='w3-rest'>\n");
+                builder.Append("<script>\n");
+                builder.Append("function myFunction() {\n");
+                //  builder.Append(" var myLink = '/company/' + document.getElementById('selectedCompany').value;\n");
+                builder.Append(" var myLink = '/company';\n");
+                builder.Append(" window.open(myLink, '_self');\n");
+                builder.Append("}\n</script>\n");
+
+                builder.Append("<script>\n");
+                builder.Append("function myFunction(x) {\n");
+                builder.Append(" document.getElementById('CompanyId').value = x;\n");
+                //builder.Append(" document.getElementById('Name').value = document.getElementById('selectedContact').options[y].text;\n");
+                builder.Append(" document.getElementById('form1').formaction = '/company'\n");
+                builder.Append(" document.getElementById('form1').submit()\n");
+                builder.Append("}\n</script>\n");
+
+                builder.Append("  <select class='w3-select w3-border w3-pale-blue' id='selectedCompany'  onchange='myFunction(this.value)'>\n");
+
+                foreach (DataRow row in dtCompany.Rows)
+                {
+                    builder.Append("   <option value='" + row["Id"] + "' ");
+                    builder.Append((companyId.ToString() == row["Id"].ToString()) ? "selected" : string.Empty);
+                    builder.Append(">" + row["Name"].ToString() + "</option>\n");
+                }
+
+                builder.Append("  </select>\n");
+                builder.Append(" </div>\n</div>\n");
+            }
+            #endregion
+
+            foreach (DataRow r in dtCompany.Rows)
+            {
+                if (companyId.ToString() != r["Id"].ToString()) continue;
+
+                foreach (DataColumn c in dtCompany.Columns)
+                {
+                    string icon;
+                    string placeholder;
+                    string inputReadonly = string.Empty;
+
+                    switch (c.ColumnName)
+                    {
+                        case "Id":
+                            c.ColumnName = "CompanyId";
+                            icon = "flag";
+                            placeholder = "Eindeutige Nummer";
+                            inputReadonly = "readonly";
+                            break;
+
+                        case "Name":
+                            icon = "local_offer";
+                            placeholder = "Firmenname";
+                            break;
+
+                        case "Adresse":
+                            icon = "location_on";
+                            placeholder = "Adresse oder Werk";
+                            break;
+
+                        case "Ort":
+                            icon = "location_city";
+                            placeholder = "Ort";
+                            break;
+
+                        default:
+                            icon = "info";
+                            placeholder = c.ColumnName;
+                            break;
+                    }
+
+                    builder.Append("<div class='w3-row w3-section'>\n");
+                    builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'><i class='w3-xxlarge material-icons-outlined'>" + icon + "</i></div>\n");
+                    builder.Append(" <div class='w3-rest'>\n");
+                    builder.Append("  <input form='form1' class='w3-input w3-border " + (inputReadonly.Length > 0 ? "w3-grey" : string.Empty) + "' type='text' name='" + c.ColumnName + "' id='" + c.ColumnName + "' value='" + r[c.ColumnName] + "' placeholder='" + placeholder + "' " + inputReadonly + ">\n");
+                    builder.Append(" </div>\n</div>\n");
+                }
+                break;
+            }
+
+            builder.Append("<div class='w3-row w3-section'>\n");
+            builder.Append(" <div class='w3-right-align w3-col l1 m2 s3'>&nbsp;</div>\n");
+            builder.Append(" <div class='w3-rest'>\n");
+            builder.Append(" <button class='w3-button " + MyStyle.PanelLight + " w3-margin' type='reset' form='form1'>Zurücksetzen</button>\n");
+            builder.Append(" <button class='w3-button " + MyStyle.Button + " w3-margin' type='submit' form='form1' formaction='/company/update' " + disabled + ">Ändern</button>\n");
+            builder.Append(" <button class='w3-button " + MyStyle.Button + " w3-margin' type='submit' form='form1' formaction='/company/create' " + disabled + ">Neu</button>\n");
+            builder.Append(" <button class='w3-button " + MyStyle.Button + " w3-margin' type='submit' form='form1' formaction='/company/delete' " + disabled + ">Löschen</button>\n");
+            builder.Append(" </div>\n</div>\n");
+            builder.Append("</div>\n");
+
+            return builder.ToString();
+        }
+
+    }
 }
 
     //    #region Werkzeuge

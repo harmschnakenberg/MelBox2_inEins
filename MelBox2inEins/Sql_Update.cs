@@ -145,7 +145,7 @@ namespace MelBox2
             }
         }
 
-        public int UpdateCompany(int companyId, string name = "", string address = "", string city = "")
+        public bool UpdateCompany(int companyId, string name = "", string address = "", string city = "")
         {
             try
             {
@@ -176,7 +176,7 @@ namespace MelBox2
                     }
 
                     command.CommandText = builder.ToString();
-                    return command.ExecuteNonQuery();
+                    return 0 != command.ExecuteNonQuery();
                 }
             }
             catch (Exception ex)

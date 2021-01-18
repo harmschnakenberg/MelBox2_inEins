@@ -185,11 +185,7 @@ namespace MelBox2
             ReadGlobalFields(args);
 
             #region Inhalt ermitteln
-            int recMsgId = 0;
-            if (args.ContainsKey("selectedRow"))
-            {
-                int.TryParse(args["selectedRow"].ToString(), out recMsgId);
-            }
+            int recMsgId = MelBoxWeb.GetArgInt(args, "selectedRow");
 
             int contentId = Program.Sql.GetContentId(recMsgId);
             #endregion
@@ -237,53 +233,43 @@ namespace MelBox2
             ReadGlobalFields(args);
 
             #region Inhalt ermitteln
-            int recMsgId = 0;
-            if (args.ContainsKey("selectedRow"))
-            {
-                int.TryParse(args["selectedRow"].ToString(), out recMsgId);
-            }
-
-            int contentId = recMsgId; // Program.Sql.GetContentId(recMsgId);
+            int recMsgId = MelBoxWeb.GetArgInt(args, "selectedRow");
+            int beginHour = MelBoxWeb.GetArgInt(args, "Beginn");
+            int endHour = MelBoxWeb.GetArgInt(args, "Ende");
+            int contentId = recMsgId;
             #endregion
 
             StringBuilder builder = new StringBuilder();
 
-            //if (contentId == 0)
-            //{
-            //    builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler", "Die übergebene Nachricht konnte nicht zugeordnet werden."));
-            //}
-            //else
-            //{
-                if (args.ContainsKey("Beginn") && args.ContainsKey("Ende"))
+            if (args.ContainsKey("Beginn") && args.ContainsKey("Ende"))
+            {
+                //int beginHour = int.Parse(args["Beginn"].ToString());
+                //int endHour = int.Parse(args["Ende"].ToString());
+
+                MelBoxSql.BlockedDays days = MelBoxSql.BlockedDays.None;
+                if (args.ContainsKey("Mo")) days |= MelBoxSql.BlockedDays.Monday;
+                if (args.ContainsKey("Di")) days |= MelBoxSql.BlockedDays.Tuesday;
+                if (args.ContainsKey("Mi")) days |= MelBoxSql.BlockedDays.Wendsday;
+                if (args.ContainsKey("Do")) days |= MelBoxSql.BlockedDays.Thursday;
+                if (args.ContainsKey("Fr")) days |= MelBoxSql.BlockedDays.Friday;
+                if (args.ContainsKey("Sa")) days |= MelBoxSql.BlockedDays.Saturday;
+                if (args.ContainsKey("So")) days |= MelBoxSql.BlockedDays.Sunday;
+
+                if (Program.Sql.UpdateMessageBlocked(contentId, beginHour, endHour, days))
                 {
-                    int beginHour = int.Parse(args["Beginn"].ToString());
-                    int endHour = int.Parse(args["Ende"].ToString());
-
-                    MelBoxSql.BlockedDays days = MelBoxSql.BlockedDays.None;
-                    if (args.ContainsKey("Mo")) days |= MelBoxSql.BlockedDays.Monday;
-                    if (args.ContainsKey("Di")) days |= MelBoxSql.BlockedDays.Tuesday;
-                    if (args.ContainsKey("Mi")) days |= MelBoxSql.BlockedDays.Wendsday;
-                    if (args.ContainsKey("Do")) days |= MelBoxSql.BlockedDays.Thursday;
-                    if (args.ContainsKey("Fr")) days |= MelBoxSql.BlockedDays.Friday;
-                    if (args.ContainsKey("Sa")) days |= MelBoxSql.BlockedDays.Saturday;
-                    if (args.ContainsKey("So")) days |= MelBoxSql.BlockedDays.Sunday;
-
-                    if (Program.Sql.UpdateMessageBlocked(contentId, beginHour, endHour, days))
-                    {
-                        builder.Append(MelBoxWeb.HtmlAlert(3, "Sperrzeiten geändert", "Die Sperrzeiten für Nachricht Nr. " + contentId + " wurden geändert."));
-                    }
-                    else
-                    {
-                        builder.Append(MelBoxWeb.HtmlAlert(2, "Sperrzeiten nicht geändert", "Die Sperrzeiten für Nachricht Nr. " + contentId + " konnten nicht geändert werden."));
-                    }
-               // }
+                    builder.Append(MelBoxWeb.HtmlAlert(3, "Sperrzeiten geändert", "Die Sperrzeiten für Nachricht Nr. " + contentId + " wurden geändert."));
+                }
+                else
+                {
+                    builder.Append(MelBoxWeb.HtmlAlert(2, "Sperrzeiten nicht geändert", "Die Sperrzeiten für Nachricht Nr. " + contentId + " konnten nicht geändert werden."));
+                }
             }
         
             Dictionary<string, string> action = new Dictionary<string, string>();
 
             if (isAdmin)
             {
-                action.Add("/blocked/update", "Gesperrte Nachricht bearbeiten");
+                action.Add("/blocked/update", "Änderungen speichern");
                 action.Add("/blocked/delete", "Aus Sperrliste entfernen");
             }
 
@@ -361,9 +347,9 @@ namespace MelBox2
 
             ReadGlobalFields(args);
 
+            #region Tabelle anzeigen
             Dictionary<string, string> action = new Dictionary<string, string>
             {
-              //  { "/shift/create", "Bereitschaft neu anlegen" },
                 { "/shift/edit", "Bereitschaft bearbeiten" }
             };
 
@@ -377,6 +363,7 @@ namespace MelBox2
 
             builder.Append(MelBoxWeb.HtmlTableShift(dt, 0, logedInUserId, isAdmin));
             builder.Append(MelBoxWeb.HtmlEditor(action));
+            #endregion
 #if DEBUG
             builder.Append("<p class='w3-pink'>" + payload + "</p>");
 #endif
@@ -389,11 +376,11 @@ namespace MelBox2
         {
             string payload = context.Request.Payload;
             Dictionary<string, string> args = MelBoxWeb.ReadPayload(payload);
-            int shiftId = 0;
-            DateTime date = DateTime.MinValue;
-
             ReadGlobalFields(args);
 
+            int shiftId = 0;
+            DateTime date = DateTime.MinValue;
+            int shiftUserId = logedInUserId;
             DataTable dt = Program.Sql.GetViewShift();
             StringBuilder builder = new StringBuilder();
 
@@ -409,7 +396,12 @@ namespace MelBox2
                 }
             }
 
-            builder.Append(MelBoxWeb.HtmlFormShift(date, shiftId, logedInUserId, isAdmin));
+            if (args.ContainsKey("ContactId"))
+            {
+                int.TryParse(args["ContactId"].ToString(), out shiftUserId);
+            }
+
+            builder.Append(MelBoxWeb.HtmlFormShift(date, shiftId, shiftUserId, isAdmin));
 
 #if DEBUG
             builder.Append("<p class='w3-pink'>" + payload + "</p>");
@@ -436,6 +428,22 @@ namespace MelBox2
             {
                 builder.Append(MelBoxWeb.ProcessFormShift(args, logedInUserId, isAdmin));
             }
+
+            #region Tabelle anzeigen
+            Dictionary<string, string> action = new Dictionary<string, string>
+            {
+                { "/shift/edit", "Bereitschaft bearbeiten" }
+            };
+
+            if (isAdmin)
+            {
+                action.Add("/shift/delete", "Bereitschaft löschen");
+            }
+
+            DataTable dt = Program.Sql.GetViewShift();
+            builder.Append(MelBoxWeb.HtmlTableShift(dt, 0, logedInUserId, isAdmin));
+            builder.Append(MelBoxWeb.HtmlEditor(action));
+            #endregion
 #if DEBUG
             builder.Append("<p class='w3-pink'>" + payload + "</p>");
 #endif
@@ -566,6 +574,19 @@ namespace MelBox2
             {
                 builder.Append(MelBoxWeb.ProcessFormAccount(args, true));
             }
+
+            if (logedInUserId != 0)
+            {
+                int chosenContactId = MelBoxWeb.GetArgInt(args, "ContactId");
+
+                DataTable dt;
+                if (isAdmin) dt = Program.Sql.GetViewContactInfo();
+                else dt = Program.Sql.GetViewContactInfo(chosenContactId);
+
+                DataTable dtCompany = Program.Sql.GetCompany();
+
+                builder.Append(MelBoxWeb.HtmlFormAccount(dt, dtCompany, chosenContactId, isAdmin));
+            }
 #if DEBUG
             builder.Append("<p class='w3-pink w3-mobile'>" + payload + "</p>");
 #endif
@@ -583,8 +604,9 @@ namespace MelBox2
             ReadGlobalFields(args);
 
             StringBuilder builder = new StringBuilder();
+            int chosenContactId = MelBoxWeb.GetArgInt(args, "ContactId");
 
-            if (!isAdmin && int.Parse(args["ContactId"]) != logedInUserId)
+            if (!isAdmin && chosenContactId != logedInUserId)
             {
                 builder.Append(MelBoxWeb.HtmlAlert(2, "Keine Berechtigung", "Sie haben keine Berechtigung den Benutzer zu ändern."));
             }
@@ -592,6 +614,18 @@ namespace MelBox2
             {
                 builder.Append(MelBoxWeb.ProcessFormAccount(args, false));
             }
+
+            if (logedInUserId != 0)
+            {
+                DataTable dt;
+                if (isAdmin) dt = Program.Sql.GetViewContactInfo();
+                else dt = Program.Sql.GetViewContactInfo(chosenContactId);
+
+                DataTable dtCompany = Program.Sql.GetCompany();
+
+                builder.Append(MelBoxWeb.HtmlFormAccount(dt, dtCompany, chosenContactId, isAdmin));
+            }
+
 #if DEBUG
             builder.Append("<p class='w3-pink w3-mobile'>" + payload + "</p>");
 #endif
@@ -642,6 +676,150 @@ namespace MelBox2
             return context;
         }
 
+        #endregion
+
+        #region Firmeninformationen
+       
+        [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/company")]
+        public IHttpContext ResponseCompany(IHttpContext context)
+        {
+            string caption = "Firmenkonto";
+            int companyId = 0;
+            string payload = context.Request.Payload;
+            Dictionary<string, string> args = MelBoxWeb.ReadPayload(payload);
+
+            ReadGlobalFields(args);
+
+            if (args.ContainsKey("CompanyId"))
+            {
+                int.TryParse(args["CompanyId"].ToString(), out companyId);
+            }
+
+            //Dictionary<string, string> action = new Dictionary<string, string>();
+            //if (isAdmin)
+            //{
+            //    action.Add("/company/create", "Firma neu anlegen");
+            //    action.Add("/company/update", "Firmeninformationen ändern");
+            //    action.Add("/company/delete", "Firma löschen");
+            //}
+
+            DataTable dtCompany = Program.Sql.GetCompany();
+
+            StringBuilder builder = new StringBuilder();
+            builder.Append(MelBoxWeb.HtmlFormCompany(dtCompany, companyId, isAdmin));
+            //builder.Append(MelBoxWeb.HtmlEditor(action));
+
+            int chosenContactId = logedInUserId;
+            if (requestingPage == caption && args.ContainsKey("selectedContactId")) //Ist Antwort von dieser Seite
+            {
+                int.TryParse(args["selectedContactId"].ToString(), out chosenContactId);
+            }
+            else if (chosenContactId == 0)
+            {
+                builder.Append(MelBoxWeb.HtmlAlert(2, "Ungültiger Aufruf", "Für Einsicht Benutzerkonto bitte einloggen."));
+            }
+
+#if DEBUG
+            builder.Append("<p class='w3-pink w3-mobile'>" + payload + "</p>");
+#endif
+            context.Response.SendResponse(MelBoxWeb.HtmlCanvas(builder.ToString(), caption, logedInUserName));
+            return context;
+        }
+
+        [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/company/create")]
+        public IHttpContext ResponseCompanyCreate(IHttpContext context)
+        {
+            string payload = context.Request.Payload;
+
+            Dictionary<string, string> args = MelBoxWeb.ReadPayload(payload);
+
+            ReadGlobalFields(args);
+
+            StringBuilder builder = new StringBuilder();
+
+            if (!isAdmin)
+            {
+                builder.Append(MelBoxWeb.HtmlAlert(2, "Keine Berechtigung", "Sie haben keine Berechtigung einen Firmeneintrag zu erstellen."));
+            }
+            else
+            {
+                builder.Append(MelBoxWeb.ProcessFormCompany(args, true));
+            }
+#if DEBUG
+            builder.Append("<p class='w3-pink w3-mobile'>" + payload + "</p>");
+#endif
+            context.Response.SendResponse(MelBoxWeb.HtmlCanvas(builder.ToString(), "Firmenkonto erstellen", logedInUserName));
+            return context;
+        }
+
+        [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/company/update")]
+        public IHttpContext ResponseCompanyUpdate(IHttpContext context)
+        {
+            string payload = context.Request.Payload;
+
+            Dictionary<string, string> args = MelBoxWeb.ReadPayload(payload);
+
+            ReadGlobalFields(args);
+
+            StringBuilder builder = new StringBuilder();
+
+            if (!isAdmin)
+            {
+                builder.Append(MelBoxWeb.HtmlAlert(2, "Keine Berechtigung", "Sie haben keine Berechtigung den Firmeneintrag zu ändern."));
+            }
+            else
+            {
+                builder.Append(MelBoxWeb.ProcessFormCompany(args, false));
+            }
+#if DEBUG
+            builder.Append("<p class='w3-pink w3-mobile'>" + payload + "</p>");
+#endif
+            context.Response.SendResponse(MelBoxWeb.HtmlCanvas(builder.ToString(), "Firmenkonto ändern", logedInUserName));
+            return context;
+        }
+
+        [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/company/delete")]
+        public IHttpContext ResponseCompanyDelete(IHttpContext context)
+        {
+            string payload = context.Request.Payload;
+
+            Dictionary<string, string> args = MelBoxWeb.ReadPayload(payload);
+
+            ReadGlobalFields(args);
+
+            StringBuilder builder = new StringBuilder();
+
+            if (!isAdmin)
+            {
+                builder.Append(MelBoxWeb.HtmlAlert(2, "Keine Berechtigung", "Sie haben keine Berechtigung den Firmeneintrag zu löschen."));
+            }
+            else
+            {
+                int companyId = MelBoxWeb.GetArgInt(args, "CompanyId");
+                if (companyId != 0)
+                {
+                    string name = MelBoxWeb.DecodeUmlaute(MelBoxWeb.GetArgStr(args, "Name").Replace('+', ' '));
+                    if (!Program.Sql.DeleteCompany(companyId))
+                    {                        
+                        builder.Append(MelBoxWeb.HtmlAlert(2, "Fehler beim Löschen von Firma '" + name + "'", "Die Firma '" + name + "' konnte nicht aus der Datenbank gelöscht werden."));
+                    }
+                    else
+                    {
+                        builder.Append(MelBoxWeb.HtmlAlert(3, "Firma '" + name + "'gelöscht", "Die Firma '" + name + "' wurde aus der Datenbank gelöscht."));
+                    }
+                }
+                else
+                {
+                    builder.Append(MelBoxWeb.HtmlAlert(1, "Ungültiger Aufruf", "Die Firmeninformationen konnten nicht zugewiesen werden."));
+                }
+            }
+#if DEBUG
+            builder.Append("<p class='w3-pink w3-mobile'>" + payload + "</p>");
+#endif
+            context.Response.SendResponse(MelBoxWeb.HtmlCanvas(builder.ToString(), "Firmenkonto löschen", logedInUserName));
+            return context;
+        }
+        
         #endregion
 
         [RestRoute]

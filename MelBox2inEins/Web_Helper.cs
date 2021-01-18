@@ -45,6 +45,26 @@ namespace MelBox2
             return dict;
         }
 
+        public static string GetArgStr(Dictionary<string, string> args, string key)
+        {
+            if (args.ContainsKey(key))
+            {
+                return args[key];
+            }
+
+            return string.Empty;
+        }
+
+        public static int GetArgInt(Dictionary<string, string> args, string key)
+        {
+            int result = 0;
+            if (args.ContainsKey(key))
+            {
+                int.TryParse(args[key].ToString(), out result);
+            }
+
+            return result;
+        }
 
         private static Dictionary<string, User> LogedInUsers { get; set; } = new Dictionary<string, User>();
 
@@ -128,12 +148,12 @@ namespace MelBox2
             {
                 switch (arg)
                 {
-                    case "pageTitle":
-                        if (args[arg] != "Benutzerkonto")
-                        {
-                            builder.Append(MelBoxWeb.HtmlAlert(1, "Ungültiger Aufruf", "Aufruf von ungültiger Stelle."));
-                        }
-                        break;
+                    //case "pageTitle":
+                    //    if (args[arg] != "Benutzerkonto")
+                    //    {
+                    //        builder.Append(MelBoxWeb.HtmlAlert(1, "Ungültiger Aufruf", "Aufruf von ungültiger Stelle."));
+                    //    }
+                    //    break;
                     case "ContactId":
                         contactId = int.Parse(args[arg]);
                         break;
@@ -206,6 +226,63 @@ namespace MelBox2
 
             return builder.ToString();
         }
+
+        public static string ProcessFormCompany(Dictionary<string, string> args, bool createNewCompany)
+        {
+            StringBuilder builder = new StringBuilder();
+
+            int companyId = 0;
+            string name = "-KEIN NAME-";
+            string address = string.Empty; 
+            string city = string.Empty;
+
+            foreach (string arg in args.Keys)
+            {
+                switch (arg)
+                {
+                    case "CompanyId":
+                        companyId = int.Parse(args[arg]);
+                        break;
+                    case "Name":
+                        name = DecodeUmlaute(args[arg].Replace('+', ' '));
+                        break;
+                    case "Adresse":
+                        address = DecodeUmlaute(args[arg].Replace('+', ' '));
+                        break;                    
+                    case "Ort":
+                        city = DecodeUmlaute(args[arg].Replace('+', ' '));
+                        break;                    
+                }
+            }
+
+            if (createNewCompany || companyId == 0)
+            {
+                bool success = Program.Sql.InsertCompany(name, address, city);
+                if (!success)
+                {
+                    builder.Append(MelBoxWeb.HtmlAlert(1, "Fehler beim Schreiben in die Datenbank", "Der Firmeneintrag für '" + name + "' konnte nicht erstellt werden."));
+                }
+                else
+                {
+                    builder.Append(MelBoxWeb.HtmlAlert(3, "Firma '" + name + "' erstellt", "Die Firma '" + name + "' wurde in der Datenbank neu erstellt."));
+                }
+
+            }
+            else
+            {
+                if (!Program.Sql.UpdateCompany(companyId, name, address, city))
+                {
+                    builder.Append(MelBoxWeb.HtmlAlert(2, "Keine Änderungen für Firma '" + name + "'", "Die Änderungen konnten nicht in die Datenbank übertragen werden."));
+                }
+                else
+                {
+                    builder.Append(MelBoxWeb.HtmlAlert(3, "Änderungen für Firma '" + name + "' übernommen", "Die Änderungen an Firma '" + name + "' wurden in der Datenbank gespeichert."));
+                }
+            }
+
+            return builder.ToString();
+        }
+
 
         public static string ProcessFormShift(Dictionary<string, string> args, int logedInUserId, bool isAdmin)
         {
