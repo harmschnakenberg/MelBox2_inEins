@@ -134,16 +134,16 @@ namespace MelBox2
             switch (prio)
             {
                 case 1:
-                    builder.Append("<div class='w3-panel w3-pale-red w3-leftbar w3-border-red'>\n");
+                    builder.Append("<div class='w3-panel w3-margin-left w3-pale-red w3-leftbar w3-border-red'>\n");
                     break;
                 case 2:
-                    builder.Append("<div class='w3-panel w3-pale-yellow w3-leftbar w3-border-yellow'>\n");
+                    builder.Append("<div class='w3-panel w3-margin-left w3-pale-yellow w3-leftbar w3-border-yellow'>\n");
                     break;
                 case 3:
-                    builder.Append("<div class='w3-panel w3-pale-green w3-leftbar w3-border-green'>\n");
+                    builder.Append("<div class='w3-panel w3-margin-left w3-pale-green w3-leftbar w3-border-green'>\n");
                     break;
                 default:
-                    builder.Append("<div class='w3-panel w3-pale-blue w3-leftbar w3-border-blue'>\n");
+                    builder.Append("<div class='w3-panel w3-margin-left w3-pale-blue w3-leftbar w3-border-blue'>\n");
                     break;
             }
 
@@ -241,10 +241,11 @@ namespace MelBox2
 
             builder.Append("<button class='w3-button w3-display-bottomleft' onclick='w3_open()'><i class='w3-xxlarge material-icons-outlined'>info</i></button>\n");
 
-            builder.Append("<div class='w3-sidebar w3-bar w3-border-top' style='display:none' id='infoSidebar'>\n");
+            builder.Append("<div class='w3-card-4 w3-display-middle w3-sand w3-threequarter w3-bar w3-border' style='display:none' id='infoSidebar'>\n");
             builder.Append(" <button onclick='w3_close()' class='w3-button w3-right w3-bar-item w3-large'><i class='w3-xxlarge material-icons-outlined'>close</i></button>\n");
-            builder.Append(" <i class='w3-jumbo material-icons-outlined'>info</i>\n");
+            
             builder.Append(" <div class='w3-panel'>\n");
+            builder.Append(" <i class='w3-jumbo material-icons-outlined'>info</i>\n");
             builder.Append("  <h3>" + title + "</h3>\n");
             builder.Append("  <div>" + infoText + "</div>");
             builder.Append(" </div>\n");
