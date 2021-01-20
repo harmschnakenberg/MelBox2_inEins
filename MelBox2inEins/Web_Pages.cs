@@ -116,7 +116,22 @@ namespace MelBox2
             DataTable dt = Program.Sql.GetViewMsgOverdue();
             StringBuilder builder = new StringBuilder();
 
-            builder.Append(MelBoxWeb.HtmlTablePlain(dt));
+            if (dt.Rows.Count == 0)
+            {
+                builder.Append(MelBoxWeb.HtmlAlert(3, "Keine Zeitüberschreitungen festgestellt", "Zur Zeit ist kein überwachter Sender in Verzug."));
+                
+                dt = Program.Sql.GetMonitoredContactList();
+                builder.Append(MelBoxWeb.HtmlTablePlain(dt));
+            }
+            else
+            {
+                builder.Append(MelBoxWeb.HtmlTablePlain(dt));
+            }
+
+            const string info = "Den einzelnen Benutzern kann ein Wert 'Max_Inaktivität' [in Stunden] zugewiesen werden. " +
+                "Kommt von diesen Benutzern innherhalb der eingestellten Zeit keine Meldung, sollte der Meldeweg (SMS, Email) geprüft werden.";
+
+            builder.Append(MelBoxWeb.HtmlInfoSidebar("Überwachte Meldungen", info));
 #if DEBUG
             builder.Append("<p class='w3-pink'>" + payload + "</p>");
 #endif

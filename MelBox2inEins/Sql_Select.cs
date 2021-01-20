@@ -170,6 +170,16 @@ namespace MelBox2
             return SqlSelectDataTable("Kontakte", query);
         }
 
+        public DataTable GetMonitoredContactList()
+        {
+            string query = "SELECT Contact.Id AS Id, Contact.Name AS Name, Company.Name AS Firma, MaxInactiveHours ||' Stunden' AS Max_Inaktivität " +
+                           "FROM \"Contact\" JOIN \"Company\" ON CompanyId = Company.Id " +
+                           "WHERE MaxInactiveHours > 0; ";
+
+            return SqlSelectDataTable("Überwachte Kontakte", query);
+        }
+
+
         public int GetLastCompany()
         {
             try
@@ -331,12 +341,15 @@ namespace MelBox2
 
             return SqlSelectDataTable("Gesendet", query);
         }
+
         public DataTable GetViewMsgOverdue()
         {
             string query = "SELECT * FROM \"ViewMessagesOverdue\" ORDER BY Fällig_seit DESC LIMIT 1000";
 
             return SqlSelectDataTable("Überfällige Meldungen", query);
         }
+
+
 
         public DataTable GetViewShift(int shiftId)
         {
