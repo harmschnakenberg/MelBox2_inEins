@@ -24,7 +24,6 @@ namespace MelBox2
   
         #endregion
 
-        //internal static Gsm gsm = new Gsm(); //löschen?
         private static void Main()
         {
             try
@@ -54,10 +53,11 @@ namespace MelBox2
                 Sql.InsertMessageRec("Testnachricht am " + DateTime.Now.Date , 4916095285304);
 
                 //Auskommentiert für Test WebServer
-                //Gsm.Connect();
+                Gsm.Connect();
 
 #if DEBUG
-                Console.WriteLine("\r\nDEBUG Mode: es wird keine StartUp-Info an MelBox2-Admin gesendet.");
+                //Console.WriteLine("\r\nDEBUG Mode: es wird keine StartUp-Info an MelBox2-Admin gesendet.");
+                Email.Send(Email.MelBox2Admin, "MelBox2 - Anwendung neu gestartet um " + DateTime.Now);
 #else
                 //Gsm.SmsSend(Properties.Settings.Default.MelBoxAdminPhone, "MelBox2 - Anwendung neu gestartet um " + DateTime.Now); //besser Email
                 Email.Send(Email.MelBox2Admin, "MelBox2 - Anwendung neu gestartet um " + DateTime.Now);                    
@@ -84,6 +84,29 @@ namespace MelBox2
                         GlobalProperty.ShowOnConsole();
                         Console.WriteLine(help);
                     }
+
+                    //if (pressed.Key == ConsoleKey.Pause)
+                    //{
+                    //    Console.Clear();
+                    //    GlobalProperty.ShowOnConsole();
+                    //    Console.WriteLine("OPTIONEN:\r\nA:\tModem: Umschalten eingehend");
+                    //    Console.WriteLine("Enter: Ohne Änderung zurück");
+                    //    Console.WriteLine("\r\n\tBitte Nummer auswählen.");
+                    //    ConsoleKeyInfo pressed2 = Console.ReadKey();
+
+                    //    if (pressed.Key == ConsoleKey.A)
+                    //    {
+                            
+                    //    }
+
+                    //    if (pressed.Key == ConsoleKey.Z)
+                    //    {
+
+                    //    }
+
+                    //    Console.Clear();
+                    //    Console.WriteLine(help);
+                    //}
 
                     if (pressed.Key == ConsoleKey.Insert)
                     {

@@ -45,7 +45,7 @@ namespace MelBox2
                 requestingPage = args["pageTitle"];
             }
 #if DEBUG
-            Console.WriteLine("Aufruf von {0} durch: [{1}] {2} - Admin: {3} | {4}", requestingPage, logedInUserId, logedInUserName, isAdmin, guid);
+           // Console.WriteLine("Aufruf von {0} durch: [{1}] {2} - Admin: {3} | {4}", requestingPage, logedInUserId, logedInUserName, isAdmin, guid);
 #endif
         }
 
@@ -77,7 +77,7 @@ namespace MelBox2
             DataTable dt = Program.Sql.GetViewMsgRec();
             StringBuilder builder = new StringBuilder();
 
-            builder.Append(MelBoxWeb.HtmlTableIn(dt, isAdmin));
+            builder.Append(MelBoxWeb.HtmlTablePlain(dt, isAdmin));
             builder.Append(MelBoxWeb.HtmlEditor(action));
 #if DEBUG
             builder.Append("<p class='w3-pink'>" + payload + "</p>");
@@ -97,7 +97,7 @@ namespace MelBox2
             DataTable dt = Program.Sql.GetViewMsgSent();
             StringBuilder builder = new StringBuilder();
 
-            builder.Append(MelBoxWeb.HtmlTablePlain(dt));
+            builder.Append(MelBoxWeb.HtmlTablePlain(dt, false));
 #if DEBUG
             builder.Append("<p class='w3-pink'>" + payload + "</p>");
 #endif
@@ -121,11 +121,11 @@ namespace MelBox2
                 builder.Append(MelBoxWeb.HtmlAlert(3, "Keine Zeitüberschreitungen festgestellt", "Zur Zeit ist kein überwachter Sender in Verzug."));
                 
                 dt = Program.Sql.GetMonitoredContactList();
-                builder.Append(MelBoxWeb.HtmlTablePlain(dt));
+                builder.Append(MelBoxWeb.HtmlTablePlain(dt, false));
             }
             else
             {
-                builder.Append(MelBoxWeb.HtmlTablePlain(dt));
+                builder.Append(MelBoxWeb.HtmlTablePlain(dt, false));
             }
 
             const string info = "Den einzelnen Benutzern kann ein Wert 'Max_Inaktivität' [in Stunden] zugewiesen werden. " +
@@ -149,12 +149,25 @@ namespace MelBox2
 
             ReadGlobalFields(args);
 
-            DataTable dt = Program.Sql.GetViewLog(DateTime.UtcNow, DateTime.UtcNow);
+            DateTime von = DateTime.UtcNow.AddDays(-2);
+            DateTime bis = DateTime.UtcNow;
+
+            string vonStr = MelBoxWeb.GetArgStr(args, "von");
+            string bisStr = MelBoxWeb.GetArgStr(args, "bis");
+
+            if(vonStr.Length > 9)
+                DateTime.TryParse(vonStr, out von);
+            
+            if (bisStr.Length > 9)
+                DateTime.TryParse(bisStr, out bis);
+
+            DataTable dt = Program.Sql.GetViewLog(von, bis.AddDays(1));
 
             StringBuilder builder = new StringBuilder();
 
-            builder.Append(MelBoxWeb.HtmlFormLog());
-            builder.Append(MelBoxWeb.HtmlTablePlain(dt));
+
+            builder.Append(MelBoxWeb.HtmlFormLog(von, bis));
+            builder.Append(MelBoxWeb.HtmlTablePlain(dt, false));
 
 #if DEBUG
             builder.Append("<p class='w3-pink'>" + payload + "</p>");

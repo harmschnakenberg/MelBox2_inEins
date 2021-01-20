@@ -312,10 +312,17 @@ namespace MelBox2
         public DataTable GetViewLog(DateTime StartTime, DateTime EndTime)
         {
 
-            if (StartTime.CompareTo(EndTime) >= 0) // > 0; t1 ist später als oder gleich t2.
+            if (StartTime.CompareTo(EndTime) > 0) // > 0; t1 ist später als oder gleich t2.
             {
-                StartTime = EndTime.AddDays(-3);
+                DateTime rem = StartTime;
+                StartTime = EndTime;
+                EndTime = rem;
             }
+            else if (StartTime.CompareTo(EndTime) == 0)
+            {
+                EndTime = EndTime.AddDays(1);
+            }
+
             //CREATE TABLE "Log"("Id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,"LogTime" TEXT NOT NULL, "Topic" TEXT , "Prio" INTEGER NOT NULL, "Content" TEXT)
             string query = "SELECT Id, datetime(LogTime, 'localtime') AS Zeit, Topic AS Bereich, Prio, Content AS Inhalt FROM \"Log\" " +
                            "WHERE LogTime BETWEEN @startTime AND @endTime ORDER BY Id DESC LIMIT 1000";
@@ -323,7 +330,7 @@ namespace MelBox2
             Dictionary<string, object> args = new Dictionary<string, object>
             {
                 { "@startTime", SqlTime(StartTime) },
-                { "@endTime", SqlTime(EndTime) }
+                { "@endTime", SqlTime(EndTime) } 
             };
 
             return SqlSelectDataTable("Logbuch", query, args);
@@ -349,8 +356,6 @@ namespace MelBox2
             return SqlSelectDataTable("Überfällige Meldungen", query);
         }
 
-
-
         public DataTable GetViewShift(int shiftId)
         {
             string query = "SELECT * FROM \"ViewShift\" WHERE Nr = @id";
@@ -365,42 +370,21 @@ namespace MelBox2
 
         public DataTable GetViewShift()
         {
-            string query = "SELECT * FROM \"ViewShift\" "; // ORDER BY Datum";
+            string query = "SELECT * FROM \"ViewShift\" ";
 
-            //string query = "SELECT s.Id AS Nr, " + 
-            //                "c.Id AS ContactId, " + 
-            //                "c.Name AS Name, " + 
-            //                "SendSms, " +
-            //                "SendEmail, " +
-            //                "date(StartTime) AS Datum, " +
-            //                "CAST(strftime('%H', StartTime, 'localtime') AS INTEGER) AS Beginn, CAST(strftime('%H', EndTime, 'localtime') AS INTEGER) AS Ende " +
-            //                "FROM Shifts AS s JOIN Contact AS c ON ContactId = c.Id " +
-            //                "WHERE Datum >= date('now') " +
-            //                "UNION " +
-            //                "SELECT NULL AS Nr, " + 
-            //                "NULL AS ContactId, " + 
-            //                "NULL AS Name, " + 
-            //                "0 AS SendSms, " +
-            //                "0 AS SendEmail, " +
-            //                "d AS Datum,  " +
-            //                "NULL AS Beginn, NULL AS Ende " +
-            //                "FROM ViewYearFromToday " +
-            //                "WHERE Datum >= date('now') ORDER BY Datum " +
-            //                "";            
-            try
-            {
+            //try
+            //{
                 return SqlSelectDataTable("Bereitschaft", query);
-            }
-            catch (Exception ex)
-            {
+            //}
+            //catch 
+            //{
+            //    DataTable table = new DataTable("LEER - GetViewShift() SQL Abfragefehler");
+            //    table.Columns.Add("Fehler", typeof(string));
+            //    table.Columns.Add("Hinweis", typeof(string));
 
-                DataTable table = new DataTable("LEER - GetViewShift() SQL Abfragefehler");
-                table.Columns.Add("Fehler", typeof(string));
-                table.Columns.Add("Hinweis", typeof(string));
-
-                table.Rows.Add(ex.GetType().Name, ex.Message);
-                return table;
-            }
+            //    //table.Rows.Add(ex.GetType().Name, ex.Message);
+            //    return table;
+            //}
 
         }
 

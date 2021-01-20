@@ -264,49 +264,49 @@ namespace MelBox2
         }
 
 
-        public static string HtmlTablePlain(DataTable dt)
-        {
-            StringBuilder builder = new StringBuilder();
+        //public static string HtmlTablePlain(DataTable dt)
+        //{
+        //    StringBuilder builder = new StringBuilder();
 
-            builder.Append(HtmlSearchbar());
+        //    builder.Append(HtmlSearchbar());
 
-            builder.Append("<center class='w3-responsive'>\n");
-            builder.Append("<table class='w3-table-all w3-hoverable w3-cell' id='myTable'>\n");
+        //    builder.Append("<center class='w3-responsive'>\n");
+        //    builder.Append("<table class='w3-table-all w3-hoverable w3-cell' id='myTable'>\n");
 
-            //Überschriften
-            builder.Append(" <tr class='" + MyStyle.PanelLight + "'>\n\t");
+        //    //Überschriften
+        //    builder.Append(" <tr class='" + MyStyle.PanelLight + "'>\n\t");
 
-            foreach (DataColumn c in dt.Columns)
-            {
-                builder.Append("<th>");
-                builder.Append(c.ColumnName);
-                builder.Append("</th>");
-            }
+        //    foreach (DataColumn c in dt.Columns)
+        //    {
+        //        builder.Append("<th>");
+        //        builder.Append(c.ColumnName);
+        //        builder.Append("</th>\n");
+        //    }
 
-            builder.Append("\n </tr>\n");
+        //    builder.Append("\n </tr>\n");
 
-            //Inhalt
-            foreach (DataRow r in dt.Rows)
-            {
-                builder.Append(" <tr class='myRow'>\n\t");
+        //    //Inhalt
+        //    foreach (DataRow r in dt.Rows)
+        //    {
+        //        builder.Append(" <tr class='myRow'>\n\t");
 
-                foreach (DataColumn c in dt.Columns)
-                {
-                    builder.Append("<td>");
-                    builder.Append(r[c.ColumnName]);
-                    builder.Append("</td>");
-                }
+        //        foreach (DataColumn c in dt.Columns)
+        //        {
+        //            builder.Append("<td>");
+        //            builder.Append(r[c.ColumnName]);
+        //            builder.Append("</td>");
+        //        }
 
-                builder.Append("\n </tr>\n");
-            }
+        //        builder.Append("\n </tr>\n");
+        //    }
 
-            builder.Append("</table>\n");
-            builder.Append("</center>\n");
+        //    builder.Append("</table>\n");
+        //    builder.Append("</center>\n");
 
-            return builder.ToString();
-        }
+        //    return builder.ToString();
+        //}
 
-        public static string HtmlTableIn(DataTable dt, bool isAdmin = false)
+        public static string HtmlTablePlain(DataTable dt, bool isAdmin = false)
         {
             StringBuilder builder = new StringBuilder();
 
@@ -325,9 +325,10 @@ namespace MelBox2
 
             foreach (DataColumn c in dt.Columns)
             {
+                // builder.Append("<th onclick=\"sortTable(document.getElementById('myTable'), " + c.Ordinal + ")\">"); //
                 builder.Append("<th>");
                 builder.Append(c.ColumnName);
-                builder.Append("</th>");
+                builder.Append("</th>\n");
             }
 
             builder.Append("\n </tr>\n");
@@ -346,7 +347,18 @@ namespace MelBox2
                 foreach (DataColumn c in dt.Columns)
                 {
                     builder.Append("<td>");
-                    builder.Append(r[c.ColumnName]);
+
+                    switch (c.ColumnName)
+                    {
+                        case "Empfangen":
+                        case "Gesendet":
+                        case "Letzte_Nachricht":                            
+                            builder.Append(DateTime.Parse(r[c.ColumnName].ToString()).ToLocalTime());
+                            break;
+                        default:
+                            builder.Append(r[c.ColumnName]);
+                            break;
+                    }
                     builder.Append("</td>");
                 }
 
@@ -355,6 +367,9 @@ namespace MelBox2
             #endregion
 
             builder.Append("</table>\n");
+
+            //builder.Append("<script>" + Properties.Resources.tableSort1  + "</script>");
+
             builder.Append("</center>\n");
 
             return builder.ToString();
@@ -370,18 +385,18 @@ namespace MelBox2
             builder.Append("<table class='w3-table-all w3-hoverable w3-cell' id='myTable'>\n");
 
             #region Überschriften
-            builder.Append(" <tr class='" + MyStyle.PanelLight + "'>\n\t");
+            builder.Append(" <tr class='" + MyStyle.PanelLight + "'>\n");
 
             if (isAdmin)
             {
-                builder.Append("<th><i class='w3-xxlarge material-icons-outlined'>create</i></th>");
+                builder.Append(" <th><i class='w3-xxlarge material-icons-outlined'>create</i></th>\n");
             }
 
             foreach (DataColumn c in dt.Columns)
             {
-                builder.Append("<th>");
+                builder.Append(" <th>");
                 builder.Append(c.ColumnName);
-                builder.Append("</th>");
+                builder.Append("</th>\n");
             }
 
             builder.Append("\n </tr>\n");
@@ -396,7 +411,7 @@ namespace MelBox2
 
                 if (isAdmin)
                 {
-                    builder.Append("<td><input class='w3-radio w3-hidden' type='radio' name='selectedRow' value='" + r[dt.Columns[0]] + "' form='form1' onclick=\"w3.show('#Editor')\"></td>");
+                    builder.Append(" <td><input class='w3-radio w3-hidden' type='radio' name='selectedRow' value='" + r[dt.Columns[0]] + "' form='form1' onclick=\"w3.show('#Editor')\"></td>\n");
                 }
 
                 foreach (DataColumn c in dt.Columns)
@@ -416,36 +431,36 @@ namespace MelBox2
                             if (r[c.ColumnName].ToString() == "1")
                                 check = "checked='checked' ";
 
-                            builder.Append("<input class='w3-check' form='form1' name='" + c.ColumnName + "' type='checkbox' " + check + " " + ((contentId == 0) ? "disabled" : string.Empty) + ">\n");
+                            builder.Append(" <input class='w3-check' form='form1' name='" + c.ColumnName + "' type='checkbox' " + check + " " + ((contentId == 0) ? "disabled" : string.Empty) + ">\n");
                             break;
                         case "Beginn":
                         case "Ende":
-                            builder.Append("<select class='w3-select' form='form1' name='" + c.ColumnName + "' " + ((contentId == 0) ? "disabled" : string.Empty) + ">\n");
+                            builder.Append(" <select class='w3-select' form='form1' name='" + c.ColumnName + "' " + ((contentId == 0) ? "disabled" : string.Empty) + ">\n");
 
                             int current = int.Parse(r[c.ColumnName].ToString().Substring(0, 2));
 
                             if (contentId == 0)
                             {
-                                builder.Append("<option value='" + current + "' selected disabled>" + current + " Uhr</option>\n");
+                                builder.Append(" <option value='" + current + "' selected disabled>" + current + " Uhr</option>\n");
                             }
                             else
                             {
                                 for (int i = 0; i < 24; i++)
                                 {
-                                    builder.Append("<option value='" + i + "' " + ((current == i) ? "selected" : string.Empty) + ">" + i + " Uhr</option>\n");
+                                    builder.Append(" <option value='" + i + "' " + ((current == i) ? "selected" : string.Empty) + ">" + i + " Uhr</option>\n");
                                 }
                             }
 
-                            builder.Append("</select>\n");
+                            builder.Append(" </select>\n");
                             break;
                         default:
-                            builder.Append("<div class='w3-margin'>");
+                            builder.Append(" <div class='w3-margin'>");
                             builder.Append(r[c.ColumnName]);
-                            builder.Append("</div>");
+                            builder.Append("</div>\n");
                             break;
                     }
 
-                    builder.Append("</td>");
+                    builder.Append("</td>\n");
                 }
 
                 builder.Append("\n </tr>\n");
@@ -569,19 +584,26 @@ namespace MelBox2
         }
 
 
-        public static string HtmlFormLog()
+        public static string HtmlFormLog(DateTime von, DateTime bis)
         {
             StringBuilder builder = new StringBuilder();
-
-            builder.Append("<div class='w3-center w3-row w3-card w3-container w3-light-grey w3-text-teal w3-margin'>\n");
-            builder.Append(" <div class='w3-col s2'>\n");
-            builder.Append("  <label>von:</label>\n");
-            builder.Append("  <input form='form1' class='w3-input w3-border w3-grey' type='date' name='von'>\n");
+          
+            builder.Append("<div class='w3-row w3-container'>\n");
+            builder.Append(" <div class='w3-col l4 m3 s1'>\n");
+            builder.Append("  &nbsp;\n");
             builder.Append(" </div>\n");
-            builder.Append(" <div class='w3-col s2'>\n");
-            builder.Append("  <label>bis:</label>\n");
-            builder.Append("  <input form='form1' class='w3-input w3-border w3-grey' type='date' name='bis'>\n");
-            builder.Append(" </div>\n");
+            builder.Append("  <div class='w3-col l2 m3 s5'>\n");
+         // builder.Append("   <label>von:</label>\n");
+            builder.Append("   <input form='form1' class='w3-input w3-border' type='date' name='von' value='" + von.ToString("yyyy-MM-dd") + "'>\n"); //
+            builder.Append("  </div>\n");
+            builder.Append("  <div class='w3-col l2 m3 s5'>\n");
+         // builder.Append("   <label>bis:</label>\n");
+            builder.Append("   <input form='form1' class='w3-input w3-border' type='date' name='bis' value='" + bis.ToString("yyyy-MM-dd") + "'>\n"); //
+            builder.Append("  </div>\n");
+            builder.Append("  <div class='w3-col l4 m3 s1'>\n");
+         // builder.Append("   <label>X&nbsp;</label>\n");
+            builder.Append("  <button form='form1' class='w3-bar-item w3-button " + MyStyle.Button + "' type='submit' formaction='/log'><i class='w3-xlarge material-icons-outlined'>schedule</i></button>\n");
+            builder.Append("  </div>\n");
             builder.Append("</div>\n");
 
             return builder.ToString();
