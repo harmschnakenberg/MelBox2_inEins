@@ -47,10 +47,11 @@ namespace MelBox2
                 MelBoxWeb.StartWebServer();
 
                 Sql.Log(MelBoxSql.LogTopic.Start, MelBoxSql.LogPrio.Info, string.Format( "MelBox2 - Anwendung gestartet. {0}, {1} Baud", Gsm_Basics.ComPortName, Gsm_Basics.BaudRate) );
-                InitDailyCheck();
+                
+                InitDailyCheck(); //Führt täglich morgens um 8 Uhr aus
 
                 //TEST
-                Sql.InsertMessageRec("Testnachricht am " + DateTime.Now.Date , 4916095285304);
+                Sql.InsertMessageRec("Testnachricht am " + DateTime.Now.Date , 4915142265412);
 
                 //Auskommentiert für Test WebServer
                 Gsm.Connect();

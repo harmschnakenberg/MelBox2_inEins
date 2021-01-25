@@ -15,7 +15,7 @@ namespace MelBox2
         private static SerialPort Port;
         const int maxConnectTrys = 7;
         static int currentConnectTrys = 0;
-        static readonly System.Timers.Timer sendTimer = new System.Timers.Timer(2000);
+        static readonly System.Timers.Timer sendTimer = new System.Timers.Timer(1000); //2000 funktioniert
         #endregion
 
         #region Properties
@@ -169,6 +169,7 @@ namespace MelBox2
                         return;
                     }
 
+                    Console.WriteLine("Warte 4 sec. bis zum nächsten Verbindunggsversuch...");
                     Thread.Sleep(4000);
                 }
             }

@@ -136,9 +136,9 @@ namespace MelBox2
                     if (int.TryParse(m.Groups[1].Value, out int simCardHolderStatus))
                     {
                         if (simCardHolderStatus == 1) 
-                            GlobalProperty.SimDetected= true;
+                            GlobalProperty.SimHolderDetected= true;
                         else
-                            GlobalProperty.SimDetected = false;
+                            GlobalProperty.SimHolderDetected = false;
                     }
                     m = m.NextMatch();
                 }
@@ -147,12 +147,12 @@ namespace MelBox2
             //Registrierung im Mobilfunknetz
             if (input.Contains("+CREG:"))
             {
-                Regex r = new Regex(@"\+CREG: (\d)"); //SAMBA75
+                Regex r = new Regex(@"\+CREG: (\d),(\d)"); //SAMBA75
                 Match m = r.Match(input);
 
                 while (m.Success)
                 {
-                    if (int.TryParse(m.Groups[1].Value, out int networkRegStatus))
+                    if (int.TryParse(m.Groups[2].Value, out int networkRegStatus))
                     {
                         switch (networkRegStatus)
                         {

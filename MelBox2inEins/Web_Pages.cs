@@ -849,8 +849,64 @@ namespace MelBox2
             context.Response.SendResponse(MelBoxWeb.HtmlCanvas(builder.ToString(), "Firmenkonto löschen", logedInUserName));
             return context;
         }
-        
+
         #endregion
+
+        [RestRoute(HttpMethod = HttpMethod.POST, PathInfo = "/gsm")]
+        public IHttpContext ResponseGsm(IHttpContext context)
+        {
+            string payload = context.Request.Payload;
+            Dictionary<string, string> args = MelBoxWeb.ReadPayload(payload);
+
+            ReadGlobalFields(args);
+             
+            StringBuilder builder = new StringBuilder();
+
+            #region Tabelle füllen
+            DataTable dt = new DataTable();
+            dt.Columns.Add("Parameter", typeof(string));
+            dt.Columns.Add("Wert", typeof(string));
+
+            string para = "Verbunden mit GSM-Modem";
+            string value = GlobalProperty.ConnectedToModem ? "verbunden" : "keine Verbindung";
+            dt.Rows.Add(para, value);
+
+            para = "SIM-Schubfach erkannt";
+            value = GlobalProperty.SimHolderDetected ? "erkannt" : "nicht erkannt";
+            dt.Rows.Add(para, value);
+
+            para = "Eigene Telefonnummer";
+            value = "+" + GlobalProperty.OwnPhone;
+            dt.Rows.Add(para, value);
+
+            para = "Registrierung Mobilfunknetz";
+            value = GlobalProperty.NetworkRegistrationStatus;
+            dt.Rows.Add(para, value);
+
+            para = "Mobilfunknetz Empfangsqualität";
+            value = string.Format("{0:0}%", GlobalProperty.GsmSignalQuality); 
+            dt.Rows.Add(para, value);
+
+            para = "Fehlende Empfangsbestätigungen";
+            value = string.Format("{0}", GlobalProperty.SmsPendingReports);
+            dt.Rows.Add(para, value);
+
+            para = "SMS-Text für Meldeweg Test";
+            value = GlobalProperty.SmsRouteTestTrigger;
+            dt.Rows.Add(para, value);
+
+            para = "Zuletzt gesendete SMS";
+            value = GlobalProperty.LastSmsSend;
+            dt.Rows.Add(para, value);
+            #endregion
+
+            builder.Append(MelBoxWeb.HtmlTablePlain(dt, false));
+#if DEBUG
+            builder.Append("<p class='w3-pink'>" + payload + "</p>");
+#endif
+            context.Response.SendResponse(MelBoxWeb.HtmlCanvas(builder.ToString(), "Status Modem", logedInUserName));
+            return context;
+        }
 
         [RestRoute]
         public IHttpContext Login(IHttpContext context)

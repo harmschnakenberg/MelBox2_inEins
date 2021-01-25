@@ -74,12 +74,12 @@ namespace MelBox2
 				string col4 = row["Letzte_Nachricht"].ToString();
 				string col5 = row["Fällig_seit"].ToString(); ;
 
-				string smsText = string.Format("Zeitüberschreitung {0} für {1} - letzte Nachricht {2}", col5, col2, col4);
+				string msg = string.Format("Zeitüberschreitung {0} für {1} - letzte Nachricht {2}", col5, col2, col4);
 
                 //ulong phone = Properties.Settings.Default.MelBoxAdminPhone;
-                //Gsm.SmsSend(phone, smsText);
+                //Gsm.SmsSend(phone, msg);
 
-                Email.Send(Email.SMSCenter, smsText);				
+                Email.Send(Email.SMSCenter, msg);				
 			}
 		}
 

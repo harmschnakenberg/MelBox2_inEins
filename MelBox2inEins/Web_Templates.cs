@@ -119,7 +119,7 @@ namespace MelBox2
             builder.Append("  <button class='w3-bar-item w3-button' type='submit' formaction='/shift'><i class='w3-xxlarge material-icons-outlined'>event_note</i></button>\n");
             builder.Append("  <button class='w3-bar-item w3-button' type='submit' formaction='/account' id='buttonAccount' disabled><i class='w3-xxlarge material-icons-outlined'>assignment_ind</i></button>\n");
             builder.Append("  <button class='w3-bar-item w3-button' type='submit' formaction='/log'><i class='w3-xxlarge material-icons-outlined'>assignment</i></button>\n");
-
+            builder.Append("  <button class='w3-bar-item w3-button' type='submit' formaction='/gsm'><i class='w3-xxlarge material-icons-outlined'>perm_device_information</i></button>\n");
 
             builder.Append(" </form>\n");
             builder.Append("</div>\n");
@@ -166,10 +166,10 @@ namespace MelBox2
             builder.Append("  </div>\n");
             builder.Append("  <div class='w3-margin'>\n");
             builder.Append("    <label><b>Benutzer</b></label>\n");
-            builder.Append("    <input form='form1' class='w3-input w3-border w3-sand' name='name' type='text' placeholder='Benutzername (von anderen sichtbar)' required></p>\n");
+            builder.Append("    <input form='form1' class='w3-input w3-border' name='name' type='text' placeholder='Benutzername (von anderen sichtbar)' required></p>\n");
             builder.Append("    <label><b>Passwort</b></label>\n");
-            //builder.Append("    <input class='w3-input w3-border w3-sand' name='password' type='password' pattern='(?=.*\\d)(?=.*[a-z])(?=.*[A-Z]).{6,}' placeholder='Mind. 6 Zeichen; Gro&szlig;- und Kleinbuchstaben, Zahl' required></p>\n");
-            builder.Append("    <input form='form1' class='w3-input w3-border w3-sand' name='password' type='password' pattern='.{4,}' placeholder='Mind. 6 Zeichen; Gro&szlig;- und Kleinbuchstaben, Zahl' required></p>\n");
+            //builder.Append("    <input class='w3-input w3-border' name='password' type='password' pattern='(?=.*\\d)(?=.*[a-z])(?=.*[A-Z]).{6,}' placeholder='Mind. 6 Zeichen; Gro&szlig;- und Kleinbuchstaben, Zahl' required></p>\n");
+            builder.Append("    <input form='form1' class='w3-input w3-border' name='password' type='password' pattern='.{4,}' placeholder='Mind. 6 Zeichen; Gro&szlig;- und Kleinbuchstaben, Zahl' required></p>\n");
             builder.Append("    <p>\n");
             builder.Append("    <button form='form1' class='w3-button " + MyStyle.Button + "' formaction='/'>Login</button>\n</p>\n");
             builder.Append("  </div>\n");
@@ -636,7 +636,7 @@ namespace MelBox2
 
                 foreach (DataRow r in dtAccount.Rows)
                 {
-                    string selected = (int.Parse(r["ContactId"].ToString()) == showAccountId) ? "selected" : string.Empty;
+                    string selected = (int.Parse(r["ContactId"].ToString()) == showAccountId) ? "selected" : string.Empty;                   
                     builder.Append("   <option value='" + r["ContactId"] + "' " + selected + ">" + r["Name"].ToString() + "</option>\n");
                 }
 
@@ -697,9 +697,10 @@ namespace MelBox2
                             {
                                 if (isAdmin || (companyId.ToString() == row["Id"].ToString()))
                                 {
+                                    string cityName = System.Text.RegularExpressions.Regex.Replace(row["Ort"].ToString(), @"[\d-]", string.Empty);
                                     builder.Append("   <option value='" + row["Id"] + "' ");
                                     builder.Append((companyId.ToString() == row["Id"].ToString()) ? "selected" : string.Empty);
-                                    builder.Append(">" + row["Name"].ToString() + "</option>\n");
+                                    builder.Append(">" + row["Name"].ToString() + ", " + cityName + "</option>\n");
                                 }
                             }
 

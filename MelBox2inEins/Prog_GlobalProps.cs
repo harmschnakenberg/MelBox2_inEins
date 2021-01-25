@@ -13,7 +13,7 @@ namespace MelBox2
 
 		public static bool ConnectedToModem { get; set; } = false;
 
-		public static bool SimDetected { get; set; } = false;
+		public static bool SimHolderDetected { get; set; } = false;
 
 		public static ulong OwnPhone { get; set; }
 
@@ -36,9 +36,9 @@ namespace MelBox2
 			Console.SetCursorPosition(tabPos, Console.CursorTop);
 			Console.WriteLine(ConnectedToModem ? "verbunden" : "keine Verbindung");
 
-			Console.Write("SIM erkannt");
+			Console.Write("SIM-Schublade erkannt");
 			Console.SetCursorPosition(tabPos, Console.CursorTop);
-			Console.WriteLine(SimDetected ? "erkannt" : "nicht erkannt");
+			Console.WriteLine(SimHolderDetected ? "erkannt" : "nicht erkannt");
 
 			Console.Write("Eigene Telefonnummer");
 			Console.SetCursorPosition(tabPos, Console.CursorTop);

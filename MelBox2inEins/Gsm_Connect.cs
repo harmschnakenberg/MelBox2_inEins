@@ -94,6 +94,8 @@ namespace MelBox2
             //Test, ob Modem antwortet
             Gsm_Basics.AddAtCommand("AT");
 
+            Gsm_Basics.AddAtCommand("AT^SSET=1");
+
             //Erzwinge, dass bei Fehlerhaftem SMS-Senden "+CMS ERROR: <err>" ausgegeben wird statt "OK"
             Gsm_Basics.AddAtCommand("AT^SM20=0,0");
 
@@ -106,10 +108,13 @@ namespace MelBox2
 
             //SIM-Karte im Mobilfunknetz registriert?
             Gsm_Basics.AddAtCommand("AT+CREG=1");
-            Gsm_Basics.AddAtCommand("AT+CREG?");
+            
 
             //Signalqualität
             Gsm_Basics.AddAtCommand("AT+CSQ");
+
+            //TEST Zeit zwischen setzen und Abfragen notwendig?
+            Gsm_Basics.AddAtCommand("AT+CREG?");
 
             //Textmode
             Gsm_Basics.AddAtCommand("AT+CMGF=1");

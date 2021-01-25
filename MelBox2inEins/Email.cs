@@ -30,16 +30,18 @@ namespace MelBox2
         {
 
             //BAUSTELLE
-           // Console.WriteLine("Email nicht implementiert. Keine gesendet Email an: " + to.ToList().ToArray().ToString());
-           // return;
+            Console.WriteLine("Email nicht implementiert. Keine gesendet Email an: " + to.ToList().ToArray().ToString());
+            return;
 
             //per SmtpClient Funktioniert.
             using (SmtpClient smtpClient = new SmtpClient())
             {
                 smtpClient.Host = SmtpServer;
-                smtpClient.Port = 465;
+                smtpClient.Port = 465; //465 //587 //25
                 smtpClient.EnableSsl = true;
-                smtpClient.Credentials = CredentialCache.DefaultNetworkCredentials;// CredentialCache.DefaultNetworkCredentials;
+                smtpClient.UseDefaultCredentials = false;
+                smtpClient.DeliveryMethod = SmtpDeliveryMethod.Network;
+                smtpClient.Credentials = new NetworkCredential("harmschnakenberg@gmx.de", "Oyterdamm64!");// CredentialCache.DefaultNetworkCredentials; //new NetworkCredential("username", "password");
 
                 using (MailMessage message = new MailMessage())
                 {
@@ -58,12 +60,20 @@ namespace MelBox2
 
                     //Betreff
                     if (subject.Length < 3)
+                    {
                         subject = body;
+                    }
+
                     int maxSubjectLenth = 255;
-                    if (subject.Length > maxSubjectLenth) 
+
+                    if (subject.Length > maxSubjectLenth)
+                    {
                         message.Subject = subject.Substring(0, maxSubjectLenth).Replace("\r\n", string.Empty);
+                    }
                     else
+                    {
                         message.Subject = subject.Replace("\r\n", string.Empty);
+                    }
                     //Nachricht
                     message.Body = body;
 
@@ -74,7 +84,14 @@ namespace MelBox2
                     catch (SmtpException ex)
                     {
 #if DEBUG
-                        Console.WriteLine("Fehler: Email nicht gesendet an " + to.ToList().ToArray().ToString() + Environment.NewLine + ex.GetType() + Environment.NewLine + ex.Message);
+                        Console.WriteLine("Fehler: Email nicht gesendet an:");
+
+                        foreach (MailAddress email in to)
+                        {
+                            Console.WriteLine(email.Address);
+                        }
+
+                        Console.WriteLine(ex.GetType() + Environment.NewLine + ex.Message + Environment.NewLine + ex.InnerException);
 #else
                         //provisorisch
                         throw ex;
