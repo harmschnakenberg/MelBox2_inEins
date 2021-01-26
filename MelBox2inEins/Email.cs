@@ -10,8 +10,8 @@ namespace MelBox2
 {
     class Email
     {
-        public static string SmtpServer { get; set; } = "mail.gmx.net"; // "192.168.165.29";
-        public static MailAddress SMSCenter { get; set; } = new MailAddress("SMSZentrale@kreutztraeger.de", "SMS Zentrale Kreutzträger Kältetechnik");
+        //public static string SmtpServer { get; set; } = "smtp.gmail.com"; //"mail.gmx.net"; // "192.168.165.29"; //"smtp.gmail.com"
+        public static MailAddress SMSCenter { get; set; } = new MailAddress("kreutztraegersmszentrale@gmail.com", "SMS Zentrale Kreutzträger Kältetechnik");//"SMSZentrale@kreutztraeger.de"
         public static MailAddress MelBox2Admin { get; set; } = new MailAddress("harm.schnakenberg@kreutztraeger.de", "MelBox2 Admin");
 
         public static List<string> PermanentEmailRecievers { get; set; }
@@ -30,18 +30,22 @@ namespace MelBox2
         {
 
             //BAUSTELLE
-            Console.WriteLine("Email nicht implementiert. Keine gesendet Email an: " + to.ToList().ToArray().ToString());
-            return;
+            //Console.WriteLine("Email nicht implementiert. Keine gesendet Email an: " + to.ToList().ToArray().ToString());
+            //return;
 
-            //per SmtpClient Funktioniert.
+            NetworkCredential credential = new NetworkCredential();
+            credential.UserName = Properties.Settings.Default.SmtpUserName;
+            credential.Password = Properties.Settings.Default.SmtpUserPassword; // "nqpfrufwrjxnrqih"
+
+            //per SmtpClient Funktioniert. Muss ggf. als "unsichere App" freigegeben werden.
             using (SmtpClient smtpClient = new SmtpClient())
             {
-                smtpClient.Host = SmtpServer;
-                smtpClient.Port = 465; //465 //587 //25
+                smtpClient.Host = Properties.Settings.Default.SmtpServerName; //SmtpServer;
+                smtpClient.Port = Properties.Settings.Default.SmtpPort; //465 //587 //25
                 smtpClient.EnableSsl = true;
                 smtpClient.UseDefaultCredentials = false;
                 smtpClient.DeliveryMethod = SmtpDeliveryMethod.Network;
-                smtpClient.Credentials = new NetworkCredential("harmschnakenberg@gmx.de", "Oyterdamm64!");// CredentialCache.DefaultNetworkCredentials; //new NetworkCredential("username", "password");
+                smtpClient.Credentials = credential; //new NetworkCredential("kreutztraegersmszentrale@gmail.com", "nqpfrufwrjxnrqih");// CredentialCache.DefaultNetworkCredentials; //new NetworkCredential("username", "password");
 
                 using (MailMessage message = new MailMessage())
                 {

@@ -17,20 +17,22 @@ namespace MelBox2
             //>     &gt;
             //' 	&apos;
             return input.Replace("Ä", "&Auml;").Replace("Ö", "&Ouml;").Replace("Ü", "&Uuml;").Replace("ä", "&auml;").Replace("ö", "&ouml;").Replace("ü", "&uuml;").Replace("ß", "&szlig;");
+            //return System.Net.WebUtility.HtmlEncode(input);
         }
 
-        public static string DecodeUmlaute(string input)
+        public static string DecodePayload(string input)
         {
-            return input.Replace("%C4", "Ä").Replace("%D6", "Ö").Replace("%DC", "Ü").Replace("%E4", "ä").Replace("%F6", "ö").Replace("%FC", "ü")
-                .Replace("%DF", "ß").Replace("%40", "@").Replace("%2B", "+").Replace("%26", "&").Replace("%22", "\"");
+            //Umwandlung bei UTF-8
+            return System.Net.WebUtility.UrlDecode(input);
+            //return input.Replace("%C3%84", "Ä").Replace("%C3%96", "Ö").Replace("%C3%9C", "Ü").Replace("%C3%A4", "ä").Replace("%C3%B6", "ö").Replace("%C3%BC", "ü")
+            //    .Replace("%C3%9F", "ß").Replace("%40", "@").Replace("%2B", "+").Replace("%5C", "\"").Replace("%3F", "?").Replace("%26", "&");
+         
         }
 
         public static Dictionary<string, string> ReadPayload(string payload)
         {
             payload = payload ?? string.Empty;
             Dictionary<string, string> dict = new Dictionary<string, string>();
-
-            payload = DecodeUmlaute(payload);
 
             string[] args = payload.Split('&');
 
@@ -39,7 +41,7 @@ namespace MelBox2
                 string[] items = arg.Split('=');
 
                 if (items.Length > 1)
-                    dict.Add(items[0], items[1]);
+                    dict.Add(items[0], DecodePayload(items[1]) );
             }
 
             return dict;
@@ -84,7 +86,7 @@ namespace MelBox2
                 {
                     switch (c.ColumnName)
                     {
-                        //ContactId,  Name, Passwort, CompanyId, Firma, Email, Telefon, SendSms, SendEmail, Max_Inaktivität 
+                        //ContactId,  Name, Passwort, CompanyId, Firma, Email, Telefon, SendSms, SendEmail, Max_Inaktiv 
 
                         case "Id":
                             int.TryParse(r[c.ColumnName].ToString(), out int id);
@@ -158,22 +160,22 @@ namespace MelBox2
                         contactId = int.Parse(args[arg]);
                         break;
                     case "Name":
-                        name = DecodeUmlaute( args[arg].Replace('+', ' ') );
+                        name = args[arg];//.Replace('+', ' ');
                         break;
                     case "Passwort":
                         if (args[arg].Length > 1)
-                            password = DecodeUmlaute(args[arg]);
+                            password = args[arg];
                         break;
                     case "CompanyId":
                         companyId = int.Parse(args[arg]);
                         break;
                     case "Email":
-                        email = DecodeUmlaute(args[arg]);
+                        email = args[arg];
                         break;
                     case "Telefon":
                         phone = GsmConverter.StrToPhone(args[arg]);
                         break;
-                    case "Max_Inaktivität":
+                    case "Max_Inaktiv":
                         maxInactivity = int.Parse(args[arg]);
                         break;
                     case "SendSms":
@@ -244,13 +246,13 @@ namespace MelBox2
                         companyId = int.Parse(args[arg]);
                         break;
                     case "Name":
-                        name = DecodeUmlaute(args[arg].Replace('+', ' '));
+                        name = args[arg];//.Replace('+', ' ');
                         break;
                     case "Adresse":
-                        address = DecodeUmlaute(args[arg].Replace('+', ' '));
+                        address = args[arg];//.Replace('+', ' ');
                         break;                    
                     case "Ort":
-                        city = DecodeUmlaute(args[arg].Replace('+', ' '));
+                        city = args[arg];//.Replace('+', ' ');
                         break;                    
                 }
             }
@@ -315,7 +317,7 @@ namespace MelBox2
                         int.TryParse(args[arg].ToString(), out shiftUserId);                        
                         break;
                     case "Name":
-                        name = DecodeUmlaute(args[arg].Replace('+', ' '));
+                        name = args[arg];//.Replace('+', ' ');
                         break;
                     case "Datum":
                         if (date == DateTime.MinValue)
@@ -422,7 +424,6 @@ namespace MelBox2
         // public string Email { get; set; }
 
         // public ulong Phone { get; set; }
-
     }
 
 

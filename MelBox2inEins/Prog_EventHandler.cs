@@ -6,8 +6,11 @@ using System.Threading.Tasks;
 
 namespace MelBox2
 {
+
     partial class Program
     {
+		public static byte ConsoleDisplayBlock { get; set; } = Properties.Settings.Default.ConsoleDisplayFilter;
+
 		static void HandleGsmEvent(object sender, GsmEventArgs e)
 		{
 			switch (e.Type)
@@ -52,7 +55,9 @@ namespace MelBox2
 					break;
 			}
 
-			Console.WriteLine(e.Type.ToString() + ":\t" + e.Message);
+			if ( (ConsoleDisplayBlock & (byte)e.Type) == 0)
+				Console.WriteLine(e.Type.ToString() + ":\t" + e.Message);
+
 			Console.ForegroundColor = ConsoleColor.Gray;
 
 		}

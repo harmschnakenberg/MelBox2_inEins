@@ -114,7 +114,7 @@ namespace MelBox2
                     query.Append("FROM LogSent AS ls JOIN Contact AS c ON SentToId = c.Id JOIN MessageContent AS mc ON mc.id = ls.ContentId; ");
 
                     query.Append("CREATE VIEW \"ViewMessagesOverdue\" AS SELECT FromContactId AS Id, cont.Name, comp.Name AS Firma, MaxInactiveHours || ' Std.' AS Max_Inaktiv, RecieveTime AS Letzte_Nachricht, Content AS Inhalt, CAST( (strftime('%s', 'now') - strftime('%s', RecieveTime, '+' || MaxInactiveHours || ' hours')) / 3600 AS INTEGER) || ' Std.' AS Fällig_seit ");
-                    query.Append("FROM LogRecieved JOIN Contact AS cont ON cont.Id = LogRecieved.FromContactId JOIN Company AS comp ON comp.Id = cont.CompanyId JOIN MessageContent AS msg ON msg.Id = ContentId WHERE MaxInactiveHours > 0 AND DATETIME(RecieveTime, '+' || MaxInactiveHours || ' hours') < Datetime('now'); ");
+                    query.Append("FROM LogRecieved JOIN Contact AS cont ON cont.Id = LogRecieved.FromContactId JOIN Company AS comp ON comp.Id = cont.CompanyId JOIN MessageContent AS msg ON msg.Id = ContentId WHERE MaxInactiveHours > 0 AND DATETIME(RecieveTime, '+' || MaxInactiveHours || ' hours') < Datetime('now') ORDER BY RecieveTime DESC; ");
 
                     query.Append("CREATE VIEW \"ViewMessagesBlocked\" AS SELECT BlockedMessages.Id AS Id, Content As Nachricht, StartHour || ' Uhr' As Beginn, EndHour || ' Uhr' As Ende, (SELECT Days & 2 > 0) AS Mo, (SELECT Days & 4 > 0) AS Di, (SELECT Days & 8 > 0) AS Mi, (SELECT Days & 16 > 0) AS Do, (SELECT Days & 32 > 0) AS Fr, (SELECT Days & 64 > 0) AS Sa, (SELECT Days & 1 > 0) AS So FROM BlockedMessages JOIN MessageContent ON MessageContent.Id = BlockedMessages.Id; ");
 

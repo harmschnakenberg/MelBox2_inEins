@@ -34,9 +34,12 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>KK.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Grapevine, Version=4.2.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Grapevine.4.2.0\lib\net40\Grapevine.dll</HintPath>
+    <Reference Include="Grapevine, Version=4.2.2.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Grapevine.4.2.2\lib\net40\Grapevine.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Data.Sqlite, Version=5.0.1.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Data.Sqlite.Core.5.0.1\lib\netstandard2.0\Microsoft.Data.Sqlite.dll</HintPath>
@@ -126,6 +129,11 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="KK.ico" />
+    <Content Include="Magazin\OldWebPages.txt" />
+    <Content Include="Magazin\OldWebTemplates.txt" />
+    <Content Include="Magazin\w3.css" />
+    <Content Include="Magazin\w3.js" />
     <Content Include="TableSort.js" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -6,7 +6,7 @@
       <Value Profile="(Default)">COM3</Value>
     </Setting>
     <Setting Name="BaudRate" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">9600</Value>
+      <Value Profile="(Default)">19200</Value>
     </Setting>
     <Setting Name="PermanentEmailRecievers" Type="System.Collections.Specialized.StringCollection" Scope="User">
       <Value Profile="(Default)">&lt;?xml version="1.0" encoding="utf-16"?&gt;
@@ -21,6 +21,21 @@
     </Setting>
     <Setting Name="MelBoxAdminEmail" Type="System.String" Scope="User">
       <Value Profile="(Default)">harm.schnakenberg@kreutztraeger.de</Value>
+    </Setting>
+    <Setting Name="SmtpServerName" Type="System.String" Scope="User">
+      <Value Profile="(Default)">smtp.gmail.com</Value>
+    </Setting>
+    <Setting Name="SmtpPort" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">587</Value>
+    </Setting>
+    <Setting Name="SmtpUserName" Type="System.String" Scope="User">
+      <Value Profile="(Default)">kreutztraegersmszentrale@gmail.com</Value>
+    </Setting>
+    <Setting Name="SmtpUserPassword" Type="System.String" Scope="User">
+      <Value Profile="(Default)">nqpfrufwrjxnrqih</Value>
+    </Setting>
+    <Setting Name="ConsoleDisplayFilter" Type="System.Byte" Scope="User">
+      <Value Profile="(Default)">5</Value>
     </Setting>
   </Settings>
 </SettingsFile>
