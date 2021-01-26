@@ -10,7 +10,7 @@ namespace MelBox2
 {
     public partial class Gsm
     {
-       
+
         /// <summary>
         /// Wird bei jedem Empfang von Daten durch COM aufgerufen!
         /// </summary>
@@ -33,7 +33,7 @@ namespace MelBox2
             }
 
             //Liste der Nachrichten im GSM-Speicher
-            if (input.Contains("+CMGL:")) 
+            if (input.Contains("+CMGL:"))
             {
                 //Empfangsbestätigungen lesen
                 ParseStatusReport(input);
@@ -46,7 +46,7 @@ namespace MelBox2
                 {
                     SmsDelete(SmsToDelete[0]);
                     SmsToDelete.Remove(SmsToDelete[0]);
-                }                
+                }
             }
 
             //Indikator neuen Statusreport empfangen
@@ -59,7 +59,7 @@ namespace MelBox2
                 bei AT+CNMI= [ <mode> ][,  <mt> ][,  <bm> ][,  2 ][,  <bfr> ]
                 erwartete Antwort: +CDSI: <mem3>, <index>
                 //*/
-               
+
                 ReadGsmMemory();
             }
 
@@ -77,7 +77,7 @@ namespace MelBox2
             }
 
             //Fehlermeldung von Modem bei SMS senden oder Empfangen
-            if(input.Contains("+CMS ERROR:"))
+            if (input.Contains("+CMS ERROR:"))
             {
                 Gsm_Basics.RaiseGsmEvent(GsmEventArgs.Telegram.GsmError, "Am GSM-Modem ist ein Fehler beim Senden oder Empfangen einer SMSM aufgetreten", input);
             }
@@ -127,20 +127,39 @@ namespace MelBox2
 
             //SIM-Schubfach / SIM erkannt
             if (input.Contains("^SCKS:"))
-            {                
-                Regex r = new Regex(@"\^SCKS: (\d+)");
+            {
+                //Antwort auf 'AT^SCKS?':   '^SCKS: <mode>,<SimStatus>'
+                Regex r = new Regex(@"\^SCKS: (\d+),(\d+)");
                 Match m = r.Match(input);
 
-                while (m.Success)
+                if (m.Success)
                 {
-                    if (int.TryParse(m.Groups[1].Value, out int simCardHolderStatus))
+                    if (int.TryParse(m.Groups[2].Value, out int simCardHolderStatus))
                     {
-                        if (simCardHolderStatus == 1) 
-                            GlobalProperty.SimHolderDetected= true;
+                        if (simCardHolderStatus == 1)
+                            GlobalProperty.SimHolderDetected = true;
                         else
                             GlobalProperty.SimHolderDetected = false;
                     }
-                    m = m.NextMatch();
+                }
+
+                else
+                {
+                    //Meldung von Modem nach Ereignis 'Sim-Schublade'
+                    r = new Regex(@"\^SCKS: (\d+)");
+                    m = r.Match(input);
+
+                    if (m.Success)
+                    {
+                        if (int.TryParse(m.Groups[1].Value, out int simCardHolderStatus))
+                        {
+                            if (simCardHolderStatus == 1)
+                                GlobalProperty.SimHolderDetected = true;
+                            else
+                                GlobalProperty.SimHolderDetected = false;
+                        }
+
+                    }
                 }
             }
 

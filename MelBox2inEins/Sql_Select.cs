@@ -172,7 +172,7 @@ namespace MelBox2
 
         public DataTable GetMonitoredContactList()
         {
-            string query = "SELECT Contact.Id AS Id, Contact.Name AS Name, Company.Name AS Firma, MaxInactiveHours ||' Stunden' AS Max_Inaktivität " +
+            string query = "SELECT Contact.Id AS Id, Contact.Name AS Name, Company.Name AS Firma, MaxInactiveHours ||' Stunden' AS Max_Inaktiv " +
                            "FROM \"Contact\" JOIN \"Company\" ON CompanyId = Company.Id " +
                            "WHERE MaxInactiveHours > 0; ";
 
@@ -351,7 +351,7 @@ namespace MelBox2
 
         public DataTable GetViewMsgOverdue()
         {
-            string query = "SELECT * FROM \"ViewMessagesOverdue\" ORDER BY Fällig_seit DESC LIMIT 1000";
+            string query = "SELECT * FROM \"ViewMessagesOverdue\" GROUP BY Id LIMIT 1000";
 
             return SqlSelectDataTable("Überfällige Meldungen", query);
         }
@@ -397,7 +397,7 @@ namespace MelBox2
 
         public DataTable GetViewContactInfo(int contactId = 0)
         {
-            string query = "SELECT Contact.Id AS ContactId, Contact.Name AS Name, '********' AS Passwort, CompanyId, Company.Name AS Firma, Phone AS Telefon, Contact.SendSms AS SendSms, Email, Contact.SendEmail AS SendEmail, MaxInactiveHours AS Max_Inaktivität " +
+            string query = "SELECT Contact.Id AS ContactId, Contact.Name AS Name, '********' AS Passwort, CompanyId, Company.Name AS Firma, Phone AS Telefon, Contact.SendSms AS SendSms, Email, Contact.SendEmail AS SendEmail, MaxInactiveHours AS Max_Inaktiv " +
                            "FROM \"Contact\" JOIN \"Company\" ON CompanyId = Company.Id ";
 
             Dictionary<string, object> args = new Dictionary<string, object>();
