@@ -38,14 +38,15 @@ namespace MelBox2
         {
             using (var server = new RestServer())
             {
+                
                 server.Port = PortFinder.FindNextLocalOpenPort(port);
                 //server.UseHttps = true;
                 server.LogToConsole(Grapevine.Interfaces.Shared.LogLevel.Warn).Start();
                 Console.WriteLine("WebHost:\thttp://" + server.Host + ":" + server.Port);
                 
                 stopWebServer.WaitOne();
-                server.LogToConsole().Stop();
-                server.ThreadSafeStop();
+                server.LogToConsole().Stop();                
+                server.ThreadSafeStop();                
             }
         }
 

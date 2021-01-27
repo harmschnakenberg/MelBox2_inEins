@@ -54,7 +54,7 @@ namespace MelBox2
                 Sql.InsertMessageRec("Testnachricht am " + DateTime.Now.Date , 4915142265412);
 
                 //Auskommentiert für Test WebServer
-             //   Gsm.Connect();
+                Gsm.Connect();
 
 #if DEBUG
                 Console.WriteLine("\r\nDEBUG Mode: es wird keine StartUp-Info an MelBox2-Admin gesendet.");
@@ -87,30 +87,30 @@ namespace MelBox2
                         Console.WriteLine(help);
                     }
 
-                    if (pressed.Key == ConsoleKey.O)
-                    {
-                        Console.Clear();
-                        GlobalProperty.ShowOnConsole();
-                        //Console.WriteLine("\r\nOPTIONEN:\r\n\tModem: Umschalten eingehend");
-                        //Console.WriteLine((byte)GsmEventArgs.Telegram.GsmError + ":\t" + GsmEventArgs.Telegram.GsmError);
-                        //Console.WriteLine((byte)GsmEventArgs.Telegram.GsmSystem + ":\t" + GsmEventArgs.Telegram.GsmSystem);
-                        //Console.WriteLine((byte)GsmEventArgs.Telegram.GsmConnection + ":\t" + GsmEventArgs.Telegram.GsmConnection);
-                        //Console.WriteLine((byte)GsmEventArgs.Telegram.GsmSignal + ":\t" + GsmEventArgs.Telegram.GsmSignal);
-                        //Console.WriteLine((byte)GsmEventArgs.Telegram.GsmOwnPhone + ":\t" + GsmEventArgs.Telegram.GsmOwnPhone);
-                        //Console.WriteLine((byte)GsmEventArgs.Telegram.GsmOwnPhone + ":\t" + GsmEventArgs.Telegram.GsmOwnPhone);
+                    //if (pressed.Key == ConsoleKey.O)
+                    //{
+                    //    Console.Clear();
+                    //    GlobalProperty.ShowOnConsole();
+                    //    //Console.WriteLine("\r\nOPTIONEN:\r\n\tModem: Umschalten eingehend");
+                    //    //Console.WriteLine((byte)GsmEventArgs.Telegram.GsmError + ":\t" + GsmEventArgs.Telegram.GsmError);
+                    //    //Console.WriteLine((byte)GsmEventArgs.Telegram.GsmSystem + ":\t" + GsmEventArgs.Telegram.GsmSystem);
+                    //    //Console.WriteLine((byte)GsmEventArgs.Telegram.GsmConnection + ":\t" + GsmEventArgs.Telegram.GsmConnection);
+                    //    //Console.WriteLine((byte)GsmEventArgs.Telegram.GsmSignal + ":\t" + GsmEventArgs.Telegram.GsmSignal);
+                    //    //Console.WriteLine((byte)GsmEventArgs.Telegram.GsmOwnPhone + ":\t" + GsmEventArgs.Telegram.GsmOwnPhone);
+                    //    //Console.WriteLine((byte)GsmEventArgs.Telegram.GsmOwnPhone + ":\t" + GsmEventArgs.Telegram.GsmOwnPhone);
 
-                        //Console.WriteLine("Konsolenanzeige: Bitweise Filter setzten (sperren):");
-                        //Console.WriteLine("\r\n\tBitte Nummer auswählen.");
+                    //    //Console.WriteLine("Konsolenanzeige: Bitweise Filter setzten (sperren):");
+                    //    //Console.WriteLine("\r\n\tBitte Nummer auswählen.");
 
-                        //string input = Console.ReadLine();
-                        //if (byte.TryParse(input, out byte a))
-                        //{
-                        //    ConsoleDisplayBlock = a;
-                        //}
+                    //    //string input = Console.ReadLine();
+                    //    //if (byte.TryParse(input, out byte a))
+                    //    //{
+                    //    //    ConsoleDisplayBlock = a;
+                    //    //}
 
-                        Console.Clear();
-                        Console.WriteLine(help);
-                    }
+                    //    Console.Clear();
+                    //    Console.WriteLine(help);
+                    //}
 
                     if (pressed.Key == ConsoleKey.Insert)
                     {

@@ -77,8 +77,10 @@ namespace MelBox2
 			}
 			else
 			{
-				if (Sql.IsMessageBlockedNow(e.Message))
-				{
+				bool isBlocked = Sql.IsMessageBlockedNow(e.Message);
+				
+				if (isBlocked)
+				{					
 					Sql.Log(MelBoxSql.LogTopic.Shift, MelBoxSql.LogPrio.Info, "Keine SMS: " + e.Message);
 				}
                 else 
@@ -99,7 +101,7 @@ namespace MelBox2
 					mailTo.Add(new System.Net.Mail.MailAddress(mail));
 				}
 
-				Email.Send(mailTo, e.Message);
+				Email.Send(mailTo, e, isBlocked );
 			}
 
 			Gsm.ReadGsmMemory();

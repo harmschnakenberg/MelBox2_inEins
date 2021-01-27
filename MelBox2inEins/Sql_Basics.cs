@@ -90,8 +90,10 @@ namespace MelBox2
                             return shiftTable;
                         }
                     }
-                    catch
+#pragma warning disable CA1031 // Do not catch general exception types
+                    catch 
                     {
+                        //Wenn Schema aus DB nicht eingehalten wird (z.B. UNIQUE Constrain in SELECT Abfragen); dann neue DataTable, alle Spalten <string>
                         using (var reader = command.ExecuteReader())
                         {
                             DataTable shiftTable = new DataTable
@@ -103,17 +105,12 @@ namespace MelBox2
                             for (int i = 0; i < reader.FieldCount; i++)
                             {
                                 //Spalten einrichten
-                                //shiftTable.Columns.Add(reader.GetName(i), reader.GetFieldType(i));
                                 shiftTable.Columns.Add(reader.GetName(i), typeof(string));
                             }
-                            
-                            //int n = 0;
-
+                                                        
                             while (reader.Read())
                             {
                                 List<object> row = new List<object>();
-
-                                //Console.Write("\r\nZeile {0}:", n++);
 
                                 for (int i = 0; i < reader.FieldCount; i++)
                                 {
@@ -121,14 +118,12 @@ namespace MelBox2
 
                                     if (reader.IsDBNull(i))
                                     {
-                                        row.Add(string.Empty);
-                                        //Console.Write("'NULL'\t");
+                                        row.Add(string.Empty);                                       
                                     }
                                     else
                                     {
                                         string r = reader.GetFieldValue<string>(i);
                                         row.Add(r);
-                                        //Console.Write(r + "\t");
                                     }
                                 }
 
@@ -136,7 +131,8 @@ namespace MelBox2
                             }
                             return shiftTable;
                         }
-                    }                
+                    }
+#pragma warning restore CA1031 // Do not catch general exception types
                 }
             }
             catch (Exception ex)
@@ -285,7 +281,6 @@ namespace MelBox2
                 throw new Exception("SqlSelectNumbers(): " + query + "\r\n" + ex.GetType() + "\r\n" + ex.Message);
             }
         }
-
 
         public System.Net.Mail.MailAddressCollection SqlSelectEmailAddresses(string query, Dictionary<string, object> args = null)
         {

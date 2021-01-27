@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Net;
 using System.Net.Mail;
@@ -15,6 +16,30 @@ namespace MelBox2
         public static MailAddress MelBox2Admin { get; set; } = new MailAddress("harm.schnakenberg@kreutztraeger.de", "MelBox2 Admin");
 
         public static List<string> PermanentEmailRecievers { get; set; }
+
+        public static void Send(MailAddressCollection to, Sms e, bool isBlocked)
+        {
+            StringBuilder body = new StringBuilder();
+            StringBuilder subject = new StringBuilder();
+
+            int contactId = Program.Sql.GetContactId("", e.Phone, "", e.Message);
+            DataTable senderContact = Program.Sql.GetContactInfo(contactId);
+            string senderName = senderContact.Rows[0]["Name"].ToString();
+            string senderFirma = senderContact.Rows[0]["Firma"].ToString();
+
+            subject.Append("SMS Eingang >" + senderFirma + "<, ");
+            subject.Append("SMS Text >" + e.Message + "<");
+
+            body.Append("SMS Absender >" + e.Phone + ": " + senderName + ", " + senderFirma + "< \r\n"); //SMS Absender >GMX SMS<
+            body.Append("SMS Text >" + e.Message + "< \r\n");
+            body.Append("SMS Sendezeit >" + e.SmsProviderTimeStamp + "< \r\n");
+
+            if (isBlocked)
+                body.Append("\r\n\r\nKeine Weiterleitung an Bereitschaftshandy.");
+
+            Send(to, body.ToString(), subject.ToString());
+        }
+
 
         public static void Send(MailAddress to, string body, string subject = "")
         {
@@ -33,9 +58,11 @@ namespace MelBox2
             //Console.WriteLine("Email nicht implementiert. Keine gesendet Email an: " + to.ToList().ToArray().ToString());
             //return;
 
-            NetworkCredential credential = new NetworkCredential();
-            credential.UserName = Properties.Settings.Default.SmtpUserName;
-            credential.Password = Properties.Settings.Default.SmtpUserPassword; // "nqpfrufwrjxnrqih"
+            NetworkCredential credential = new NetworkCredential
+            {
+                UserName = Properties.Settings.Default.SmtpUserName,
+                Password = Properties.Settings.Default.SmtpUserPassword // "nqpfrufwrjxnrqih"
+            };
 
             //per SmtpClient Funktioniert. Muss ggf. als "unsichere App" freigegeben werden.
             using (SmtpClient smtpClient = new SmtpClient())
