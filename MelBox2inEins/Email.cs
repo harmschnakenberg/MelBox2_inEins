@@ -23,7 +23,7 @@ namespace MelBox2
             StringBuilder subject = new StringBuilder();
 
             int contactId = Program.Sql.GetContactId("", e.Phone, "", e.Message);
-            DataTable senderContact = Program.Sql.GetContactInfo(contactId);
+            DataTable senderContact = Program.Sql.GetViewContactInfo(contactId);
             string senderName = senderContact.Rows[0]["Name"].ToString();
             string senderFirma = senderContact.Rows[0]["Firma"].ToString();
 

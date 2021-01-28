@@ -179,19 +179,19 @@ namespace MelBox2
             return SqlSelectDataTable("Überwachte Kontakte", query);
         }
 
-        public DataTable GetContactInfo(int contactId)
-        {
-            string query = "SELECT Contact.Name AS Name, Company.Name AS Firma, Contact.Phone AS Phone, Contact.Email AS Email " +
-                           "FROM \"Contact\" JOIN \"Company\" ON CompanyId = Company.Id " +
-                           "WHERE Contact.Id = @contactId; ";
+        //public DataTable GetContactInfo(int contactId)
+        //{
+        //    string query = "SELECT Contact.Name AS Name, Company.Name AS Firma, Contact.Phone AS Phone, Contact.Email AS Email " +
+        //                   "FROM \"Contact\" JOIN \"Company\" ON CompanyId = Company.Id " +
+        //                   "WHERE Contact.Id = @contactId; ";
 
-            Dictionary<string, object> args = new Dictionary<string, object>
-                {
-                    { "@contactId", contactId }
-                };
+        //    Dictionary<string, object> args = new Dictionary<string, object>
+        //        {
+        //            { "@contactId", contactId }
+        //        };
 
-            return SqlSelectDataTable("Kontakt", query, args);
-        }
+        //    return SqlSelectDataTable("Kontakt", query, args);
+        //}
 
 
         public int GetLastCompany()

@@ -795,25 +795,13 @@ namespace MelBox2
             builder.Append("<h2 class='w3-center'>Bereitschaft</h2>\n");
 
             #region Füllwerte ermitteln
-            if (shiftId != 0)
-            {
-                //Bestandsdaten in Formular laden
-                DataTable dtShift = Program.Sql.GetViewShift(shiftId);
-
-                shiftContactId = int.Parse(dtShift.Rows[0]["ContactId"].ToString());
-                name = dtShift.Rows[0]["Name"].ToString();
-                sendSms = (int.Parse(dtShift.Rows[0]["SendSms"].ToString()) > 0);
-                sendEmail = (int.Parse(dtShift.Rows[0]["SendEmail"].ToString()) > 0);
-                date = DateTime.Parse(dtShift.Rows[0]["Datum"].ToString());
-                beginHour = int.Parse(dtShift.Rows[0]["Beginn"].ToString());
-                endHour = int.Parse(dtShift.Rows[0]["Ende"].ToString());
-            }
-            else if (shiftContactId == 0)
+            if (shiftContactId == 0 && shiftId == 0)
             {
                 builder.Append(MelBoxWeb.HtmlAlert(2, "Kein gültiger Empfänger ausgewählt", "Die Bereitschaft kann nur einem gültigen Empänger zugeteilt werden."));
                 return builder.ToString();
             }
-            else
+
+            if (shiftContactId != 0 )
             {
                 //neue Bereitschaftdaten erstellen
                 DataTable dtContact = Program.Sql.GetViewContactInfo(shiftContactId);
@@ -826,6 +814,24 @@ namespace MelBox2
                     beginHour = MelBoxSql.ShiftStandardStartTime(date).Hour;
                     endHour = MelBoxSql.ShiftStandardEndTime(date).Hour;
                 }
+            }
+
+            if (shiftId != 0)
+            {
+                //Bestandsdaten in Formular laden
+                DataTable dtShift = Program.Sql.GetViewShift(shiftId);
+
+                if (shiftContactId == 0)
+                {
+                    shiftContactId = int.Parse(dtShift.Rows[0]["ContactId"].ToString());
+                    name = dtShift.Rows[0]["Name"].ToString();
+                    sendSms = (int.Parse(dtShift.Rows[0]["SendSms"].ToString()) > 0);
+                    sendEmail = (int.Parse(dtShift.Rows[0]["SendEmail"].ToString()) > 0);
+                }
+
+                date = DateTime.Parse(dtShift.Rows[0]["Datum"].ToString());
+                beginHour = int.Parse(dtShift.Rows[0]["Beginn"].ToString());
+                endHour = int.Parse(dtShift.Rows[0]["Ende"].ToString());
             }
             #endregion
 

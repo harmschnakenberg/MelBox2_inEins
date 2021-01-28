@@ -54,7 +54,7 @@ namespace MelBox2
                 Sql.InsertMessageRec("Testnachricht am " + DateTime.Now.Date , 4915142265412);
 
                 //Auskommentiert für Test WebServer
-                Gsm.Connect();
+             //   Gsm.Connect();
 
 #if DEBUG
                 Console.WriteLine("\r\nDEBUG Mode: es wird keine StartUp-Info an MelBox2-Admin gesendet.");

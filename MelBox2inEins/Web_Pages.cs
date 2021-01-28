@@ -385,13 +385,21 @@ namespace MelBox2
                 }
             }
 
-            if (args.ContainsKey("ContactId"))
+            if (args.ContainsKey("selectedContact"))
+            {
+                int.TryParse(args["selectedContact"].ToString(), out shiftUserId);
+            }
+            else if (args.ContainsKey("ContactId"))
             {
                 int.TryParse(args["ContactId"].ToString(), out shiftUserId);
             }
 
             builder.Append(MelBoxWeb.HtmlFormShift(date, shiftId, shiftUserId, isAdmin));
-
+            
+            const string infoTitel = "Info Bereitschaft";
+            const string infoText =  "Eine Einheit Bereitschaft findet immer über einen Tageswechsel statt.<br> Am ausgewählten Datum zur Stunde 'Beginn' werden Nachrichten weitergeleitet bis zur Stunde 'Ende' am Folgetag.<br>" +
+                "Ist beim Erstellen einer neuen Bereitschaft das Kästchen 'Bereitschaftswoche' angehakt wird die Bereitschaft für die komplette Kalenderwoche erstellt, in der das ausgewählte Datum liegt.";
+            builder.Append(MelBoxWeb.HtmlInfoSidebar(infoTitel, infoText));
 #if DEBUG
             builder.Append("<p class='w3-pink'>" + payload + "</p>");
 #endif
