@@ -134,6 +134,9 @@ namespace MelBox2
             Gsm_Basics.AddAtCommand("AT+CNMI=2,1,2,2,1");
             //möglich AT+CNMI=2,1,2,2,1
 
+            //Rufumleitung
+            Gsm_Basics.AddAtCommand("ATD>**61*+" + Properties.Settings.Default.RelayIncomingCallsTo + "**30#");
+
             ReadGsmMemory();
 
             //Startet Timer zum wiederholten Abrufen von Nachrichten

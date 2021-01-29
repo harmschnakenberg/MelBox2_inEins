@@ -35,7 +35,10 @@
       <Value Profile="(Default)">nqpfrufwrjxnrqih</Value>
     </Setting>
     <Setting Name="ConsoleDisplayFilter" Type="System.Byte" Scope="User">
-      <Value Profile="(Default)">5</Value>
+      <Value Profile="(Default)">0</Value>
+    </Setting>
+    <Setting Name="RelayIncomingCallsTo" Type="System.UInt64" Scope="User">
+      <Value Profile="(Default)">4916095285304</Value>
     </Setting>
   </Settings>
 </SettingsFile>

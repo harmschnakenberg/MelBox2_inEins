@@ -138,13 +138,25 @@ namespace MelBox2.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("5")]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
         public byte ConsoleDisplayFilter {
             get {
                 return ((byte)(this["ConsoleDisplayFilter"]));
             }
             set {
                 this["ConsoleDisplayFilter"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("4916095285304")]
+        public ulong RelayIncomingCallsTo {
+            get {
+                return ((ulong)(this["RelayIncomingCallsTo"]));
+            }
+            set {
+                this["RelayIncomingCallsTo"] = value;
             }
         }
     }

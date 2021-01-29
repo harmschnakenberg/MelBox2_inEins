@@ -169,8 +169,8 @@ namespace MelBox2
                         return;
                     }
 
-                    Console.WriteLine("Warte 4 sec. bis zum nächsten Verbindunggsversuch...");
-                    Thread.Sleep(4000);
+                    Console.WriteLine("Warte 5 sec. bis zum nächsten Verbindunggsversuch...");
+                    Thread.Sleep(5000);
                 }
             }
 

@@ -93,13 +93,17 @@ namespace MelBox2
         private static string HtmlPageCaption(string caption)
         {
             StringBuilder builder = new StringBuilder();
-
-            builder.Append("<center>\n");
-            builder.Append(" <div class='w3-container " + MyStyle.Panel + " w3-margin-bottom'>\n");
-            builder.Append("  <h1>MelBox2 - " + caption + "</h1>\n");
-            builder.Append("  <input form='form1' type='hidden' name='pageTitle' value='" + caption + "'>\n");
+               
+            builder.Append("<div class='w3-row " + MyStyle.Panel + " w3-margin-bottom'>\n");
+            builder.Append(" <div class='w3-col s1'>&nbsp;</div>\n");
+            builder.Append(" <div class='w3-col s10'><center><h1>MelBox2 - " + caption + "</h1></center></div>\n");
+            builder.Append(" <div class='w3-col s1'>\n");
+            builder.Append("  <div class='" + MyStyle.PanelLight + " w3-margin w3-round-xlarge w3-card'>\n");
+            builder.Append("   <div class='w3-grey' style='width:" + GlobalProperty.GsmSignalQuality + "%'>&nbsp;</div>\n");
+            builder.Append("  </div>\n");
             builder.Append(" </div>\n");
-            builder.Append("</center>\n\n");
+            builder.Append("</div>\n");
+            builder.Append("  <input form='form1' type='hidden' name='pageTitle' value='" + caption + "'>\n\n");
 
             return builder.ToString();
         }
