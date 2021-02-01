@@ -891,8 +891,8 @@ namespace MelBox2
             dt.Columns.Add("Parameter", typeof(string));
             dt.Columns.Add("Wert", typeof(string));
 
-            string para = "Verbunden mit GSM-Modem";
-            string value = GlobalProperty.ConnectedToModem ? "verbunden" : "keine Verbindung";
+            string para = "Status GSM-Modem";
+            string value = GlobalProperty.ConnectedToModem ? "angeschlossen" : "keine Verbindung";
             dt.Rows.Add(para, value);
 
             para = "SIM-Schubfach erkannt";
@@ -905,6 +905,10 @@ namespace MelBox2
 
             para = "Registrierung Mobilfunknetz";
             value = GlobalProperty.NetworkRegistrationStatus;
+            dt.Rows.Add(para, value);
+
+            para = "Mobilfunkanbieter";
+            value = GlobalProperty.NetworkProviderName;
             dt.Rows.Add(para, value);
 
             para = "Mobilfunknetz Empfangsqualität";

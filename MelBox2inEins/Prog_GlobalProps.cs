@@ -19,6 +19,8 @@ namespace MelBox2
 
 		public static string NetworkRegistrationStatus { get; set; } = "noch nicht erfasst";
 
+		public static string NetworkProviderName { get; set; } = "unbekannt";
+
 		public static int GsmSignalQuality { get; set; } = 0;
 
 		public static int SmsPendingReports { get; set; } = 0;
@@ -32,13 +34,26 @@ namespace MelBox2
 			const int tabPos = 32;
 			Console.WriteLine("PROGRAMM - STATUS");
 
-			Console.Write("Verbunden mit GSM-Modem");
+			Console.Write("Status GSM-Modem");
 			Console.SetCursorPosition(tabPos, Console.CursorTop);
 			Console.WriteLine(ConnectedToModem ? "verbunden" : "keine Verbindung");
 
-			Console.Write("SIM-Schublade erkannt");
+			Console.Write("Status SIM-Schublade");
 			Console.SetCursorPosition(tabPos, Console.CursorTop);
-			Console.WriteLine(SimHolderDetected ? "erkannt" : "nicht erkannt");
+			//string value = "unbekannt";
+   //         switch (SimHolderDetected)
+   //         {
+			//	case 0:
+			//		value = "nicht erkannt";
+			//		break;
+			//	case 1:
+			//		value = "erkannt";
+			//		break;
+			//	case 2:
+			//		value = "";
+			//		break;
+   //         }
+            Console.WriteLine(SimHolderDetected ? "erkannt" : "nicht erkannt");
 
 			Console.Write("Eigene Telefonnummer");
 			Console.SetCursorPosition(tabPos, Console.CursorTop);
@@ -47,6 +62,10 @@ namespace MelBox2
 			Console.Write("Registrierung Mobilfunknetz");
 			Console.SetCursorPosition(tabPos, Console.CursorTop);
 			Console.WriteLine(NetworkRegistrationStatus);
+
+			Console.Write("Mobilfunknetzanbieter");
+			Console.SetCursorPosition(tabPos, Console.CursorTop);
+			Console.WriteLine(NetworkProviderName);
 
 			Console.Write("Mobilfunknetz Empfangsqualität");
 			Console.SetCursorPosition(tabPos, Console.CursorTop);

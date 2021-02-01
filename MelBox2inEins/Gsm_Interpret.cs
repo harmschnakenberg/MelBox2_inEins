@@ -114,7 +114,7 @@ namespace MelBox2
                 Regex r = new Regex(@"\+CNUM: ""(.+)"",""(.+)"",(.*)"); //SAMBA75
                 Match m = r.Match(input);
 
-                Console.WriteLine(input);
+                //Console.WriteLine(input);
                 while (m.Success)
                 {
                     string name = m.Groups[1].Value;
@@ -181,6 +181,8 @@ namespace MelBox2
                                 break;
                             case 1:
                                 GlobalProperty.NetworkRegistrationStatus = "registriert";
+
+                                SetupGsm(null, null);
                                 break;
                             case 2:
                                 GlobalProperty.NetworkRegistrationStatus = "Netzsuche";
@@ -203,6 +205,21 @@ namespace MelBox2
                 {
                     Gsm_Basics.RaiseGsmEvent(GsmEventArgs.Telegram.GsmError, "Das GSM-Modem ist nicht im Mobilfunknetz angemeldet.");
                 }
+            }
+
+            //Anbietername Mobilfunknetz
+            if (input.Contains("+COPS:"))
+            {
+                Regex r = new Regex(@"\+COPS: (\d),(\d),""(.*)"""); //z.B. +COPS: 0,0,"T-Mobile D"
+
+                Match m = r.Match(input);
+
+                while (m.Success)
+                {
+                    GlobalProperty.NetworkProviderName = m.Groups[3].Value;
+                   
+                    m = m.NextMatch();
+                }     
             }
 
             #endregion

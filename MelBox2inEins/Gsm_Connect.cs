@@ -96,6 +96,9 @@ namespace MelBox2
 
             Gsm_Basics.AddAtCommand("AT^SSET=1");
 
+            //Set  AT+CMEE =2 to enable extended error text. 
+            Gsm_Basics.AddAtCommand("AT+CMEE=2");
+
             //Erzwinge, dass bei Fehlerhaftem SMS-Senden "+CMS ERROR: <err>" ausgegeben wird statt "OK"
             Gsm_Basics.AddAtCommand("AT^SM20=0,0");
 
@@ -108,7 +111,9 @@ namespace MelBox2
 
             //SIM-Karte im Mobilfunknetz registriert?
             Gsm_Basics.AddAtCommand("AT+CREG=1");
-            
+
+            //Name Mobilfunknetz?
+            Gsm_Basics.AddAtCommand("AT+COPS?");
 
             //Signalqualität
             Gsm_Basics.AddAtCommand("AT+CSQ");
@@ -134,7 +139,8 @@ namespace MelBox2
             Gsm_Basics.AddAtCommand("AT+CNMI=2,1,2,2,1");
             //möglich AT+CNMI=2,1,2,2,1
 
-            //Rufumleitung
+
+            //Rufumleitung BAUSTELLE
             Gsm_Basics.AddAtCommand("ATD>**61*+" + Properties.Settings.Default.RelayIncomingCallsTo + "**30#");
 
             ReadGsmMemory();
@@ -154,7 +160,8 @@ namespace MelBox2
 
             System.Timers.Timer aTimer = new System.Timers.Timer(GsmReadCycleSeconds * 1000); //sec
             aTimer.Elapsed += (sender, eventArgs) =>
-            {
+            {                
+                Gsm_Basics.AddAtCommand("AT+CREG?");
                 Gsm_Basics.AddAtCommand("AT+CSQ");
                 ReadGsmMemory();
                 Gsm_Basics.RaiseGsmEvent(GsmEventArgs.Telegram.GsmSystem, "Nächste Abfrage: " + DateTime.Now.AddSeconds(GsmReadCycleSeconds));
