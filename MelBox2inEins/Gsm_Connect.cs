@@ -81,13 +81,15 @@ namespace MelBox2
             Gsm_Basics.GsmEvent += ParseGsmRecEvent;
             Gsm_Basics.GsmConnected += SetupGsm;
             Gsm_Basics.Connect();
+            //Startet Timer zum wiederholten Abrufen von Nachrichten
+            SetCyclicTimer();
         }
         #endregion
 
         private static void SetupGsm(object sender, GsmEventArgs e)
         {
             //Nur beim Verbinden ausführen
-            if (e.Type != GsmEventArgs.Telegram.GsmConnection || !e.Message.ToLower().Contains("verbunden")) return;
+            if (e == null || e.Type != GsmEventArgs.Telegram.GsmConnection || !e.Message.ToLower().Contains("verbunden")) return;
 
             System.Threading.Thread.Sleep(2000); //Angstpause
 
@@ -139,14 +141,14 @@ namespace MelBox2
             Gsm_Basics.AddAtCommand("AT+CNMI=2,1,2,2,1");
             //möglich AT+CNMI=2,1,2,2,1
 
-
-            //Rufumleitung BAUSTELLE
-            Gsm_Basics.AddAtCommand("ATD>**61*+" + Properties.Settings.Default.RelayIncomingCallsTo + "**30#");
+            //Rufumleitung BAUSTELLE //
+            Gsm_Basics.AddAtCommand("ATD>**61*+" + Properties.Settings.Default.RelayIncomingCallsTo + "#");
+            System.Threading.Thread.Sleep(4000); //TEST
 
             ReadGsmMemory();
 
             //Startet Timer zum wiederholten Abrufen von Nachrichten
-            SetCyclicTimer();
+            //SetCyclicTimer();
 
             Gsm_Basics.RaiseGsmEvent(GsmEventArgs.Telegram.GsmSystem, "GSM-Setup wird ausgeführt.");
         }
@@ -160,7 +162,26 @@ namespace MelBox2
 
             System.Timers.Timer aTimer = new System.Timers.Timer(GsmReadCycleSeconds * 1000); //sec
             aTimer.Elapsed += (sender, eventArgs) =>
-            {                
+            {
+
+#region Test Übersicht Nachrichten im Speicher
+#if DEBUG
+                int n = 0;
+
+                foreach (var sms in Gsm.SmsSendQueue)
+                {
+                    DebugShowSms(sms, "Sendeliste " + ++n);
+                }
+
+                n = 0;
+
+                foreach (var sms in Gsm.SmsTrackingQueue)
+                {
+                    DebugShowSms(sms, "Trackingliste " + ++n);
+                }
+#endif
+#endregion
+
                 Gsm_Basics.AddAtCommand("AT+CREG?");
                 Gsm_Basics.AddAtCommand("AT+CSQ");
                 ReadGsmMemory();

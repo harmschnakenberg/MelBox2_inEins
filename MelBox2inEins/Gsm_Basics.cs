@@ -15,7 +15,9 @@ namespace MelBox2
         private static SerialPort Port;
         const int maxConnectTrys = 7;
         static int currentConnectTrys = 0;
-        static readonly System.Timers.Timer sendTimer = new System.Timers.Timer(1000); //2000 funktioniert
+        static readonly System.Timers.Timer sendTimer = new System.Timers.Timer(2000); 
+        //2000 funktioniert, 
+        //bei 1000 wird die Nachricht wiederholt gesendet. Grund?
         #endregion
 
         #region Properties

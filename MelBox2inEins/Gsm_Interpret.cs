@@ -29,7 +29,7 @@ namespace MelBox2
             //COM-Antwort auf Gesendete SMS: Referenzzuweisung für Empfangsbestätigung
             if (input.Contains("+CMGS:") || input.Contains("+CMSS:")) //
             {
-                ParseSmsReference(input);
+                ParseSmsReference(input);                
             }
 
             //Liste der Nachrichten im GSM-Speicher
@@ -37,16 +37,11 @@ namespace MelBox2
             {
                 //Empfangsbestätigungen lesen
                 ParseStatusReport(input);
+                SmsDeletePending();
 
                 //Empfangen neuer Nachrichten
                 ParseSmsMessages(input);
-
-                //Zum Löschen anstehende SMSen aus GSM-Speicher löschen
-                for (int i = 0; i < SmsToDelete.Count; i++)
-                {
-                    SmsDelete(SmsToDelete[0]);
-                    SmsToDelete.Remove(SmsToDelete[0]);
-                }
+                SmsDeletePending();
             }
 
             //Indikator neuen Statusreport empfangen
@@ -224,7 +219,6 @@ namespace MelBox2
 
             #endregion
         }
-
-      
+              
     }
 }

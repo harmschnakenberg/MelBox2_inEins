@@ -40,15 +40,18 @@ namespace MelBox2
 					break;
 				case GsmEventArgs.Telegram.SmsRec:
 					Console.ForegroundColor = ConsoleColor.Cyan;
-					Sql.Log(MelBoxSql.LogTopic.Sms, MelBoxSql.LogPrio.Info, "Empfangen:" + e.Message);
+					if ((ConsoleDisplayBlock & (byte)e.Type) == 0)
+						Sql.Log(MelBoxSql.LogTopic.Sms, MelBoxSql.LogPrio.Info, "Empfangen: " + e.Message);
 					break;
 				case GsmEventArgs.Telegram.SmsStatus:
 					Console.ForegroundColor = ConsoleColor.DarkCyan;
-					Sql.Log(MelBoxSql.LogTopic.Sms, MelBoxSql.LogPrio.Info, "Status: " + e.Message);
+					if ((ConsoleDisplayBlock & (byte)e.Type) == 0)
+						Sql.Log(MelBoxSql.LogTopic.Sms, MelBoxSql.LogPrio.Info, "Status: " + e.Message);
 					break;
 				case GsmEventArgs.Telegram.SmsSent:
 					Console.ForegroundColor = ConsoleColor.DarkBlue;
-					Sql.Log(MelBoxSql.LogTopic.Sms, MelBoxSql.LogPrio.Info, "Gesendet: " + e.Message);
+					if ((ConsoleDisplayBlock & (byte)e.Type) == 0)
+						Sql.Log(MelBoxSql.LogTopic.Sms, MelBoxSql.LogPrio.Info, "Gesendet: " + e.Message);
 					break;
 				default:
 					Console.ForegroundColor = ConsoleColor.White;
@@ -59,7 +62,6 @@ namespace MelBox2
 				Console.WriteLine(e.Type.ToString() + ":\t" + e.Message);
 
 			Console.ForegroundColor = ConsoleColor.Gray;
-
 		}
 
 		static void HandleSmsRecievedEvent(object sender, Sms e)
@@ -70,10 +72,22 @@ namespace MelBox2
 			//Neue Nachricht in DB speichern
 			Sql.InsertMessageRec(e.Message, e.Phone);
 
-			if (e.Message.ToLower().StartsWith(GlobalProperty.SmsRouteTestTrigger.ToLower()))
+			if ( e.Message.Trim().ToLower() == GlobalProperty.SmsRouteTestTrigger.ToLower() )
 			{
 				//SMS mit 'MeldeAbruf' Empfangen
-				Gsm.SmsSend(e.Phone, e.Message + " um " + DateTime.Now);
+
+				//if (!Gsm.SmsSendQueue.Contains(e))
+				{
+					//Gsm.SmsSend(e.Phone, e.Message + " um " + DateTime.Now);
+					//Gsm.SmsToDelete.Add(e.Index);
+					//Gsm.SmsDeletePending();
+
+					const string ctrlz = "\u001a";
+
+					//Senden
+					Gsm_Basics.AddAtCommand("AT+CMGS=\"+" + e.Phone + "\"\r");
+					Gsm_Basics.AddAtCommand(e.Message + " um " + DateTime.Now + ctrlz);
+				}
 			}
 			else
 			{

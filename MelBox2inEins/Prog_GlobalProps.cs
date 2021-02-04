@@ -53,6 +53,7 @@ namespace MelBox2
 			//		value = "";
 			//		break;
    //         }
+
             Console.WriteLine(SimHolderDetected ? "erkannt" : "nicht erkannt");
 
 			Console.Write("Eigene Telefonnummer");

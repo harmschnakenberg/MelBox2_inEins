@@ -42,6 +42,7 @@ namespace MelBox2
         /// </summary>
         public static void ReadGsmMemory()
         {
+            SmsDeletePending();
             Gsm_Basics.AddAtCommand("AT+CMGL=\"ALL\"");
         }
         #endregion
@@ -87,8 +88,15 @@ namespace MelBox2
                 return;
             }
 
+            Console.WriteLine("### zu sendende SMSen {0} ###", SmsSendQueue.Count);
+
+            foreach(Sms sms in SmsSendQueue)
+            {
+                Console.WriteLine("Index: {0}\tAn: {1}\t{2}",sms.Index, sms.Phone, sms.Message);
+            }
+                        
             CurrentSmsSend = SmsSendQueue.FirstOrDefault();
-            SmsSendQueue.RemoveAt(0);
+            SmsSendQueue.Remove(SmsSendQueue.FirstOrDefault()); //.RemoveAt(0);
             GlobalProperty.LastSmsSend = CurrentSmsSend.Message;
 
             const string ctrlz = "\u001a";
@@ -114,16 +122,25 @@ namespace MelBox2
         /// <param name="smsId">Id der SMS im GSM-Speicher</param>
         static void SmsDelete(int smsId)
         {
+            
             Gsm_Basics.RaiseGsmEvent(GsmEventArgs.Telegram.SmsStatus, "Die SMS mit der Id " + smsId + " wird gelöscht.");
+            
 
-//#if DEBUG
-//            //nicht aus Modemspeicher löschen
-//#else
             string cmd = "AT+CMGD=" + smsId;
             //if (Gsm_Com.ATCommandQueue.Contains(cmd)) return;
             Gsm_Basics.AddAtCommand(cmd);
-//#endif        
+      
             }
+
+        public static void SmsDeletePending()
+        {
+            //Zum Löschen anstehende SMSen aus GSM-Speicher löschen
+            for (int i = 0; i < SmsToDelete.Count; i++)
+            {
+                SmsDelete(SmsToDelete[0]);
+                SmsToDelete.Remove(SmsToDelete[0]);
+            }
+        }
 
 #endregion
 

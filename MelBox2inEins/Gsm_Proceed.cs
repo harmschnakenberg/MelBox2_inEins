@@ -9,6 +9,19 @@ namespace MelBox2
 {
     public partial class Gsm
     {
+        public static void DebugShowSms(Sms sms, string caption)
+        {
+            Console.WriteLine("\r\n\r\n###_DEBUG_SMS_IN_MEMORY_###");
+            Console.WriteLine(caption);
+            Console.WriteLine("SMS Referenz: {0}", sms.MessageReference);
+            Console.WriteLine("SMS Index: {0}", sms.Index);
+            Console.WriteLine("SMS Status: {0}", sms.Status);
+            Console.WriteLine("SMS Phone: {0}", sms.Phone);
+            Console.WriteLine("SMS Name: {0}", sms.Name);
+            Console.WriteLine("SMS Zeit: {0}", sms.SmsProviderTimeStamp);
+            Console.WriteLine("SMS Nachricht:\r\n{0}", sms.Message);
+        }
+
         /// <summary>
         /// Lese SMS-Textnachricht aus Modemspeicher, melde und lösche die Nachricht anschließend.
         /// </summary>
@@ -31,7 +44,7 @@ namespace MelBox2
                 #endregion
 
                 Regex r = new Regex(@"\+CMGL: (\d+),""(.+)"",""(.+)"",(.*),""(.+)""\r\n(.+)\r\n"); //SAMBA75
-                //Regex r2 = new Regex(@"(\d+),(.+\s.+),(.+),(.+),(.+),(.+),(.+)\n{2}"); //SAMSUNG GALAXY A3
+                //Regex r = new Regex(@"(\d+),(.+\s.+),(.+),(.+),(.+),(.+),(.+)\n{2}"); //SAMSUNG GALAXY A3
                 Match m = r.Match(input);
 
                 while (m.Success)
@@ -47,11 +60,16 @@ namespace MelBox2
                     if (sms.Status == "REC UNREAD" || sms.Status == "REC READ")
                     {
                         RaiseSmsRecievedEvent(sms);
-                        SmsToDelete.Add(sms.Index);
+#if DEBUG
+                        DebugShowSms(sms, "SMS von Modem");
+#endif
+                        SmsToDelete.Add(sms.Index);                        
                     }
 
                     m = m.NextMatch();
                 }
+
+                SmsDeletePending();
             }
             catch (Exception ex)
             {
@@ -92,6 +110,7 @@ namespace MelBox2
 
                     //Für Wiedererkennung Werte aus 'Orignal-SMS' einfügen 
                     Sms smsTracking = SmsTrackingQueue.Find(x => x.MessageReference == smsReport.MessageReference);
+
                     if (smsTracking != null)
                     {
                         smsReport.Message = smsTracking.Message;
@@ -104,11 +123,16 @@ namespace MelBox2
                     if (smsReport.Status == "REC UNREAD" || smsReport.Status == "REC READ")
                     {
                         RaiseSmsStatusreportEvent(smsReport);
-                        SmsToDelete.Add(smsReport.Index);
+#if DEBUG
+                        DebugShowSms(smsReport, "Sendebestätigung von Modem");
+#endif
+                        SmsToDelete.Add(smsReport.Index);                       
                     }
 
                     m = m.NextMatch();
                 }
+
+                SmsDeletePending();
             }
             catch (Exception ex)
             {
@@ -141,10 +165,10 @@ namespace MelBox2
                     {
                         //Fehler: Empfangsbestätigung, aber keine SMS gesendet
                         Gsm_Basics.RaiseGsmEvent(GsmEventArgs.Telegram.GsmError, string.Format("Erhaltene Referenz {0} konnte keiner gesendeten Nachricht zugewiesen werden.", trackingId), trackingId);
-                        continue;
+                        break;
                     }
 
-                    Console.WriteLine("Tracking-ID {0} für Nachricht an:\r\n+{1}\r\n{2}", trackingId, CurrentSmsSend.Phone, CurrentSmsSend.Message);
+                    Console.WriteLine("Tracking-ID {0} erfasst für Nachricht an:\r\n+{1}\r\n{2}", trackingId, CurrentSmsSend.Phone, CurrentSmsSend.Message);
 
                     CurrentSmsSend.MessageReference = trackingId;
                     CurrentSmsSend.SmsProviderTimeStamp = DateTime.UtcNow; // Timeout Sendungsverfolgung
@@ -156,8 +180,9 @@ namespace MelBox2
 
                     //Wieder frei machen für nächste zu sendende SMS
                     CurrentSmsSend = null;
+
                     //Nächste Nachricht senden
-                    SmsSendFromList();
+                    //SmsSendFromList();
                 }
 
                 m = m.NextMatch();
