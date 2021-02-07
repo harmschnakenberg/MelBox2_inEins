@@ -96,6 +96,9 @@ namespace MelBox2
             //Test, ob Modem antwortet
             Gsm_Basics.AddAtCommand("AT");
 
+            //Sicherstellen, dass die ANfrage in der Antwort wiederholt wird.
+            //Gsm_Basics.AddAtCommand("ATE1");
+
             Gsm_Basics.AddAtCommand("AT^SSET=1");
 
             //Set  AT+CMEE =2 to enable extended error text. 
@@ -120,8 +123,14 @@ namespace MelBox2
             //Signalqualität
             Gsm_Basics.AddAtCommand("AT+CSQ");
 
-            //TEST Zeit zwischen setzen und Abfragen notwendig?
+            //Nicht getestet: Zeit zwischen setzen und Abfragen notwendig?
             Gsm_Basics.AddAtCommand("AT+CREG?");
+
+            //SMS-Service-Center Adresse
+            Gsm_Basics.AddAtCommand("AT+CSCA?");
+
+            //Modemhersteller
+            Gsm_Basics.AddAtCommand("AT+CGMI");
 
             //Textmode
             Gsm_Basics.AddAtCommand("AT+CMGF=1");

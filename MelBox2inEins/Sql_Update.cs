@@ -43,7 +43,7 @@ namespace MelBox2
                 { "@sendVia", sendVia },
                 { "@smsRef", smsReference },
                 { "@confirmStatus", sendStatus },
-                { "@confirmStatusOld", SendStatus.OnlyDb },
+                { "@confirmStatusOld", SendStatus.SetToSent },
                 { "@sentTime", MelBoxSql.SqlTime(sendTime) },
             };
 

@@ -31,6 +31,8 @@ namespace MelBox2
 				case GsmEventArgs.Telegram.GsmSignal:
 					Console.ForegroundColor = ConsoleColor.Yellow;
 					GlobalProperty.GsmSignalQuality = (int)e.Payload;
+					if (GlobalProperty.GsmSignalQuality < 30)
+						Sql.Log(MelBoxSql.LogTopic.Sms, MelBoxSql.LogPrio.Warning, "Mobilfunksignal schwach: " + GlobalProperty.GsmSignalQuality + "%");
 					break;
 				case GsmEventArgs.Telegram.GsmRec:
 					Console.ForegroundColor = ConsoleColor.DarkGreen;

@@ -164,7 +164,7 @@ namespace MelBox2
                     if (CurrentSmsSend == null)
                     {
                         //Fehler: Empfangsbestätigung, aber keine SMS gesendet
-                        Gsm_Basics.RaiseGsmEvent(GsmEventArgs.Telegram.GsmError, string.Format("Erhaltene Referenz {0} konnte keiner gesendeten Nachricht zugewiesen werden.", trackingId), trackingId);
+                        Gsm_Basics.RaiseGsmEvent(GsmEventArgs.Telegram.GsmError, string.Format("Erhaltene Empfangsbestätigung {0} konnte nicht zugewiesen werden.", trackingId), trackingId);
                         break;
                     }
 

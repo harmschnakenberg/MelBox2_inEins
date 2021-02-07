@@ -296,8 +296,6 @@ namespace MelBox2
                 //Send data to whom ever interested
                 RaiseGsmEvent(GsmEventArgs.Telegram.GsmRec, answer);
             }
-
-           // PermissionToSend = true;
         }
 
         /// <summary>

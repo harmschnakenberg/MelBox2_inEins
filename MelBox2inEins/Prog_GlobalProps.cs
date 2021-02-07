@@ -17,6 +17,10 @@ namespace MelBox2
 
 		public static ulong OwnPhone { get; set; }
 
+		public static string ModemManufacturer { get; set; } = "unbekannt";
+
+		public static string NetworkServiceCenterNumber { get; set; } = "unbekannt";
+
 		public static string NetworkRegistrationStatus { get; set; } = "noch nicht erfasst";
 
 		public static string NetworkProviderName { get; set; } = "unbekannt";
@@ -37,6 +41,10 @@ namespace MelBox2
 			Console.Write("Status GSM-Modem");
 			Console.SetCursorPosition(tabPos, Console.CursorTop);
 			Console.WriteLine(ConnectedToModem ? "verbunden" : "keine Verbindung");
+
+			Console.Write("Modemfabrikat");
+			Console.SetCursorPosition(tabPos, Console.CursorTop);
+			Console.WriteLine(ModemManufacturer);
 
 			Console.Write("Status SIM-Schublade");
 			Console.SetCursorPosition(tabPos, Console.CursorTop);

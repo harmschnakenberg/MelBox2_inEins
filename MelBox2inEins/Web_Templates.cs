@@ -361,6 +361,45 @@ namespace MelBox2
                         case "Letzte_Nachricht":                            
                             builder.Append(DateTime.Parse(r[c.ColumnName].ToString()).ToLocalTime());
                             break;
+                        case "Via":
+                            int.TryParse(r[c.ColumnName].ToString(), out int sendDevice);
+                            switch (sendDevice)
+                            {
+                                case 1:
+                                    builder.Append("<i class='w3-xxlarge material-icons-outlined'>smartphone</i>");
+                                    break;
+                                case 2:
+                                    builder.Append("<i class='w3-xxlarge material-icons-outlined'>email</i>");
+                                    break;                                
+                                default:
+                                    builder.Append(sendDevice);
+                                    break;
+                            }
+                            break;
+                        case "Sendestatus":
+                            int.TryParse(r[c.ColumnName].ToString(), out int sendStatus);
+                            switch (sendStatus)
+                            {                               
+                                case 0: //OnlyDb,
+                                    builder.Append("<i>nur Datenbank</i>");
+                                    break;
+                                case 1: //SetTo Sent,
+                                    builder.Append("<i>bereit zum Absenden</i>");
+                                    break;
+                                case 2: //Pending,
+                                    builder.Append("<i>erwarte Empfangsbestätigung</i>");
+                                    break;
+                                case 3:  //SendAgain,
+                                    builder.Append("<i>Senden wiederholen</i>");
+                                    break;
+                                case 4: //SendAbborted,
+                                    builder.Append("<i>Senden abgebrochen</i>");
+                                    break;
+                                case 5: //SentSuccess
+                                    builder.Append("<i>Empfangsbestätigung erhalten</i>");
+                                    break;
+                            }
+                            break;
                         default:
                             builder.Append(r[c.ColumnName]);
                             break;

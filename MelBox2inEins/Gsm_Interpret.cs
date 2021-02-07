@@ -101,6 +101,7 @@ namespace MelBox2
                     RaiseGsmSignalQualityEvent(new GsmEventArgs(GsmEventArgs.Telegram.GsmSignal, string.Format("GSM Signalstärke {0:00}%", qualityPercent), qualityPercent));
                     m = m.NextMatch();
                 }
+
             }
 
             //Eigene Rufnummer lesen
@@ -117,6 +118,33 @@ namespace MelBox2
 
                     Gsm_Basics.RaiseGsmEvent(GsmEventArgs.Telegram.GsmOwnPhone, string.Format("Eigene Nummer: '{0}' {1}", name, strPhone), GsmConverter.StrToPhone(strPhone));
                     m = m.NextMatch();
+                }
+            }
+
+            //BAUSTELLE
+            //Herstellername Modem
+            if (input.Contains("+CGMI:"))
+            {
+                Regex r = new Regex(@"\+CGMI\n(.+)");
+                Match m = r.Match(input);
+
+                if (m.Success)
+                {
+                    GlobalProperty.ModemManufacturer = m.Groups[1].Value;                    
+                }               
+            }
+
+            //BAUSTELLE
+            //SMS Service-Center Adresse
+            if (input.Contains("+CSCA: \"(.+)\",(\\d+)"))
+            {
+                //+CSCA: "+491710760000",145
+                Regex r = new Regex(@"\+CSCA: ""(.+)"",(\d+)");
+                Match m = r.Match(input);
+
+                if (m.Success)
+                {
+                    GlobalProperty.NetworkServiceCenterNumber = m.Groups[1].Value;
                 }
             }
 
