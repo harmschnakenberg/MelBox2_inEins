@@ -378,27 +378,34 @@ namespace MelBox2
                             break;
                         case "Sendestatus":
                             int.TryParse(r[c.ColumnName].ToString(), out int sendStatus);
+
+                            builder.Append("<i class='w3-xxlarge w3-disabled material-icons-outlined'>");
+
                             switch (sendStatus)
-                            {                               
+                            {
+                               
                                 case 0: //OnlyDb,
-                                    builder.Append("<i>nur Datenbank</i>");
+                                    builder.Append("storage");
                                     break;
                                 case 1: //SetTo Sent,
-                                    builder.Append("<i>bereit zum Absenden</i>");
+                                    builder.Append("not_started");
                                     break;
                                 case 2: //Pending,
-                                    builder.Append("<i>erwarte Empfangsbestätigung</i>");
+                                    builder.Append("radar");
                                     break;
                                 case 3:  //SendAgain,
-                                    builder.Append("<i>Senden wiederholen</i>");
+                                    builder.Append("replay");
                                     break;
                                 case 4: //SendAbborted,
-                                    builder.Append("<i>Senden abgebrochen</i>");
+                                    builder.Append("unpublished");
                                     break;
                                 case 5: //SentSuccess
-                                    builder.Append("<i>Empfangsbestätigung erhalten</i>");
+                                    builder.Append("check_circle");
                                     break;
                             }
+
+                            builder.Append("</i>");
+                            
                             break;
                         default:
                             builder.Append(r[c.ColumnName]);
