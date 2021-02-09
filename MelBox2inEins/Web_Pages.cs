@@ -491,6 +491,24 @@ namespace MelBox2
                     Program.Sql.Log(MelBoxSql.LogTopic.Shift, MelBoxSql.LogPrio.Warning, msg);
                 }
             }
+
+            #region Tabelle anzeigen
+            Dictionary<string, string> action = new Dictionary<string, string>
+            {
+                { "/shift/edit", "Bereitschaft bearbeiten" }
+            };
+
+            if (isAdmin)
+            {
+                action.Add("/shift/delete", "Bereitschaft löschen");
+            }
+
+            DataTable dt = Program.Sql.GetViewShift();
+           
+            builder.Append(MelBoxWeb.HtmlTableShift(dt, 0, logedInUserId, isAdmin));
+            builder.Append(MelBoxWeb.HtmlEditor(action));
+            #endregion
+
 #if DEBUG
             builder.Append("<p class='w3-pink'>" + payload + "</p>");
 #endif

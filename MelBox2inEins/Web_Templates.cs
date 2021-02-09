@@ -380,10 +380,8 @@ namespace MelBox2
                             int.TryParse(r[c.ColumnName].ToString(), out int sendStatus);
 
                             builder.Append("<i class='w3-xxlarge w3-disabled material-icons-outlined'>");
-
                             switch (sendStatus)
-                            {
-                               
+                            {                               
                                 case 0: //OnlyDb,
                                     builder.Append("storage");
                                     break;
