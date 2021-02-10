@@ -242,7 +242,7 @@ namespace MelBox2
         /// <param name="phoneTo">Mobiltelefonnumer</param>
         /// <param name="smsReference">Vom Modem vergebene Referneznumme für dei Sendungsverfolgung</param>
         /// <param name="smsSendStatus">von Modem: 0..31 success, 32..63 pending, 64..127 aborted; von mir: >127 für intern</param>
-        public void InsertMessageSent(string message, ulong phoneTo, int smsReference, byte smsSendStatus = 255)
+        public void InsertMessageSent(string message, ulong phoneTo, int smsReference, byte smsSendStatus = 128)
         {
             int contentId = GetContentId(message);
             int contactId = GetContactId("", phoneTo, "", message);
@@ -255,8 +255,10 @@ namespace MelBox2
                 sendStatus = SendStatus.Pending;
             else if (smsSendStatus < 128)
                 sendStatus = SendStatus.SendAbborted;
-            else if (smsSendStatus >= 128)
+            else if (smsSendStatus < 255)
                 sendStatus = SendStatus.SetToSent;
+            else if (smsSendStatus == 255)
+                sendStatus = SendStatus.OnlyDb;
 
             InsertMessageSent(contentId, contactId, SendWay.Sms, smsReference, sendStatus);
         }

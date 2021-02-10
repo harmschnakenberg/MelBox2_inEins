@@ -155,7 +155,7 @@ namespace MelBox2
                     InsertMessageRec("Datenbank neu erstellt.", 0, "smszentrale@kreutztraeger.de");
 
                  // InsertMessageSent(1, 1, SendWay.Unknown, 0, SendStatus.OnlyDb);
-                    InsertMessageSent("Datenbank neu erstellt.", 0, 0);
+                    InsertMessageSent("Datenbank neu erstellt.", 0, 0, 255);
                    
                     //Dummy
                     InsertShift(7, DateTime.Now.AddDays(-2));

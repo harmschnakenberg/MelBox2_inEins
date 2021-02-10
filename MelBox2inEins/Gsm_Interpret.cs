@@ -135,8 +135,8 @@ namespace MelBox2
             }
 
             //BAUSTELLE
-            //SMS Service-Center Adresse
-            if (input.Contains("+CSCA: \"(.+)\",(\\d+)"))
+            //SMS Service-Center Adresse // +CSCA: "+491710760000",145
+            if (input.Contains("+CSCA:"))
             {
                 //+CSCA: "+491710760000",145
                 Regex r = new Regex(@"\+CSCA: ""(.+)"",(\d+)");

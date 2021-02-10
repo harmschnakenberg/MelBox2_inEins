@@ -107,6 +107,7 @@ namespace MelBox2
                 {
                     //Neuen Eintrag erstellen
                     contactId = InsertContact(name, null, 1, email, phone, 0, false, false);
+                    Email.Send(Email.MelBox2Admin, string.Format("Es wurde ein neuer Kontakt in die Datenbank aufgenommen\r\nName: {2}\r\nEmail: {0}\r\nTelefon: +{1}\r\nNachricht: {3}\r\n\r\nBitte den Kontakt in der Datenbank vervollständigen.", email, phone, name, message), "MelBox2 - neuer Kontakt");
                 }
 
                 return contactId;

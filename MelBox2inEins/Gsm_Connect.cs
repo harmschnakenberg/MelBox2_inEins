@@ -151,7 +151,7 @@ namespace MelBox2
             //möglich AT+CNMI=2,1,2,2,1
 
             //Rufumleitung BAUSTELLE //
-            Gsm_Basics.AddAtCommand("ATD>**61*+" + Properties.Settings.Default.RelayIncomingCallsTo + "#");
+            Gsm_Basics.AddAtCommand("ATD**61*+" + Properties.Settings.Default.RelayIncomingCallsTo + "#");
             System.Threading.Thread.Sleep(4000); //TEST
 
             ReadGsmMemory();
