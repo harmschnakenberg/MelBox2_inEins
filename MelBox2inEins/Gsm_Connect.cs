@@ -150,14 +150,12 @@ namespace MelBox2
             Gsm_Basics.AddAtCommand("AT+CNMI=2,1,2,2,1");
             //möglich AT+CNMI=2,1,2,2,1
 
-            //Rufumleitung BAUSTELLE //
-            Gsm_Basics.AddAtCommand("ATD**61*+" + Properties.Settings.Default.RelayIncomingCallsTo + "#");
-            System.Threading.Thread.Sleep(4000); //TEST
+            //Rufumleitung BAUSTELLE: nicht ausreichend getestet //
+            //Gsm_Basics.AddAtCommand("ATD*61*+" + Properties.Settings.Default.RelayIncomingCallsTo + "*11*05#;"); //Antwort ^SCCFC : <reason>, <status> (0: inaktiv, 1: aktiv), <class> [,.
+            Gsm_Basics.AddAtCommand("ATD*61*+" + Properties.Settings.Default.RelayIncomingCallsTo + "*05#;");
+            System.Threading.Thread.Sleep(4000); //Antwort abwarten - Antwort wird nicht ausgewertet.
 
             ReadGsmMemory();
-
-            //Startet Timer zum wiederholten Abrufen von Nachrichten
-            //SetCyclicTimer();
 
             Gsm_Basics.RaiseGsmEvent(GsmEventArgs.Telegram.GsmSystem, "GSM-Setup wird ausgeführt.");
         }
@@ -189,7 +187,23 @@ namespace MelBox2
                     DebugShowSms(sms, "Trackingliste " + ++n);
                 }
 #endif
-#endregion
+                #endregion
+
+                //Zeitüberschreitung Empfangsbestätigung prüfen
+                foreach (var sms in Gsm.SmsTrackingQueue)
+                {
+                    if ( sms.SmsProviderTimeStamp.AddMinutes( Properties.Settings.Default.SmsAckTimeoutMinutes ).CompareTo(DateTime.UtcNow) > 0) // > 0; t1 ist später als oder gleich t2.
+                    {
+                        Email.Send(
+                            Email.MelBox2Admin, 
+                            string.Format("Zeitüberschreitung SMS-Empfangsbestätigung (nach {0} min) für SMS an \r\n+{1}\r\n{2}\r\n\r\nSendeversuch um {3}", Properties.Settings.Default.SmsAckTimeoutMinutes, sms.Phone, sms.Message, sms.SmsProviderTimeStamp), 
+                            "Fehlende SMS-Empfangsbestätigung"
+                            );
+
+                        //SmsTrackingQueue.Remove(sms);
+                    }
+
+                }
 
                 Gsm_Basics.AddAtCommand("AT+CREG?");
                 Gsm_Basics.AddAtCommand("AT+CSQ");

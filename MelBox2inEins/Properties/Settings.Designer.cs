@@ -159,5 +159,29 @@ namespace MelBox2.Properties {
                 this["RelayIncomingCallsTo"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("8")]
+        public int HourOfDailyCheck {
+            get {
+                return ((int)(this["HourOfDailyCheck"]));
+            }
+            set {
+                this["HourOfDailyCheck"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("5")]
+        public int SmsAckTimeoutMinutes {
+            get {
+                return ((int)(this["SmsAckTimeoutMinutes"]));
+            }
+            set {
+                this["SmsAckTimeoutMinutes"] = value;
+            }
+        }
     }
 }

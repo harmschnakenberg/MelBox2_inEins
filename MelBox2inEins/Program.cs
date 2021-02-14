@@ -48,7 +48,7 @@ namespace MelBox2
 
                 Sql.Log(MelBoxSql.LogTopic.Start, MelBoxSql.LogPrio.Info, string.Format( "MelBox2 - Anwendung gestartet. {0}, {1} Baud", Gsm_Basics.ComPortName, Gsm_Basics.BaudRate) );
                 
-                InitDailyCheck(); //Führt täglich morgens um 8 Uhr aus
+                InitDailyCheck( Properties.Settings.Default.HourOfDailyCheck ); //Führt täglich morgens um 8 Uhr Routinecheck aus
 
                 //TEST
                 Sql.InsertMessageRec("Testnachricht am " + DateTime.Now.Date , 4915142265412);

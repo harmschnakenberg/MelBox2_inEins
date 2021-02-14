@@ -40,5 +40,11 @@
     <Setting Name="RelayIncomingCallsTo" Type="System.UInt64" Scope="User">
       <Value Profile="(Default)">4916095285304</Value>
     </Setting>
+    <Setting Name="HourOfDailyCheck" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">8</Value>
+    </Setting>
+    <Setting Name="SmsAckTimeoutMinutes" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">5</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

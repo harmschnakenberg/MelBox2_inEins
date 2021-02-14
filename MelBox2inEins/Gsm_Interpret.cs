@@ -29,7 +29,7 @@ namespace MelBox2
             //COM-Antwort auf Gesendete SMS: Referenzzuweisung für Empfangsbestätigung
             if (input.Contains("+CMGS:") || input.Contains("+CMSS:")) //
             {
-                ParseSmsReference(input);                
+                ParseSmsReference(input);
             }
 
             //Liste der Nachrichten im GSM-Speicher
@@ -75,6 +75,14 @@ namespace MelBox2
             if (input.Contains("+CMS ERROR:"))
             {
                 Gsm_Basics.RaiseGsmEvent(GsmEventArgs.Telegram.GsmError, "Am GSM-Modem ist ein Fehler beim Senden oder Empfangen einer SMSM aufgetreten", input);
+            }
+            #endregion
+
+            #region Sprachanruf
+            //+CRING: VOICE
+            if (input.Contains("+CRING: VOICE"))
+            {
+                Email.VoiceCallRing();
             }
             #endregion
 
@@ -130,8 +138,8 @@ namespace MelBox2
 
                 if (m.Success)
                 {
-                    GlobalProperty.ModemManufacturer = m.Groups[1].Value;                    
-                }               
+                    GlobalProperty.ModemManufacturer = m.Groups[1].Value;
+                }
             }
 
             //BAUSTELLE
@@ -221,7 +229,7 @@ namespace MelBox2
                                 break;
                         }
                     }
-                    
+
                     m = m.NextMatch();
                 }
                 if (input.Contains("+CREG: 0,0"))
@@ -240,9 +248,9 @@ namespace MelBox2
                 while (m.Success)
                 {
                     GlobalProperty.NetworkProviderName = m.Groups[3].Value;
-                   
+
                     m = m.NextMatch();
-                }     
+                }
             }
 
             #endregion

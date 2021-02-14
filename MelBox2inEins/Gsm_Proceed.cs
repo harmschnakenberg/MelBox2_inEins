@@ -171,7 +171,7 @@ namespace MelBox2
                     Console.WriteLine("Tracking-ID {0} erfasst für Nachricht an:\r\n+{1}\r\n{2}", trackingId, CurrentSmsSend.Phone, CurrentSmsSend.Message);
 
                     CurrentSmsSend.MessageReference = trackingId;
-                    CurrentSmsSend.SmsProviderTimeStamp = DateTime.UtcNow; // Timeout Sendungsverfolgung
+                    CurrentSmsSend.SmsProviderTimeStamp = DateTime.UtcNow; // für Timeout Sendungsverfolgung
 
                     SmsTrackingQueue.Add(CurrentSmsSend);
                     MelBox2.GlobalProperty.SmsPendingReports = SmsTrackingQueue.Count;

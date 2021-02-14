@@ -135,10 +135,18 @@ namespace MelBox2
 		static void HandleSmsStatusReportEvent(object sender, Sms e)
 		{
 			//Empfangener Statusreport (z.B. Sendebestätigung)
-			Gsm_Basics.RaiseGsmEvent(GsmEventArgs.Telegram.SmsStatus, string.Format("Empfangsbestätigung für SMS-Referrenz {0}", e.MessageReference) );
+			Gsm_Basics.RaiseGsmEvent(GsmEventArgs.Telegram.SmsStatus, string.Format("Empfangsbestätigung erhalten für SMS-Referrenz {0}", e.MessageReference) );
 
-			Sql.InsertMessageStatus(e.MessageReference, e.SendStatus);
+			Sql.InsertMessageStatus(e.MessageReference, e.SendStatus); //provisorisch - später entfernen?
 			Sql.UpdateMessageSentStatus(MelBoxSql.SendWay.Sms, e.MessageReference, e.SmsProviderTimeStamp, e.SendStatus);
+
+			//Status prüfen 0-31 erfolgreich versandt; 32-63 versucht weiter zu senden: 64-127 Sendeversuch abgebrochen
+			if (63 > e.SendStatus && e.SendStatus < 128)
+			{
+				//BAUSTELLE: In DB prüfen, ob die Nachricht schonal erfolglos versdnet wurde, wenn ja Abbruch, wenn nein; Sendewiederholung
+				Email.Send(Email.MelBox2Admin, string.Format("Sendeabbruch. Wiederhole SMS senden an \r\n+{0}\r\n{1}\r\n\r\nSendeversuch um {2}", e.Phone, e.Message, e.SmsProviderTimeStamp), "SMS-Sendeversuch wiederholen");
+				Gsm.SmsSend(e.Phone, e.Message);
+			}
 		}
 
 	}

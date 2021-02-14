@@ -17,6 +17,7 @@ namespace MelBox2
 
         public static List<string> PermanentEmailRecievers { get; set; }
 
+       
         public static void Send(MailAddressCollection to, Sms e, bool isBlocked)
         {
             StringBuilder body = new StringBuilder();
@@ -30,9 +31,9 @@ namespace MelBox2
             subject.Append("SMS Eingang >" + senderFirma + "<, ");
             subject.Append("SMS Text >" + e.Message + "<");
 
-            body.Append("SMS Absender >" + e.Phone + ": " + senderName + ", " + senderFirma + "< \r\n"); //SMS Absender >GMX SMS<
-            body.Append("SMS Text >" + e.Message + "< \r\n");
-            body.Append("SMS Sendezeit >" + e.SmsProviderTimeStamp + "< \r\n");
+            body.Append("\r\nSMS Absender\t>" + e.Phone + ": " + senderName + ", " + senderFirma + "< \r\n"); //SMS Absender >GMX SMS<
+            body.Append("SMS Text\t>" + e.Message + "< \r\n");
+            body.Append("SMS Sendezeit\t>" + e.SmsProviderTimeStamp + "< \r\n");
 
             if (isBlocked)
                 body.Append("\r\n\r\nKeine Weiterleitung an Bereitschaftshandy.");
@@ -131,5 +132,50 @@ namespace MelBox2
                 }
             }
         }
+
+        #region Sprachanrufe behandeln
+
+        private static bool VoiceCallRecieved { get; set; } = false;
+
+
+        public static void VoiceCallRing()
+        {
+            if (!VoiceCallRecieved)
+            {
+#if DEBUG
+                Console.WriteLine("Eingehenden Anruf registriert.");
+#endif
+                VoiceCallRecieved = true;
+                SendVoiceCallRecievedNotification();
+            }
+        }
+
+        private static void SendVoiceCallRecievedNotification()
+        {
+            string subject = "Sprachanruf > ";
+            string body = string.Format("Sprachanruf {0} weitergeleitet. ", DateTime.Now);
+
+            MailAddressCollection to = new MailAddressCollection();
+            foreach (var address in PermanentEmailRecievers)
+            {
+                to.Add(address);
+            }
+
+            Send(to, body, subject);
+
+#if DEBUG
+            Console.WriteLine("Send Email: 'Eingehender Anruf' und sperre erneute E-mail für 30 sec.");
+#endif
+
+            var t = Task.Run(async delegate
+            {
+                await Task.Delay(30000); //es wird maximal alle 30 sec eine mail rausgeschickt.                
+            });
+            t.Wait();
+
+            VoiceCallRecieved = false;
+        }
+
+#endregion
     }
 }

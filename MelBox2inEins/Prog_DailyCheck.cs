@@ -17,10 +17,10 @@ namespace MelBox2
 		/// <summary>
 		/// Startet einen Timer, der morgen um 8 Uhr eine Überprüfung startet.
 		/// </summary>
-		private static void InitDailyCheck()
+		private static void InitDailyCheck(int hourOfDay = 8)
 		{
 			Console.WriteLine("Starte Timer\t'tägliche Überprüfungen'");
-			double MilliSecTo8am = (DateTime.Now.Date.AddDays(1).AddHours(8) - DateTime.Now).TotalMilliseconds; //Morgen um 8 Uhr
+			double MilliSecTo8am = (DateTime.Now.Date.AddDays(1).AddHours(hourOfDay) - DateTime.Now).TotalMilliseconds; //Morgen um 8 Uhr
 
 			tDaily = new Timer(MilliSecTo8am);
 			tDaily.Elapsed += new ElapsedEventHandler(DailyCheck);
@@ -52,7 +52,7 @@ namespace MelBox2
 			Sql.CheckDbBackup();
 
 			// Timer neu starten, um TimeSpan bis morgen 8 Uhr neu zu berechnen
-			InitDailyCheck();
+			InitDailyCheck( Properties.Settings.Default.HourOfDailyCheck );
 		}
 		#endregion
 
