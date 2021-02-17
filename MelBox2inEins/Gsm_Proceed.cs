@@ -43,9 +43,10 @@ namespace MelBox2
                 //*/
                 #endregion
 
-                Regex r = new Regex(@"\+CMGL: (\d+),""(.+)"",""(.+)"",(.*),""(.+)""\r\n(.+)\r\n"); //SAMBA75
+                Regex r = new Regex(@"\+CMGL: (\d+),""(.+)"",""(.+)"",(.*),""(.+)""(.+|\n)+?(?=OK)"); //SAMBA75                 
+                //Regex r = new Regex(@"\+CMGL: (\d+),""(.+)"",""(.+)"",(.*),""(.+)""\r\n(.+)\r\n"); //SAMBA75 
                 //Regex r = new Regex(@"(\d+),(.+\s.+),(.+),(.+),(.+),(.+),(.+)\n{2}"); //SAMSUNG GALAXY A3
-                Match m = r.Match(input);
+                Match m = r.Match(input.Replace('\n', ' ') );
 
                 while (m.Success)
                 {

@@ -150,12 +150,15 @@ namespace MelBox2
             Gsm_Basics.AddAtCommand("AT+CNMI=2,1,2,2,1");
             //möglich AT+CNMI=2,1,2,2,1
 
+
+            ReadGsmMemory();
+
+
             //Rufumleitung BAUSTELLE: nicht ausreichend getestet //
             //Gsm_Basics.AddAtCommand("ATD*61*+" + Properties.Settings.Default.RelayIncomingCallsTo + "*11*05#;"); //Antwort ^SCCFC : <reason>, <status> (0: inaktiv, 1: aktiv), <class> [,.
             Gsm_Basics.AddAtCommand("ATD*61*+" + Properties.Settings.Default.RelayIncomingCallsTo + "*05#;");
             System.Threading.Thread.Sleep(4000); //Antwort abwarten - Antwort wird nicht ausgewertet.
 
-            ReadGsmMemory();
 
             Gsm_Basics.RaiseGsmEvent(GsmEventArgs.Telegram.GsmSystem, "GSM-Setup wird ausgeführt.");
         }

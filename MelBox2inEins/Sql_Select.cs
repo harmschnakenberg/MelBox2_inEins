@@ -263,11 +263,14 @@ namespace MelBox2
                     int contactIdBereitschafshandy = GetContactId(StandardWatchName);
                     if (contactIdBereitschafshandy == 0)
                     {
-                        throw new Exception(" GetCurrentShiftPhoneNumbers(): Kein Kontakt '" + StandardWatchName + "' gefunden.");
+                        //throw new Exception(" GetCurrentShiftPhoneNumbers(): Kein Kontakt '" + StandardWatchName + "' gefunden.");
+                        Program.Sql.Log(LogTopic.Shift, LogPrio.Error, "GetCurrentShiftPhoneNumbers(): Kein Kontakt '" + StandardWatchName + "' in DB gefunden.");
                     }
-
-                    //Erzeuge eine neue Schicht für heute mit Standardwerten (Bereitschaftshandy)
-                    InsertShift(contactIdBereitschafshandy, DateTime.Now);
+                    else
+                    {
+                        //Erzeuge eine neue Schicht für heute mit Standardwerten (Bereitschaftshandy)
+                        InsertShift(contactIdBereitschafshandy, DateTime.Now);
+                    }
                 }
           
                 #endregion
@@ -284,7 +287,13 @@ namespace MelBox2
                 watch = SqlSelectPhoneNumbers(query2);
 
                 if (watch.Count == 0)
-                    throw new Exception(" GetCurrentShiftPhoneNumbers(): Es ist aktuell keine SMS-Bereitschaft definiert."); //Exception? Muss anderweitig abgefangen werden.
+                {
+                    // throw new Exception(" GetCurrentShiftPhoneNumbers(): Es ist aktuell keine SMS-Bereitschaft definiert."); 
+
+                    //Sollte nur passieren, wenn für das Bereitschaftshandy in DB kein SMS-Versand freigegeben ist.
+                    watch.Add(Properties.Settings.Default.MelBoxAdminPhone);
+                }
+                   
 
                 return watch;
                 #endregion

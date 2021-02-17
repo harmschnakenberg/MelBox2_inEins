@@ -219,9 +219,17 @@ namespace MelBox2
         /// <param name="command">AT-Befehl</param>
         public static void AddAtCommand(string command)
         {
-            if(!ATCommandQueue.Contains(command))
+            if (!ATCommandQueue.Contains(command))
+            {
                 ATCommandQueue.Add(command); //Stellt die Abarbeitung nacheinander sicher
 
+                //Test: Pause für Antwort länger bei SMS senden und wählen
+                //if (command.StartsWith("AT+CMGL") || command.StartsWith("ATD"))
+                //    sendTimer.Interval = 2000;
+                //else
+                //    sendTimer.Interval = Port.ReadTimeout * 2;
+            }
+            
             sendTimer.Start();
         }
 
@@ -243,6 +251,12 @@ namespace MelBox2
                     if (Port != null)
                     {
                         string command = ATCommandQueue.FirstOrDefault();
+
+                        //Test Senden verzögert- Modemantwort abwarten
+                        //if (command.StartsWith("AT+CMGS") || command.StartsWith("ATD"))
+                        //{
+                        //    Task.Delay(1000).Wait();
+                        //}
                       
                         Port.Write(command + "\r");
                         ATCommandQueue.Remove(command);

@@ -39,6 +39,9 @@
   <PropertyGroup>
     <ApplicationIcon>KK.ico</ApplicationIcon>
   </PropertyGroup>
+  <PropertyGroup>
+    <NoWin32Manifest>true</NoWin32Manifest>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Grapevine, Version=4.2.2.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Grapevine.4.2.2\lib\net40\Grapevine.dll</HintPath>

@@ -121,11 +121,11 @@ namespace MelBox2
                     query.Append("CREATE VIEW \"ViewShift\" AS ");
                     query.Append("SELECT s.Id AS Nr, c.Id AS ContactId, c.Name AS Name, SendSms, SendEmail, ");
                     query.Append("CASE(CAST(strftime('%w', StartTime) AS INT) + 6) % 7 WHEN 0 THEN 'Mo' WHEN 1 THEN 'Di' WHEN 2 THEN 'Mi' WHEN 3 THEN 'Do' WHEN 4 THEN 'Fr' WHEN 5 THEN 'Sa' ELSE 'So' END AS Tag, ");
-                    query.Append("date(StartTime) AS Datum, CAST(strftime('%H', StartTime, 'localtime') AS INTEGER) AS Beginn, CAST(strftime('%H', EndTime, 'localtime') AS INTEGER) AS Ende FROM Shifts AS s JOIN Contact AS c ON ContactId = c.Id WHERE Datum >= date('now') ");
+                    query.Append("date(StartTime) AS Datum, CAST(strftime('%H', StartTime, 'localtime') AS INTEGER) AS Beginn, CAST(strftime('%H', EndTime, 'localtime') AS INTEGER) AS Ende FROM Shifts AS s JOIN Contact AS c ON ContactId = c.Id WHERE Datum >= date('now', '-1 day') ");
                     query.Append("UNION ");
                     query.Append("SELECT NULL AS Nr, NULL AS ContactId, NULL AS Name, 0 AS SendSms, 0 AS SendEmail, ");
                     query.Append("CASE(CAST(strftime('%w', d) AS INT) + 6) % 7 WHEN 0 THEN 'Mo' WHEN 1 THEN 'Di' WHEN 2 THEN 'Mi' WHEN 3 THEN 'Do' WHEN 4 THEN 'Fr' WHEN 5 THEN 'Sa' ELSE 'So' END AS Tag, ");
-                    query.Append("d AS Datum, NULL AS Beginn, NULL AS Ende FROM ViewYearFromToday WHERE Datum >= date('now') ");
+                    query.Append("d AS Datum, NULL AS Beginn, NULL AS Ende FROM ViewYearFromToday WHERE Datum >= date('now', '-1 day') ");
                     query.Append("ORDER BY Datum ; ");
 
                     SqlNonQuery(query.ToString());

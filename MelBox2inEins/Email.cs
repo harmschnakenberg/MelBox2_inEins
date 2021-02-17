@@ -96,21 +96,20 @@ namespace MelBox2
                         subject = body;
                     }
 
-                    int maxSubjectLenth = 255;
+                    const int maxSubjectLenth = 255;
 
                     if (subject.Length > maxSubjectLenth)
                     {
-                        message.Subject = subject.Substring(0, maxSubjectLenth).Replace("\r\n", string.Empty);
+                        subject = subject.Substring(0, maxSubjectLenth);
                     }
-                    else
-                    {
-                        message.Subject = subject.Replace("\r\n", string.Empty);
-                    }
-                    //Nachricht
-                    message.Body = body;
 
                     try
                     {
+                        message.Subject = subject.Replace("\n", string.Empty).Replace("\r", string.Empty).Replace("\t", " ").Trim();
+
+                        //Nachricht
+                        message.Body = body;
+
                         smtpClient.Send(message);
                     }
                     catch (SmtpException ex)
@@ -128,6 +127,11 @@ namespace MelBox2
                         //provisorisch
                         throw ex;
 #endif
+                    }
+                    catch (ArgumentException arg_ex)
+                    {
+                        throw arg_ex;
+
                     }
                 }
             }
@@ -152,6 +156,12 @@ namespace MelBox2
 
         private static void SendVoiceCallRecievedNotification()
         {
+            //BAUSTELLE Anrufer-Nummer herausfinden
+            //AT^SCNI
+            //^SCNI: <id> [, < cs > [, < number > , < type > ]]
+            Gsm_Basics.AddAtCommand("AT^SCNI");
+
+
             string subject = "Sprachanruf > ";
             string body = string.Format("Sprachanruf {0} weitergeleitet. ", DateTime.Now);
 

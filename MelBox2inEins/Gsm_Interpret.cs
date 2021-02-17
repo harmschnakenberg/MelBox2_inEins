@@ -82,6 +82,7 @@ namespace MelBox2
             //+CRING: VOICE
             if (input.Contains("+CRING: VOICE"))
             {
+
                 Email.VoiceCallRing();
             }
             #endregion
@@ -143,8 +144,8 @@ namespace MelBox2
             }
 
             //BAUSTELLE
-            //SMS Service-Center Adresse // +CSCA: "+491710760000",145
-            if (input.Contains("+CSCA:"))
+            //SMS Service-Center Adresse // +CSCA: "+491710760000",145  //+CSCA: "+491710760000",145
+            if (input.Contains("+CSCA: "))
             {
                 //+CSCA: "+491710760000",145
                 Regex r = new Regex(@"\+CSCA: ""(.+)"",(\d+)");

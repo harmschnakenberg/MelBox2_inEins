@@ -92,6 +92,15 @@ namespace MelBox2
             StringBuilder builder = new StringBuilder();
 
             builder.Append(MelBoxWeb.HtmlTablePlain(dt, false));
+
+            string info =   "<i class='w3-xxlarge w3-disabled material-icons-outlined'>storage</i> Nur Datenbank<br>" +
+                            "<i class='w3-xxlarge w3-disabled material-icons-outlined'>not_started</i> bereit zum Versenden<br>" +
+                            "<i class='w3-xxlarge w3-disabled material-icons-outlined'>radar</i> Warte auf Empfangsbestätigung<br>" +
+                            "<i class='w3-xxlarge w3-disabled material-icons-outlined'>replay</i> wird nochmal gesendet<br>" +
+                            "<i class='w3-xxlarge w3-disabled material-icons-outlined'>unpublished</i> Nachverfolgung abgebrochen<br>" +
+                            "<i class='w3-xxlarge w3-disabled material-icons-outlined'>check_circle</i> Empfangsbestätigung erhalten<br>";
+
+            builder.Append(MelBoxWeb.HtmlInfoSidebar("Sendestatus", info));
 #if DEBUG
             builder.Append("<p class='w3-pink'>" + payload + "</p>");
 #endif
@@ -913,7 +922,7 @@ namespace MelBox2
             string value = GlobalProperty.ConnectedToModem ? "angeschlossen" : "keine Verbindung";
             dt.Rows.Add(para, value);
 
-            //para = "Hersteller";
+            //para = "Hersteller"; //Modem-Antort ohne +CNMI
             //value = GlobalProperty.ModemManufacturer;
             //dt.Rows.Add(para, value);
 
